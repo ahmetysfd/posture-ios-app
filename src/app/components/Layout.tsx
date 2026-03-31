@@ -10,14 +10,19 @@ const Layout: React.FC<LayoutProps> = ({ children, hideNav = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const currentScreen = location.pathname === '/' ? 'home'
+    : location.pathname === '/progress' ? 'progress'
+    : location.pathname === '/settings' ? 'settings' : '';
+
   const tabs = [
-    { path: '/', label: 'Home', icon: HomeIcon },
-    { path: '/progress', label: 'Progress', icon: ChartIcon },
-    { path: '/settings', label: 'Settings', icon: SettingsIcon },
+    { id: 'home', path: '/', label: 'Home', Icon: HomeIcon },
+    { id: 'progress', path: '/progress', label: 'Progress', Icon: ChartIcon },
+    { id: 'settings', path: '/settings', label: 'Settings', Icon: GearIcon },
   ];
 
   return (
     <div style={{
+      width: '100%',
       maxWidth: 430,
       margin: '0 auto',
       minHeight: '100vh',
@@ -25,12 +30,14 @@ const Layout: React.FC<LayoutProps> = ({ children, hideNav = false }) => {
       position: 'relative',
       display: 'flex',
       flexDirection: 'column',
-      boxShadow: '0 0 60px rgba(0,0,0,0.08)',
+      fontFamily: 'var(--font-body)',
+      boxShadow: '0 0 80px rgba(0,0,0,0.04)',
     }}>
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        paddingBottom: hideNav ? 0 : 90,
+        paddingBottom: hideNav ? 0 : 80,
+        WebkitOverflowScrolling: 'touch' as any,
       }}>
         {children}
       </div>
@@ -43,41 +50,40 @@ const Layout: React.FC<LayoutProps> = ({ children, hideNav = false }) => {
           transform: 'translateX(-50%)',
           width: '100%',
           maxWidth: 430,
-          background: 'rgba(255,255,255,0.92)',
+          background: 'rgba(255,255,255,0.96)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          borderTop: '1px solid var(--color-border-light)',
-          padding: '8px 16px 24px',
+          borderTop: '1px solid #ECEEF1',
+          padding: '6px 0 20px',
           display: 'flex',
           justifyContent: 'space-around',
-          alignItems: 'center',
           zIndex: 100,
         }}>
-          {tabs.map((tab) => {
-            const isActive = location.pathname === tab.path;
+          {tabs.map(({ id, path, label, Icon }) => {
+            const active = currentScreen === id;
             return (
               <button
-                key={tab.path}
-                onClick={() => navigate(tab.path)}
+                key={id}
+                onClick={() => navigate(path)}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 4,
-                  padding: '8px 20px',
-                  borderRadius: 12,
-                  background: isActive ? 'var(--color-primary-50)' : 'transparent',
-                  transition: 'all 0.25s ease',
+                  gap: 2,
+                  padding: '6px 24px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
                 }}
               >
-                <tab.icon color={isActive ? 'var(--color-primary)' : 'var(--color-text-tertiary)'} size={24} />
+                <Icon active={active} />
                 <span style={{
                   fontSize: 11,
-                  fontWeight: isActive ? 700 : 500,
-                  color: isActive ? 'var(--color-primary)' : 'var(--color-text-tertiary)',
-                  letterSpacing: '0.02em',
+                  fontWeight: active ? 600 : 500,
+                  color: active ? 'var(--color-primary)' : 'var(--color-text-tert)',
+                  letterSpacing: '0.01em',
                 }}>
-                  {tab.label}
+                  {label}
                 </span>
               </button>
             );
@@ -88,26 +94,33 @@ const Layout: React.FC<LayoutProps> = ({ children, hideNav = false }) => {
   );
 };
 
-// Inline SVG icons
-const HomeIcon = ({ color, size }: { color: string; size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+// Icons matching Figma exactly
+const HomeIcon = ({ active }: { active: boolean }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24"
+    fill={active ? 'var(--color-primary)' : 'none'}
+    stroke={active ? 'var(--color-primary)' : 'var(--color-text-tert)'}
+    strokeWidth={active ? 1.5 : 2} strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
     <polyline points="9 22 9 12 15 12 15 22" />
   </svg>
 );
 
-const ChartIcon = ({ color, size }: { color: string; size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+const ChartIcon = ({ active }: { active: boolean }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+    stroke={active ? 'var(--color-primary)' : 'var(--color-text-tert)'}
+    strokeWidth={2} strokeLinecap="round">
     <line x1="18" y1="20" x2="18" y2="10" />
     <line x1="12" y1="20" x2="12" y2="4" />
     <line x1="6" y1="20" x2="6" y2="14" />
   </svg>
 );
 
-const SettingsIcon = ({ color, size }: { color: string; size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+const GearIcon = ({ active }: { active: boolean }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+    stroke={active ? 'var(--color-primary)' : 'var(--color-text-tert)'}
+    strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="3" />
-    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
   </svg>
 );
 

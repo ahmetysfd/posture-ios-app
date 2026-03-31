@@ -1,446 +1,169 @@
 export interface Exercise {
   id: string;
   name: string;
-  duration: number; // seconds
+  duration: number;
   description: string;
   instructions: string[];
-  muscleGroups: string[];
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  imageEmoji: string;
+  emoji: string;
 }
 
 export interface PostureProblem {
   id: string;
   title: string;
-  subtitle: string;
+  exercises: number;
+  duration: string;
   description: string;
-  category: string;
-  color: string;
-  bgColor: string;
-  icon: string;
-  severity: 'mild' | 'moderate' | 'severe';
   affectedAreas: string[];
-  exercises: Exercise[];
+  cardBg: string;
+  cardBorder: string;
+  emoji: string;
+  exerciseList: Exercise[];
   tips: string[];
 }
 
 export const postureProblems: PostureProblem[] = [
   {
     id: 'forward-head',
-    title: 'Forward Head',
-    subtitle: 'Tech Neck Syndrome',
-    description: 'Forward head posture occurs when your head shifts forward past your shoulders, commonly caused by prolonged screen use. This puts extra strain on your cervical spine and upper back muscles.',
-    category: 'neck',
-    color: '#8B5CF6',
-    bgColor: '#F5F3FF',
-    icon: '🦒',
-    severity: 'moderate',
+    title: 'Forward Head Posture',
+    exercises: 5,
+    duration: '3m',
+    description: 'Forward head posture occurs when your head shifts forward past your shoulders, commonly caused by prolonged screen use. This puts extra strain on your cervical spine.',
     affectedAreas: ['Cervical spine', 'Upper trapezius', 'Suboccipitals', 'SCM'],
-    exercises: [
-      {
-        id: 'chin-tuck',
-        name: 'Chin Tucks',
-        duration: 30,
-        description: 'Gently retract your chin straight back, creating a double chin. Hold, then release.',
-        instructions: [
-          'Sit or stand tall with shoulders relaxed',
-          'Look straight ahead, keeping your eyes level',
-          'Draw your chin straight back (not down)',
-          'Hold for 5 seconds, feel the stretch at the base of your skull',
-          'Release slowly and repeat 10 times'
-        ],
-        muscleGroups: ['Deep neck flexors', 'Suboccipitals'],
-        difficulty: 'beginner',
-        imageEmoji: '🧘'
-      },
-      {
-        id: 'neck-stretch',
-        name: 'Lateral Neck Stretch',
-        duration: 45,
-        description: 'Gently tilt your head to each side, stretching the SCM and upper trapezius.',
-        instructions: [
-          'Sit tall with both hands on your thighs',
-          'Slowly tilt your right ear toward right shoulder',
-          'For deeper stretch, gently press with right hand',
-          'Hold for 15-20 seconds',
-          'Return to center and repeat on left side'
-        ],
-        muscleGroups: ['SCM', 'Upper trapezius', 'Scalenes'],
-        difficulty: 'beginner',
-        imageEmoji: '🙆'
-      },
-      {
-        id: 'wall-angel',
-        name: 'Wall Angels',
-        duration: 60,
-        description: 'Stand against a wall and slide your arms up and down like making a snow angel.',
-        instructions: [
-          'Stand with your back flat against a wall',
-          'Press the back of your head, upper back, and hips against the wall',
-          'Raise arms to goal post position (90° at shoulder and elbow)',
-          'Slowly slide arms up overhead while maintaining wall contact',
-          'Lower back down slowly, repeat 10 times'
-        ],
-        muscleGroups: ['Rhomboids', 'Lower trapezius', 'Serratus anterior'],
-        difficulty: 'intermediate',
-        imageEmoji: '👼'
-      }
+    cardBg: '#E8F4FE',
+    cardBorder: '#C5E3FC',
+    emoji: '🦒',
+    exerciseList: [
+      { id: 'chin-tuck', name: 'Chin Tucks', duration: 30, description: 'Retract your chin straight back, creating a double chin.', emoji: '🧘',
+        instructions: ['Sit or stand tall with shoulders relaxed', 'Look straight ahead, eyes level', 'Draw chin straight back', 'Hold 5 seconds', 'Repeat 10 times'] },
+      { id: 'neck-flexor', name: 'Neck Flexor Stretch', duration: 45, description: 'Tilt head to each side stretching the SCM.', emoji: '🙆',
+        instructions: ['Sit tall, hands on thighs', 'Tilt right ear to right shoulder', 'Apply gentle pressure', 'Hold 15-20 seconds', 'Switch sides'] },
+      { id: 'wall-angel', name: 'Wall Angels', duration: 60, description: 'Slide arms up and down against a wall.', emoji: '👼',
+        instructions: ['Back flat against wall', 'Press head, upper back, hips to wall', 'Arms at 90° goalpost', 'Slide arms overhead', 'Lower slowly, 10 reps'] },
+      { id: 'thoracic-ext', name: 'Thoracic Extension', duration: 45, description: 'Extend upper back over a foam roller.', emoji: '🤸',
+        instructions: ['Place foam roller under upper back', 'Support head with hands', 'Extend back over roller', 'Hold 5 seconds', 'Move roller and repeat'] },
+      { id: 'levator-stretch', name: 'Levator Scapulae Stretch', duration: 30, description: 'Target the muscle connecting neck to shoulder blade.', emoji: '💆',
+        instructions: ['Turn head 45° to one side', 'Look down toward armpit', 'Gently pull head down', 'Hold 20 seconds', 'Switch sides'] },
     ],
-    tips: [
-      'Position your screen at eye level',
-      'Take breaks every 30 minutes',
-      'Use a supportive pillow at night',
-      'Strengthen your deep neck flexors daily'
-    ]
+    tips: ['Position screen at eye level', 'Break every 30 minutes', 'Use supportive pillow', 'Strengthen deep neck flexors'],
   },
   {
     id: 'rounded-shoulders',
     title: 'Rounded Shoulders',
-    subtitle: 'Desk Worker Syndrome',
-    description: 'Rounded shoulders happen when the chest muscles tighten and upper back muscles weaken, pulling your shoulders forward. This is extremely common with desk work.',
-    category: 'shoulder',
-    color: '#3B82F6',
-    bgColor: '#EFF6FF',
-    icon: '🏋️',
-    severity: 'moderate',
+    exercises: 5,
+    duration: '3m',
+    description: 'Rounded shoulders happen when chest muscles tighten and upper back muscles weaken, pulling shoulders forward from desk work.',
     affectedAreas: ['Pectorals', 'Anterior deltoids', 'Upper back', 'Rotator cuff'],
-    exercises: [
-      {
-        id: 'doorway-stretch',
-        name: 'Doorway Pec Stretch',
-        duration: 45,
-        description: 'Use a doorway to open up your chest and stretch tight pectoral muscles.',
-        instructions: [
-          'Stand in a doorway with arms at 90° angle',
-          'Place forearms on the door frame',
-          'Step one foot forward gently',
-          'Lean into the stretch until you feel it in your chest',
-          'Hold for 20-30 seconds, repeat 3 times'
-        ],
-        muscleGroups: ['Pectoralis major', 'Pectoralis minor', 'Anterior deltoids'],
-        difficulty: 'beginner',
-        imageEmoji: '🚪'
-      },
-      {
-        id: 'band-pull-apart',
-        name: 'Band Pull Aparts',
-        duration: 45,
-        description: 'Use a resistance band to strengthen your upper back and improve shoulder position.',
-        instructions: [
-          'Hold a resistance band at shoulder width, arms extended forward',
-          'Squeeze your shoulder blades together',
-          'Pull the band apart until it touches your chest',
-          'Slowly return to the starting position',
-          'Repeat 15 times for 3 sets'
-        ],
-        muscleGroups: ['Rhomboids', 'Rear deltoids', 'Middle trapezius'],
-        difficulty: 'beginner',
-        imageEmoji: '💪'
-      },
-      {
-        id: 'prone-y-raise',
-        name: 'Prone Y-Raises',
-        duration: 60,
-        description: 'Lie face down and raise arms into a Y position to strengthen lower traps.',
-        instructions: [
-          'Lie face down on the floor or a bench',
-          'Extend arms overhead at a 30° angle forming a Y',
-          'Thumbs pointing toward the ceiling',
-          'Lift arms 3-4 inches off the ground, squeeze shoulder blades',
-          'Hold for 3 seconds, lower slowly, repeat 12 times'
-        ],
-        muscleGroups: ['Lower trapezius', 'Serratus anterior', 'Rhomboids'],
-        difficulty: 'intermediate',
-        imageEmoji: '🤸'
-      }
+    cardBg: '#E8FEF1',
+    cardBorder: '#C5FADA',
+    emoji: '🫧',
+    exerciseList: [
+      { id: 'doorway-stretch', name: 'Doorway Pec Stretch', duration: 45, description: 'Open up your chest using a doorway.', emoji: '🚪',
+        instructions: ['Stand in doorway, arms at 90°', 'Place forearms on frame', 'Step forward gently', 'Lean into stretch', 'Hold 30s, repeat 3x'] },
+      { id: 'band-pull', name: 'Band Pull Aparts', duration: 45, description: 'Strengthen upper back with resistance bands.', emoji: '💪',
+        instructions: ['Hold band at shoulder width', 'Squeeze shoulder blades', 'Pull band to chest', 'Return slowly', '15 reps × 3 sets'] },
+      { id: 'y-raise', name: 'Prone Y-Raises', duration: 60, description: 'Strengthen lower traps lying face down.', emoji: '🤸',
+        instructions: ['Lie face down', 'Arms at 30° forming Y', 'Thumbs to ceiling', 'Lift arms, squeeze blades', 'Hold 3s, 12 reps'] },
+      { id: 'blade-squeeze', name: 'Shoulder Blade Squeeze', duration: 30, description: 'Activate mid-back muscles.', emoji: '🎯',
+        instructions: ['Sit or stand tall', 'Arms at sides', 'Squeeze shoulder blades together', 'Hold 5 seconds', 'Repeat 15 times'] },
+      { id: 'chest-opener', name: 'Chest Opener Stretch', duration: 40, description: 'Open the chest with clasped hands behind back.', emoji: '🧘',
+        instructions: ['Stand tall', 'Clasp hands behind back', 'Straighten arms', 'Lift hands away from body', 'Hold 20 seconds'] },
     ],
-    tips: [
-      'Set up an ergonomic workstation',
-      'Strengthen your upper back muscles',
-      'Stretch your chest muscles daily',
-      'Be conscious of shoulder position when walking'
-    ]
+    tips: ['Set up ergonomic workstation', 'Strengthen upper back', 'Stretch chest daily', 'Watch shoulder position'],
   },
   {
-    id: 'lower-back-pain',
-    title: 'Lower Back Pain',
-    subtitle: 'Lumbar Strain',
-    description: 'Lower back pain from poor posture typically involves excessive lordosis or prolonged flexion, weakening the core stabilizers and straining the lumbar spine.',
-    category: 'back',
-    color: '#EC4899',
-    bgColor: '#FDF2F8',
-    icon: '🔥',
-    severity: 'severe',
-    affectedAreas: ['Lumbar spine', 'Erector spinae', 'Quadratus lumborum', 'Core muscles'],
-    exercises: [
-      {
-        id: 'cat-cow',
-        name: 'Cat-Cow Stretch',
-        duration: 60,
-        description: 'Alternate between arching and rounding your back to mobilize the spine.',
-        instructions: [
-          'Start on hands and knees, wrists under shoulders, knees under hips',
-          'Inhale: drop belly, lift chest and tailbone (Cow)',
-          'Exhale: round spine, tuck chin and tailbone (Cat)',
-          'Move slowly with your breath',
-          'Repeat 10-15 cycles'
-        ],
-        muscleGroups: ['Erector spinae', 'Rectus abdominis', 'Multifidus'],
-        difficulty: 'beginner',
-        imageEmoji: '🐱'
-      },
-      {
-        id: 'bird-dog',
-        name: 'Bird Dog',
-        duration: 60,
-        description: 'A core stabilization exercise that strengthens your back without compression.',
-        instructions: [
-          'Start on hands and knees in a neutral spine position',
-          'Extend your right arm forward and left leg back simultaneously',
-          'Keep your hips level and core braced',
-          'Hold for 5 seconds at the top',
-          'Return to start and switch sides, 10 reps each'
-        ],
-        muscleGroups: ['Multifidus', 'Transverse abdominis', 'Glutes', 'Erector spinae'],
-        difficulty: 'intermediate',
-        imageEmoji: '🐕'
-      },
-      {
-        id: 'dead-bug',
-        name: 'Dead Bug',
-        duration: 60,
-        description: 'A core exercise that teaches you to stabilize your spine during movement.',
-        instructions: [
-          'Lie on your back, arms pointing to the ceiling',
-          'Bring knees to 90° angle (tabletop position)',
-          'Press your lower back firmly into the floor',
-          'Slowly extend right arm back and left leg forward',
-          'Return and switch sides, 10 reps each side'
-        ],
-        muscleGroups: ['Transverse abdominis', 'Rectus abdominis', 'Hip flexors'],
-        difficulty: 'beginner',
-        imageEmoji: '🪲'
-      }
+    id: 'anterior-pelvic',
+    title: 'Anterior Pelvic Tilt',
+    exercises: 5,
+    duration: '4m',
+    description: 'Anterior pelvic tilt occurs when the pelvis tilts forward, increasing lower back curve and weakening glutes and core.',
+    affectedAreas: ['Hip flexors', 'Lumbar spine', 'Glutes', 'Core'],
+    cardBg: '#F0EEFE',
+    cardBorder: '#DDD9FC',
+    emoji: '🦴',
+    exerciseList: [
+      { id: 'half-kneel', name: 'Half-Kneeling Stretch', duration: 60, description: 'Deep hip flexor stretch in a lunge position.', emoji: '🦵',
+        instructions: ['Kneel on right knee', 'Left foot forward', 'Shift weight forward', 'Squeeze right glute', 'Hold 30s, switch'] },
+      { id: 'glute-bridge', name: 'Glute Bridges', duration: 45, description: 'Strengthen glutes and stretch hip flexors.', emoji: '🌉',
+        instructions: ['Lie back, knees bent', 'Drive through heels', 'Squeeze glutes at top', 'Hold 3 seconds', '15 reps'] },
+      { id: 'dead-bug', name: 'Dead Bug', duration: 60, description: 'Core stabilization for spinal control.', emoji: '🪲',
+        instructions: ['Lie back, arms to ceiling', 'Knees at 90° tabletop', 'Press lower back to floor', 'Extend opposite arm and leg', '10 reps each side'] },
+      { id: 'cat-cow', name: 'Cat-Cow Stretch', duration: 50, description: 'Mobilize the spine with alternating movements.', emoji: '🐱',
+        instructions: ['Hands and knees', 'Inhale: belly drops, chest lifts', 'Exhale: round spine, tuck chin', 'Move with breath', '10-15 cycles'] },
+      { id: 'pelvic-tilt', name: 'Posterior Pelvic Tilts', duration: 30, description: 'Learn to control pelvic position.', emoji: '🔄',
+        instructions: ['Lie on back, knees bent', 'Flatten lower back to floor', 'Tilt pelvis upward', 'Hold 5 seconds', 'Repeat 15 times'] },
     ],
-    tips: [
-      'Avoid sitting for more than 45 minutes at a time',
-      'Strengthen your core muscles daily',
-      'Use lumbar support when sitting',
-      'Sleep on your side with a pillow between your knees'
-    ]
+    tips: ['Avoid prolonged sitting', 'Strengthen core and glutes', 'Stretch hip flexors daily', 'Practice neutral pelvis standing'],
   },
   {
-    id: 'hip-flexor-tightness',
-    title: 'Tight Hip Flexors',
-    subtitle: 'Sitting Syndrome',
-    description: 'Prolonged sitting causes hip flexors to shorten and tighten, leading to anterior pelvic tilt and contributing to lower back pain and poor posture.',
-    category: 'hip',
-    color: '#F97316',
-    bgColor: '#FFF7ED',
-    icon: '🪑',
-    severity: 'moderate',
-    affectedAreas: ['Iliopsoas', 'Rectus femoris', 'TFL', 'Glutes'],
-    exercises: [
-      {
-        id: 'half-kneeling-stretch',
-        name: 'Half-Kneeling Hip Stretch',
-        duration: 60,
-        description: 'A deep hip flexor stretch performed in a lunge position.',
-        instructions: [
-          'Kneel on your right knee, left foot forward in a lunge',
-          'Keep your torso upright and core engaged',
-          'Shift your weight forward gently',
-          'Squeeze your right glute to deepen the stretch',
-          'Hold 30 seconds, switch sides'
-        ],
-        muscleGroups: ['Iliopsoas', 'Rectus femoris'],
-        difficulty: 'beginner',
-        imageEmoji: '🦵'
-      },
-      {
-        id: 'glute-bridge',
-        name: 'Glute Bridges',
-        duration: 45,
-        description: 'Strengthen your glutes and stretch your hip flexors simultaneously.',
-        instructions: [
-          'Lie on your back with knees bent, feet flat on the floor',
-          'Drive through your heels to lift your hips',
-          'Squeeze your glutes hard at the top',
-          'Hold for 3 seconds at the top',
-          'Lower slowly, repeat 15 times'
-        ],
-        muscleGroups: ['Gluteus maximus', 'Hamstrings', 'Core'],
-        difficulty: 'beginner',
-        imageEmoji: '🌉'
-      },
-      {
-        id: 'pigeon-pose',
-        name: 'Pigeon Pose',
-        duration: 60,
-        description: 'A deep hip opener that targets the external rotators and hip flexors.',
-        instructions: [
-          'From all fours, bring your right knee behind your right wrist',
-          'Extend your left leg straight behind you',
-          'Square your hips toward the floor',
-          'Fold forward over your front leg for a deeper stretch',
-          'Hold for 30-45 seconds, switch sides'
-        ],
-        muscleGroups: ['Hip external rotators', 'Iliopsoas', 'Piriformis'],
-        difficulty: 'intermediate',
-        imageEmoji: '🐦'
-      }
+    id: 'slouching',
+    title: 'Slouching Posture',
+    exercises: 5,
+    duration: '3m',
+    description: 'Slouching involves a rounded upper back and collapsed chest, often from poor sitting habits and weak postural muscles.',
+    affectedAreas: ['Thoracic spine', 'Core', 'Erector spinae', 'Rhomboids'],
+    cardBg: '#FEF0E8',
+    cardBorder: '#FCD9C5',
+    emoji: '🪑',
+    exerciseList: [
+      { id: 'thoracic-ext-2', name: 'Thoracic Extension', duration: 45, description: 'Extend upper back over chair back.', emoji: '🤸',
+        instructions: ['Sit in chair', 'Clasp hands behind head', 'Arch upper back over chair', 'Hold 5 seconds', 'Repeat 10 times'] },
+      { id: 'seated-row', name: 'Seated Row Motion', duration: 40, description: 'Mimic rowing to strengthen mid-back.', emoji: '🚣',
+        instructions: ['Sit on edge of chair', 'Arms extended forward', 'Pull elbows back', 'Hold 3 seconds', '15 reps'] },
+      { id: 'superman', name: 'Superman Hold', duration: 45, description: 'Strengthen the entire posterior chain.', emoji: '🦸',
+        instructions: ['Lie face down', 'Arms extended overhead', 'Lift arms, chest, and legs', 'Hold 5 seconds', 'Repeat 10 times'] },
+      { id: 'wall-stand', name: 'Wall Stand', duration: 30, description: 'Practice perfect posture alignment.', emoji: '🧱',
+        instructions: ['Stand with back to wall', 'Touch head, shoulders, butt, heels', 'Hold position', 'Breathe normally', 'Hold 30 seconds'] },
+      { id: 'cobra', name: 'Cobra Stretch', duration: 40, description: 'Open the chest and extend the spine.', emoji: '🐍',
+        instructions: ['Lie face down', 'Hands under shoulders', 'Press up, extending arms', 'Keep hips on floor', 'Hold 15 seconds'] },
     ],
-    tips: [
-      'Stand up and walk every 30-45 minutes',
-      'Use a standing desk when possible',
-      'Stretch hip flexors before and after sitting',
-      'Strengthen your glutes to counteract tightness'
-    ]
+    tips: ['Set hourly posture reminders', 'Strengthen back extensors', 'Use lumbar support', 'Practice wall stands daily'],
   },
   {
-    id: 'text-neck',
-    title: 'Text Neck',
-    subtitle: 'Phone Posture',
-    description: 'Text neck is caused by looking down at your phone for extended periods, creating excessive strain on the cervical spine — up to 60 lbs of force at 60° forward tilt.',
-    category: 'neck',
-    color: '#8B5CF6',
-    bgColor: '#F5F3FF',
-    icon: '📱',
-    severity: 'mild',
-    affectedAreas: ['Cervical spine', 'Upper trapezius', 'Levator scapulae'],
-    exercises: [
-      {
-        id: 'chin-tuck-2',
-        name: 'Seated Chin Tucks',
-        duration: 30,
-        description: 'A variation of chin tucks specifically designed for phone users.',
-        instructions: [
-          'Sit tall in a chair with feet flat on the floor',
-          'Hold your phone at eye level or put it down',
-          'Draw your chin straight back, making a double chin',
-          'Hold for 5 seconds, repeat 10 times',
-          'Do this every time you finish using your phone'
-        ],
-        muscleGroups: ['Deep neck flexors', 'Longus colli'],
-        difficulty: 'beginner',
-        imageEmoji: '🧘'
-      },
-      {
-        id: 'upper-trap-stretch',
-        name: 'Upper Trap Release',
-        duration: 45,
-        description: 'Release tension in the upper trapezius from holding your phone.',
-        instructions: [
-          'Sit or stand with good posture',
-          'Reach your right hand behind your back',
-          'Tilt your left ear toward your left shoulder',
-          'Gently apply pressure with your left hand on your head',
-          'Hold 20 seconds, release gently, switch sides'
-        ],
-        muscleGroups: ['Upper trapezius', 'Levator scapulae'],
-        difficulty: 'beginner',
-        imageEmoji: '🙆'
-      }
+    id: 'tech-neck',
+    title: 'Tech Neck',
+    exercises: 5,
+    duration: '3m',
+    description: 'Tech neck is caused by looking down at devices for extended periods, creating excessive strain on the cervical spine.',
+    affectedAreas: ['Cervical spine', 'Upper trapezius', 'Levator scapulae', 'Scalenes'],
+    cardBg: '#FEE8F0',
+    cardBorder: '#FCC5D9',
+    emoji: '📱',
+    exerciseList: [
+      { id: 'chin-tuck-2', name: 'Chin Tucks', duration: 30, description: 'The go-to exercise for tech neck.', emoji: '🧘',
+        instructions: ['Sit tall, feet flat', 'Put phone down', 'Draw chin straight back', 'Hold 5 seconds', 'Repeat 10 times'] },
+      { id: 'upper-trap', name: 'Upper Trap Release', duration: 45, description: 'Release tension from phone holding.', emoji: '🙆',
+        instructions: ['Right hand behind back', 'Tilt left ear to left shoulder', 'Gentle pressure with left hand', 'Hold 20 seconds', 'Switch sides'] },
+      { id: 'neck-rotation', name: 'Neck Rotation', duration: 30, description: 'Restore range of motion in the neck.', emoji: '🔄',
+        instructions: ['Sit tall', 'Slowly turn head right', 'Hold at end range 5s', 'Return to center', '10 each side'] },
+      { id: 'scalene', name: 'Scalene Stretch', duration: 40, description: 'Target side neck muscles tight from phone use.', emoji: '💆',
+        instructions: ['Tilt head to one side', 'Rotate slightly upward', 'Gentle stretch on side of neck', 'Hold 15 seconds', 'Switch sides'] },
+      { id: 'shrugs', name: 'Shoulder Shrugs', duration: 25, description: 'Release built-up upper trap tension.', emoji: '🤷',
+        instructions: ['Stand or sit tall', 'Raise shoulders to ears', 'Hold 3 seconds', 'Drop and relax', 'Repeat 15 times'] },
     ],
-    tips: [
-      'Hold your phone at eye level',
-      'Use voice-to-text when possible',
-      'Take a phone break every 20 minutes',
-      'Do chin tucks after each phone session'
-    ]
+    tips: ['Hold phone at eye level', 'Use voice-to-text', 'Break every 20 min', 'Chin tucks after phone use'],
   },
   {
-    id: 'wrist-strain',
-    title: 'Wrist Strain',
-    subtitle: 'Repetitive Stress',
-    description: 'Wrist strain from typing and mouse use causes tension in the forearm flexors and extensors, leading to conditions like carpal tunnel syndrome.',
-    category: 'wrist',
-    color: '#6366F1',
-    bgColor: '#EEF2FF',
-    icon: '⌨️',
-    severity: 'mild',
-    affectedAreas: ['Wrist flexors', 'Wrist extensors', 'Carpal tunnel', 'Forearm'],
-    exercises: [
-      {
-        id: 'wrist-circles',
-        name: 'Wrist Circles',
-        duration: 30,
-        description: 'Gentle circular motions to improve wrist mobility and blood flow.',
-        instructions: [
-          'Extend your arms in front of you',
-          'Make fists with both hands',
-          'Rotate your wrists in circles — 10 clockwise',
-          'Then 10 counter-clockwise',
-          'Shake your hands out after'
-        ],
-        muscleGroups: ['Wrist flexors', 'Wrist extensors'],
-        difficulty: 'beginner',
-        imageEmoji: '🔄'
-      },
-      {
-        id: 'prayer-stretch',
-        name: 'Prayer Stretch',
-        duration: 30,
-        description: 'A stretch that targets the wrist flexors and forearm.',
-        instructions: [
-          'Press your palms together in front of your chest',
-          'Slowly lower your hands while keeping palms together',
-          'Stop when you feel a stretch in your wrists and forearms',
-          'Hold for 15-20 seconds',
-          'Repeat 3 times'
-        ],
-        muscleGroups: ['Wrist flexors', 'Forearm muscles'],
-        difficulty: 'beginner',
-        imageEmoji: '🙏'
-      }
+    id: 'upper-back',
+    title: 'Upper Back Tension',
+    exercises: 5,
+    duration: '3m',
+    description: 'Upper back tension results from stress, poor posture, and repetitive movements, causing pain between shoulder blades.',
+    affectedAreas: ['Rhomboids', 'Middle trapezius', 'Thoracic spine', 'Rear deltoids'],
+    cardBg: '#FEF4E8',
+    cardBorder: '#FCE3C5',
+    emoji: '😺',
+    exerciseList: [
+      { id: 'thread-needle', name: 'Thread the Needle', duration: 45, description: 'Rotational stretch for thoracic spine.', emoji: '🧵',
+        instructions: ['Start on hands and knees', 'Slide right arm under left', 'Lower right shoulder to floor', 'Hold 20 seconds', 'Switch sides'] },
+      { id: 'cat-cow-2', name: 'Cat-Cow', duration: 50, description: 'Mobilize the entire spine gently.', emoji: '🐱',
+        instructions: ['Hands and knees', 'Inhale: arch back', 'Exhale: round back', 'Move slowly with breath', '10-15 cycles'] },
+      { id: 'roller-angels', name: 'Foam Roller Angels', duration: 60, description: 'Open the chest on a foam roller.', emoji: '👼',
+        instructions: ['Lie on foam roller lengthwise', 'Arms out to sides', 'Slowly make snow angel motion', 'Feel chest opening', '10 slow reps'] },
+      { id: 'rhomboid-squeeze', name: 'Rhomboid Squeeze', duration: 30, description: 'Target muscles between shoulder blades.', emoji: '🎯',
+        instructions: ['Stand tall, arms at 90°', 'Squeeze shoulder blades', 'Hold 5 seconds', 'Release slowly', 'Repeat 15 times'] },
+      { id: 'child-pose', name: "Child's Pose", duration: 45, description: 'Gentle stretch for the entire back.', emoji: '🧒',
+        instructions: ['Kneel on floor', 'Sit back on heels', 'Extend arms forward on floor', 'Relax and breathe', 'Hold 30 seconds'] },
     ],
-    tips: [
-      'Keep wrists neutral while typing',
-      'Use an ergonomic keyboard and mouse',
-      'Take micro-breaks every 15 minutes',
-      'Strengthen your grip and forearm muscles'
-    ]
-  }
+    tips: ['Manage stress levels', 'Stretch between shoulder blades', 'Use heat for tension relief', 'Strengthen mid-back muscles'],
+  },
 ];
-
-export interface DailyProgress {
-  date: string;
-  exercisesCompleted: number;
-  totalDuration: number; // minutes
-  streak: number;
-  problemsAddressed: string[];
-}
-
-export const sampleProgress: DailyProgress[] = [
-  { date: '2026-03-24', exercisesCompleted: 6, totalDuration: 12, streak: 1, problemsAddressed: ['forward-head', 'rounded-shoulders'] },
-  { date: '2026-03-25', exercisesCompleted: 9, totalDuration: 18, streak: 2, problemsAddressed: ['forward-head', 'lower-back-pain', 'hip-flexor-tightness'] },
-  { date: '2026-03-26', exercisesCompleted: 4, totalDuration: 8, streak: 3, problemsAddressed: ['text-neck'] },
-  { date: '2026-03-27', exercisesCompleted: 8, totalDuration: 15, streak: 4, problemsAddressed: ['rounded-shoulders', 'wrist-strain', 'lower-back-pain'] },
-  { date: '2026-03-28', exercisesCompleted: 7, totalDuration: 14, streak: 5, problemsAddressed: ['forward-head', 'hip-flexor-tightness'] },
-  { date: '2026-03-29', exercisesCompleted: 10, totalDuration: 20, streak: 6, problemsAddressed: ['rounded-shoulders', 'lower-back-pain', 'text-neck'] },
-  { date: '2026-03-30', exercisesCompleted: 5, totalDuration: 10, streak: 7, problemsAddressed: ['forward-head', 'wrist-strain'] },
-];
-
-export const getCategoryColor = (category: string): string => {
-  const colors: Record<string, string> = {
-    neck: '#8B5CF6',
-    shoulder: '#3B82F6',
-    back: '#EC4899',
-    hip: '#F97316',
-    knee: '#14B8A6',
-    wrist: '#6366F1',
-  };
-  return colors[category] || '#6366F1';
-};
-
-export const getCategoryBgColor = (category: string): string => {
-  const bgColors: Record<string, string> = {
-    neck: '#F5F3FF',
-    shoulder: '#EFF6FF',
-    back: '#FDF2F8',
-    hip: '#FFF7ED',
-    knee: '#F0FDFA',
-    wrist: '#EEF2FF',
-  };
-  return bgColors[category] || '#EEF2FF';
-};

@@ -5,46 +5,20 @@ interface ImageWithFallbackProps {
   alt: string;
   fallback?: string;
   style?: React.CSSProperties;
-  className?: string;
 }
 
-const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
-  src,
-  alt,
-  fallback = '🖼️',
-  style,
-  className,
-}) => {
+const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({ src, alt, fallback = '🖼️', style }) => {
   const [hasError, setHasError] = useState(false);
 
   if (hasError) {
     return (
-      <div
-        className={className}
-        style={{
-          ...style,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'var(--color-surface-raised)',
-          borderRadius: 12,
-          fontSize: 32,
-        }}
-      >
+      <div style={{ ...style, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-border-light)', borderRadius: 12, fontSize: 32 }}>
         {fallback}
       </div>
     );
   }
 
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      style={style}
-      onError={() => setHasError(true)}
-    />
-  );
+  return <img src={src} alt={alt} style={style} onError={() => setHasError(true)} />;
 };
 
 export default ImageWithFallback;

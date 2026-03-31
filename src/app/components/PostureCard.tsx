@@ -14,89 +14,46 @@ const PostureCard: React.FC<PostureCardProps> = ({ problem, index }) => {
     <button
       onClick={() => navigate(`/problem/${problem.id}`)}
       style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-        padding: 16,
-        borderRadius: 16,
-        background: 'var(--color-surface)',
-        border: '1px solid var(--color-border-light)',
-        boxShadow: 'var(--shadow-card)',
+        background: problem.cardBg,
+        border: `1.5px solid ${problem.cardBorder}`,
+        borderRadius: 20,
+        padding: '20px 16px 16px',
         textAlign: 'left',
-        animation: `slideUp 0.5s ease ${index * 0.08}s both`,
         cursor: 'pointer',
-        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)';
-        e.currentTarget.style.transform = 'translateY(-2px)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = 'var(--shadow-card)';
-        e.currentTarget.style.transform = 'translateY(0)';
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+        transition: 'all 0.2s ease',
+        animation: `slideUp 0.4s ease ${0.14 + index * 0.05}s both`,
       }}
     >
-      {/* Icon */}
-      <div style={{
-        width: 56,
-        height: 56,
-        borderRadius: 16,
-        background: problem.bgColor,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 28,
-        flexShrink: 0,
-      }}>
-        {problem.icon}
-      </div>
-
-      {/* Text */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <span style={{ fontSize: 36 }}>{problem.emoji}</span>
+      <div>
         <div style={{
-          fontSize: 16,
+          fontSize: 14,
           fontWeight: 700,
           color: 'var(--color-text)',
-          marginBottom: 2,
+          lineHeight: 1.3,
+          marginBottom: 6,
           fontFamily: 'var(--font-display)',
         }}>
           {problem.title}
         </div>
-        <div style={{
-          fontSize: 13,
-          color: 'var(--color-text-secondary)',
-          marginBottom: 6,
-        }}>
-          {problem.subtitle}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: problem.color,
-            background: problem.bgColor,
-            padding: '2px 8px',
-            borderRadius: 6,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-          }}>
-            {problem.category}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 12, color: 'var(--color-text-sec)', fontWeight: 500 }}>
+            {problem.exercises} exercises · {problem.duration}
           </span>
-          <span style={{
-            fontSize: 11,
-            color: 'var(--color-text-tertiary)',
+          <div style={{
+            width: 28, height: 28, borderRadius: '50%',
+            background: `${problem.cardBorder}40`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            {problem.exercises.length} exercises
-          </span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke={problem.cardBorder} strokeWidth={2.5} strokeLinecap="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </div>
         </div>
-      </div>
-
-      {/* Arrow */}
-      <div style={{ color: 'var(--color-text-tertiary)', flexShrink: 0 }}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
       </div>
     </button>
   );
