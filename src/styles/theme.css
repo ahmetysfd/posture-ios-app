@@ -1,0 +1,80 @@
+/* PostureFix iOS App — Design Tokens & Theme */
+:root {
+  /* ─── Primary Palette ─── */
+  --color-primary: #4F46E5;
+  --color-primary-light: #818CF8;
+  --color-primary-dark: #3730A3;
+  --color-primary-50: #EEF2FF;
+  --color-primary-100: #E0E7FF;
+  --color-primary-200: #C7D2FE;
+  --color-primary-500: #6366F1;
+  --color-primary-600: #4F46E5;
+  --color-primary-700: #4338CA;
+
+  /* ─── Accent / Success ─── */
+  --color-accent: #10B981;
+  --color-accent-light: #34D399;
+  --color-accent-dark: #059669;
+  --color-success: #10B981;
+  --color-success-bg: #ECFDF5;
+
+  /* ─── Warning / Danger ─── */
+  --color-warning: #F59E0B;
+  --color-warning-bg: #FFFBEB;
+  --color-danger: #EF4444;
+  --color-danger-light: #FCA5A5;
+  --color-danger-bg: #FEF2F2;
+
+  /* ─── Neutrals ─── */
+  --color-bg: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #F1F5F9;
+  --color-border: #E2E8F0;
+  --color-border-light: #F1F5F9;
+  --color-text: #0F172A;
+  --color-text-secondary: #64748B;
+  --color-text-tertiary: #94A3B8;
+  --color-text-inverse: #FFFFFF;
+
+  /* ─── Posture Category Colors ─── */
+  --color-neck: #8B5CF6;
+  --color-neck-bg: #F5F3FF;
+  --color-shoulder: #3B82F6;
+  --color-shoulder-bg: #EFF6FF;
+  --color-back: #EC4899;
+  --color-back-bg: #FDF2F8;
+  --color-hip: #F97316;
+  --color-hip-bg: #FFF7ED;
+  --color-knee: #14B8A6;
+  --color-knee-bg: #F0FDFA;
+  --color-wrist: #6366F1;
+  --color-wrist-bg: #EEF2FF;
+
+  /* ─── Typography ─── */
+  --font-display: 'DM Sans', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'DM Sans', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+
+  /* ─── Spacing ─── */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* ─── Radius ─── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* ─── Shadows ─── */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --shadow-xl: 0 16px 48px rgba(15, 23, 42, 0.12);
+  --shadow-card: 0 2px 8px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 8px 24px rgba(15, 23, 42, 0.1), 0 2px 4px rgba(15, 23, 42, 0.06);
+}
