@@ -17,44 +17,20 @@ const PostureCard: React.FC<PostureCardProps> = ({ problem, index }) => {
         background: problem.cardBg,
         border: `1.5px solid ${problem.cardBorder}`,
         borderRadius: 20,
-        padding: '20px 16px 16px',
-        textAlign: 'left',
+        padding: 0,
+        overflow: 'hidden',
         cursor: 'pointer',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
+        display: 'block',
         transition: 'all 0.2s ease',
         animation: `slideUp 0.4s ease ${0.14 + index * 0.05}s both`,
       }}
     >
-      <span style={{ fontSize: 36 }}>{problem.emoji}</span>
-      <div>
-        <div style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: 'var(--color-text)',
-          lineHeight: 1.3,
-          marginBottom: 6,
-          fontFamily: 'var(--font-display)',
-        }}>
-          {problem.title}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 12, color: 'var(--color-text-sec)', fontWeight: 500 }}>
-            {problem.exercises} exercises · {problem.duration}
-          </span>
-          <div style={{
-            width: 28, height: 28, borderRadius: '50%',
-            background: `${problem.cardBorder}40`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke={problem.cardBorder} strokeWidth={2.5} strokeLinecap="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </div>
-        </div>
-      </div>
+      <img
+        src={problem.cardImage}
+        alt=""
+        draggable={false}
+        style={{ width: '100%', height: 132, objectFit: 'cover', display: 'block' }}
+      />
     </button>
   );
 };

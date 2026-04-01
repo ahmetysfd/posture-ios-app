@@ -10,6 +10,8 @@ export interface Exercise {
 export interface PostureProblem {
   id: string;
   title: string;
+  /** Public URL for home grid / detail hero (files in /public/problems/) */
+  cardImage: string;
   exercises: number;
   duration: string;
   description: string;
@@ -19,12 +21,17 @@ export interface PostureProblem {
   emoji: string;
   exerciseList: Exercise[];
   tips: string[];
+  /** Optional: illustration top-right of Reason card; use with reasonLead + reasonRest */
+  reasonImage?: string;
+  reasonLead?: string;
+  reasonRest?: string;
 }
 
 export const postureProblems: PostureProblem[] = [
   {
     id: 'forward-head',
-    title: 'Forward Head Posture',
+    title: 'Forward Head',
+    cardImage: '/problems/forward-head.png',
     exercises: 5,
     duration: '3m',
     description: 'Forward head posture occurs when your head shifts forward past your shoulders, commonly caused by prolonged screen use. This puts extra strain on your cervical spine.',
@@ -49,6 +56,7 @@ export const postureProblems: PostureProblem[] = [
   {
     id: 'rounded-shoulders',
     title: 'Rounded Shoulders',
+    cardImage: '/problems/rounded-shoulders.png',
     exercises: 5,
     duration: '3m',
     description: 'Rounded shoulders happen when chest muscles tighten and upper back muscles weaken, pulling shoulders forward from desk work.',
@@ -73,6 +81,7 @@ export const postureProblems: PostureProblem[] = [
   {
     id: 'anterior-pelvic',
     title: 'Anterior Pelvic Tilt',
+    cardImage: '/problems/anterior-pelvic.png',
     exercises: 5,
     duration: '4m',
     description: 'Anterior pelvic tilt occurs when the pelvis tilts forward, increasing lower back curve and weakening glutes and core.',
@@ -95,75 +104,103 @@ export const postureProblems: PostureProblem[] = [
     tips: ['Avoid prolonged sitting', 'Strengthen core and glutes', 'Stretch hip flexors daily', 'Practice neutral pelvis standing'],
   },
   {
-    id: 'slouching',
-    title: 'Slouching Posture',
+    id: 'winging-scapula',
+    title: 'Winging Scapula',
+    cardImage: '/problems/winging-scapula.png',
     exercises: 5,
     duration: '3m',
-    description: 'Slouching involves a rounded upper back and collapsed chest, often from poor sitting habits and weak postural muscles.',
-    affectedAreas: ['Thoracic spine', 'Core', 'Erector spinae', 'Rhomboids'],
-    cardBg: '#FEF0E8',
-    cardBorder: '#FCD9C5',
-    emoji: '🪑',
+    reasonImage: '/problems/desk-work-upper.png',
+    reasonLead: `Most people spend hours:
+
+Sitting
+Looking at phones/laptops
+With rounded shoulders`,
+    reasonRest: `👉 Over time:
+
+Chest muscles get tight
+Upper back muscles (including scapular stabilizers) get weak
+The scapula loses its stable position
+
+This creates functional winging (not nerve damage, but poor control).`,
+    description: `Most people spend hours:
+
+Sitting
+Looking at phones/laptops
+With rounded shoulders
+
+👉 Over time:
+
+Chest muscles get tight
+Upper back muscles (including scapular stabilizers) get weak
+The scapula loses its stable position
+
+This creates functional winging (not nerve damage, but poor control).`,
+    affectedAreas: ['Serratus anterior', 'Rhomboids', 'Trapezius', 'Scapula'],
+    cardBg: '#E8F0FE',
+    cardBorder: '#C5D9FC',
+    emoji: '🪽',
     exerciseList: [
-      { id: 'thoracic-ext-2', name: 'Thoracic Extension', duration: 45, description: 'Extend upper back over chair back.', emoji: '🤸',
-        instructions: ['Sit in chair', 'Clasp hands behind head', 'Arch upper back over chair', 'Hold 5 seconds', 'Repeat 10 times'] },
-      { id: 'seated-row', name: 'Seated Row Motion', duration: 40, description: 'Mimic rowing to strengthen mid-back.', emoji: '🚣',
-        instructions: ['Sit on edge of chair', 'Arms extended forward', 'Pull elbows back', 'Hold 3 seconds', '15 reps'] },
-      { id: 'superman', name: 'Superman Hold', duration: 45, description: 'Strengthen the entire posterior chain.', emoji: '🦸',
-        instructions: ['Lie face down', 'Arms extended overhead', 'Lift arms, chest, and legs', 'Hold 5 seconds', 'Repeat 10 times'] },
-      { id: 'wall-stand', name: 'Wall Stand', duration: 30, description: 'Practice perfect posture alignment.', emoji: '🧱',
-        instructions: ['Stand with back to wall', 'Touch head, shoulders, butt, heels', 'Hold position', 'Breathe normally', 'Hold 30 seconds'] },
-      { id: 'cobra', name: 'Cobra Stretch', duration: 40, description: 'Open the chest and extend the spine.', emoji: '🐍',
-        instructions: ['Lie face down', 'Hands under shoulders', 'Press up, extending arms', 'Keep hips on floor', 'Hold 15 seconds'] },
+      { id: 'wall-slide', name: 'Wall Slides (Serratus)', duration: 45, description: 'Reach along the wall to activate serratus anterior.', emoji: '🧱',
+        instructions: ['Stand facing wall, forearms on wall', 'Slide arms up keeping contact', 'Think of wrapping scapula forward', 'Lower with control', '12 slow reps'] },
+      { id: 'push-up-plus', name: 'Push-Up Plus', duration: 40, description: 'Protract the scapula at the top of a push-up.', emoji: '💪',
+        instructions: ['High plank or knees plank', 'Lower chest toward floor', 'Press up', 'At top, push upper back toward ceiling', '10 reps'] },
+      { id: 'band-punch', name: 'Band Punch Forward', duration: 45, description: 'Resisted reach trains upward rotation.', emoji: '🎯',
+        instructions: ['Anchor band behind you', 'Hold at shoulder height', 'Punch forward with straight arm', 'Let shoulder blade glide', '12 each arm'] },
+      { id: 'wall-angel-2', name: 'Wall Angels', duration: 60, description: 'Control scapula as arms move overhead.', emoji: '👼',
+        instructions: ['Back to wall, head and hips touch', 'Arms 90° goalpost on wall', 'Slide up toward ceiling', 'Keep ribs down', '10 reps'] },
+      { id: 'blade-squeeze-ws', name: 'Shoulder Blade Squeeze', duration: 30, description: 'Retraction to balance protraction work.', emoji: '🤝',
+        instructions: ['Stand tall, palms forward', 'Pull shoulder blades together', 'Hold 5 seconds without shrugging', 'Repeat 15 times'] },
     ],
-    tips: ['Set hourly posture reminders', 'Strengthen back extensors', 'Use lumbar support', 'Practice wall stands daily'],
+    tips: ['Avoid prolonged elbow-plank shrugging', 'Strengthen serratus gradually', 'Check desk elbow height', 'See a clinician if pain or numbness'],
   },
   {
-    id: 'tech-neck',
-    title: 'Tech Neck',
+    id: 'kyphosis',
+    title: 'Kyphosis',
+    cardImage: '/problems/kyphosis.png',
     exercises: 5,
     duration: '3m',
-    description: 'Tech neck is caused by looking down at devices for extended periods, creating excessive strain on the cervical spine.',
-    affectedAreas: ['Cervical spine', 'Upper trapezius', 'Levator scapulae', 'Scalenes'],
-    cardBg: '#FEE8F0',
-    cardBorder: '#FCC5D9',
-    emoji: '📱',
+    description: 'Kyphosis is an excessive outward curve of the upper back (thoracic spine), sometimes called a rounded or hunched back, often worsened by prolonged sitting and weak upper-back muscles.',
+    affectedAreas: ['Thoracic spine', 'Rhomboids', 'Middle trapezius', 'Pectorals'],
+    cardBg: '#EEF2FF',
+    cardBorder: '#C7D2FE',
+    emoji: '📐',
     exerciseList: [
-      { id: 'chin-tuck-2', name: 'Chin Tucks', duration: 30, description: 'The go-to exercise for tech neck.', emoji: '🧘',
-        instructions: ['Sit tall, feet flat', 'Put phone down', 'Draw chin straight back', 'Hold 5 seconds', 'Repeat 10 times'] },
-      { id: 'upper-trap', name: 'Upper Trap Release', duration: 45, description: 'Release tension from phone holding.', emoji: '🙆',
-        instructions: ['Right hand behind back', 'Tilt left ear to left shoulder', 'Gentle pressure with left hand', 'Hold 20 seconds', 'Switch sides'] },
-      { id: 'neck-rotation', name: 'Neck Rotation', duration: 30, description: 'Restore range of motion in the neck.', emoji: '🔄',
-        instructions: ['Sit tall', 'Slowly turn head right', 'Hold at end range 5s', 'Return to center', '10 each side'] },
-      { id: 'scalene', name: 'Scalene Stretch', duration: 40, description: 'Target side neck muscles tight from phone use.', emoji: '💆',
-        instructions: ['Tilt head to one side', 'Rotate slightly upward', 'Gentle stretch on side of neck', 'Hold 15 seconds', 'Switch sides'] },
-      { id: 'shrugs', name: 'Shoulder Shrugs', duration: 25, description: 'Release built-up upper trap tension.', emoji: '🤷',
-        instructions: ['Stand or sit tall', 'Raise shoulders to ears', 'Hold 3 seconds', 'Drop and relax', 'Repeat 15 times'] },
+      { id: 'thoracic-ext-ky', name: 'Thoracic Extension', duration: 45, description: 'Extend the upper back over support.', emoji: '🤸',
+        instructions: ['Place foam roller at mid-back', 'Support head lightly', 'Extend over roller in small segments', 'Pause 3–5 breaths each spot', 'Move roller 2–3 times'] },
+      { id: 'cat-cow-ky', name: 'Cat-Cow', duration: 50, description: 'Mobilize thoracic spine with breath.', emoji: '🐱',
+        instructions: ['Hands and knees', 'Inhale gently extend spine', 'Exhale round and spread shoulder blades', '10–15 slow cycles'] },
+      { id: 'doorway-ky', name: 'Doorway Pec Stretch', duration: 45, description: 'Open tight chest that rounds the upper back.', emoji: '🚪',
+        instructions: ['Forearms on door frame at ~90°', 'Step through until mild stretch in chest', 'Breathe into ribs', 'Hold 30s × 2'] },
+      { id: 'prone-y', name: 'Prone Y-Raises', duration: 60, description: 'Strengthen lower traps and extend thoracic spine.', emoji: '🏋️',
+        instructions: ['Lie face down', 'Arms in Y, thumbs up', 'Lift chest slightly off floor', 'Lower slowly', '10–12 reps'] },
+      { id: 'wall-stand-ky', name: 'Wall Stand', duration: 30, description: 'Stack joints for neutral upper-back alignment.', emoji: '🧱',
+        instructions: ['Heels, hips, shoulders, head to wall', 'Tuck chin lightly', 'Arms relaxed or W on wall', 'Hold 30–45 seconds'] },
     ],
-    tips: ['Hold phone at eye level', 'Use voice-to-text', 'Break every 20 min', 'Chin tucks after phone use'],
+    tips: ['Bring screen to eye height', 'Take movement breaks hourly', 'Pair stretching with upper-back strength', 'Seek evaluation for severe or painful curve'],
   },
   {
-    id: 'upper-back',
-    title: 'Upper Back Tension',
+    id: 'uneven-shoulders',
+    title: 'Uneven Shoulders',
+    cardImage: '/problems/uneven-shoulders.png',
     exercises: 5,
     duration: '3m',
-    description: 'Upper back tension results from stress, poor posture, and repetitive movements, causing pain between shoulder blades.',
-    affectedAreas: ['Rhomboids', 'Middle trapezius', 'Thoracic spine', 'Rear deltoids'],
-    cardBg: '#FEF4E8',
-    cardBorder: '#FCE3C5',
-    emoji: '😺',
+    description: 'Uneven shoulders—one side higher than the other—can come from muscle imbalance, favored carrying patterns, scoliosis, or compensation elsewhere. Gentle symmetry and mobility work can help alongside professional assessment.',
+    affectedAreas: ['Upper trapezius', 'Levator scapulae', 'Shoulder girdle', 'Neck'],
+    cardBg: '#F8FAFC',
+    cardBorder: '#E2E8F0',
+    emoji: '⚖️',
     exerciseList: [
-      { id: 'thread-needle', name: 'Thread the Needle', duration: 45, description: 'Rotational stretch for thoracic spine.', emoji: '🧵',
-        instructions: ['Start on hands and knees', 'Slide right arm under left', 'Lower right shoulder to floor', 'Hold 20 seconds', 'Switch sides'] },
-      { id: 'cat-cow-2', name: 'Cat-Cow', duration: 50, description: 'Mobilize the entire spine gently.', emoji: '🐱',
-        instructions: ['Hands and knees', 'Inhale: arch back', 'Exhale: round back', 'Move slowly with breath', '10-15 cycles'] },
-      { id: 'roller-angels', name: 'Foam Roller Angels', duration: 60, description: 'Open the chest on a foam roller.', emoji: '👼',
-        instructions: ['Lie on foam roller lengthwise', 'Arms out to sides', 'Slowly make snow angel motion', 'Feel chest opening', '10 slow reps'] },
-      { id: 'rhomboid-squeeze', name: 'Rhomboid Squeeze', duration: 30, description: 'Target muscles between shoulder blades.', emoji: '🎯',
-        instructions: ['Stand tall, arms at 90°', 'Squeeze shoulder blades', 'Hold 5 seconds', 'Release slowly', 'Repeat 15 times'] },
-      { id: 'child-pose', name: "Child's Pose", duration: 45, description: 'Gentle stretch for the entire back.', emoji: '🧒',
-        instructions: ['Kneel on floor', 'Sit back on heels', 'Extend arms forward on floor', 'Relax and breathe', 'Hold 30 seconds'] },
+      { id: 'ear-stretch-hi', name: 'Side Neck Stretch (High Side)', duration: 45, description: 'Lengthen the typically tighter upper side.', emoji: '🙆',
+        instructions: ['Sit tall', 'Gently tilt ear away from higher shoulder', 'Opposite hand can extend down', 'Light pressure only', '20–30 seconds each side'] },
+      { id: 'shoulder-roll', name: 'Controlled Shoulder Rolls', duration: 30, description: 'Reduce guarding and encourage smooth motion.', emoji: '🔄',
+        instructions: ['Slow circles both directions', 'Keep neck long', '10 reps each way'] },
+      { id: 'uni-shrug', name: 'One-Sided Shrug Lowering', duration: 35, description: 'Teach the elevated side to relax down.', emoji: '🤷',
+        instructions: ['Shrug both shoulders up', 'Lower the higher side first, slowly', 'Match the other side', '10 reps'] },
+      { id: 'rib-breath', name: 'Ribcage Breathing', duration: 40, description: 'Encourage even expansion side to side.', emoji: '🫁',
+        instructions: ['Hand on low ribs', 'Inhale 360° into ribs', 'Exhale fully', '5–8 breaths'] },
+      { id: 'wand-pass', name: 'Overhead Dowel Pass', duration: 45, description: 'Improve shoulder elevation symmetry with feedback.', emoji: '🪄',
+        instructions: ['Hold stick with wide grip', 'Lift overhead in pain-free range', 'Keep ribs quiet', '8 slow reps'] },
     ],
-    tips: ['Manage stress levels', 'Stretch between shoulder blades', 'Use heat for tension relief', 'Strengthen mid-back muscles'],
+    tips: ['Balance backpack and bag weight', 'Check workstation monitor height', 'Avoid prolonged one-sided phone holding', 'See a professional if asymmetry is new or severe'],
   },
 ];

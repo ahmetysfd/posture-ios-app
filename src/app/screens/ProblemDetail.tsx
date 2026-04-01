@@ -37,39 +37,27 @@ const ProblemDetail: React.FC = () => {
           </button>
 
           <div style={{ position: 'relative', zIndex: 2, animation: 'slideUp 0.4s ease' }}>
-            <div style={{ fontSize: 56, marginBottom: 12 }}>{problem.emoji}</div>
-            <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--color-text)', marginBottom: 4, letterSpacing: '-0.02em' }}>{problem.title}</h1>
-            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.7)', color: 'var(--color-text-sec)' }}>
-                {problem.exercises} exercises
-              </span>
-              <span style={{ fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.7)', color: 'var(--color-text-sec)' }}>
-                {problem.duration}
-              </span>
+            <div style={{
+              borderRadius: 16,
+              overflow: 'hidden',
+              marginBottom: 14,
+              border: `1px solid ${problem.cardBorder}`,
+              boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
+            }}>
+              <img
+                src={problem.cardImage}
+                alt=""
+                style={{ width: '100%', height: 320, objectFit: 'cover', display: 'block' }}
+              />
             </div>
+            <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--color-text)', marginTop: 4, marginBottom: 0, letterSpacing: '-0.02em' }}>{problem.title}</h1>
           </div>
         </div>
 
         <div style={{ padding: '24px 20px' }}>
-          {/* About */}
-          <div style={{ background: 'var(--color-surface)', borderRadius: 18, padding: 18, marginBottom: 16, border: '1px solid var(--color-border-light)', animation: 'slideUp 0.4s ease 0.1s both' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 8 }}>About</h3>
-            <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--color-text-sec)' }}>{problem.description}</p>
-          </div>
-
-          {/* Affected Areas */}
-          <div style={{ background: 'var(--color-surface)', borderRadius: 18, padding: 18, marginBottom: 16, border: '1px solid var(--color-border-light)', animation: 'slideUp 0.4s ease 0.14s both' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 10 }}>Affected Areas</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {problem.affectedAreas.map((a, i) => (
-                <span key={i} style={{ fontSize: 12, padding: '5px 12px', borderRadius: 10, background: problem.cardBg, color: 'var(--color-text)', fontWeight: 600, border: `1px solid ${problem.cardBorder}` }}>{a}</span>
-              ))}
-            </div>
-          </div>
-
           {/* Exercises */}
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', marginBottom: 12, animation: 'slideUp 0.4s ease 0.18s both' }}>Exercises</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, animation: 'slideUp 0.4s ease 0.2s both' }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', marginBottom: 12, animation: 'slideUp 0.4s ease 0.1s both' }}>Exercises</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, animation: 'slideUp 0.4s ease 0.14s both' }}>
             {problem.exerciseList.map((ex, i) => (
               <div key={ex.id} style={{
                 display: 'flex', alignItems: 'center', gap: 14,
@@ -86,8 +74,55 @@ const ProblemDetail: React.FC = () => {
             ))}
           </div>
 
+          {/* Reason */}
+          <div style={{ background: 'var(--color-surface)', borderRadius: 18, padding: 18, marginTop: 16, marginBottom: 0, border: '1px solid var(--color-border-light)', animation: 'slideUp 0.4s ease 0.18s both' }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 8 }}>Reason</h3>
+            {problem.reasonImage && problem.reasonLead != null && problem.reasonRest != null ? (
+              <>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  <p style={{
+                    flex: '1 1 160px',
+                    minWidth: 0,
+                    margin: 0,
+                    fontSize: 13.5,
+                    lineHeight: 1.65,
+                    color: 'var(--color-text-sec)',
+                    whiteSpace: 'pre-line',
+                  }}>
+                    {problem.reasonLead}
+                  </p>
+                  <img
+                    src={problem.reasonImage}
+                    alt=""
+                    draggable={false}
+                    style={{
+                      width: 295,
+                      maxWidth: '100%',
+                      flexShrink: 0,
+                      borderRadius: 12,
+                      objectFit: 'contain',
+                      alignSelf: 'flex-start',
+                      background: '#FAFAFA',
+                    }}
+                  />
+                </div>
+                <p style={{
+                  fontSize: 13.5,
+                  lineHeight: 1.65,
+                  color: 'var(--color-text-sec)',
+                  whiteSpace: 'pre-line',
+                  margin: '14px 0 0',
+                }}>
+                  {problem.reasonRest}
+                </p>
+              </>
+            ) : (
+              <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--color-text-sec)', whiteSpace: 'pre-line', margin: 0 }}>{problem.description}</p>
+            )}
+          </div>
+
           {/* Tips */}
-          <div style={{ background: 'var(--color-surface)', borderRadius: 18, padding: 18, marginTop: 16, border: '1px solid var(--color-border-light)', animation: 'slideUp 0.4s ease 0.24s both' }}>
+          <div style={{ background: 'var(--color-surface)', borderRadius: 18, padding: 18, marginTop: 16, border: '1px solid var(--color-border-light)', animation: 'slideUp 0.4s ease 0.22s both' }}>
             <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 10 }}>💡 Tips</h3>
             {problem.tips.map((t, i) => (
               <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: i < problem.tips.length - 1 ? 8 : 0 }}>
