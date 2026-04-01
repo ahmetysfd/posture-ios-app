@@ -243,6 +243,21 @@ This creates functional winging (not nerve damage, but poor control).`,
     cardImage: '/problems/uneven-shoulders.png',
     exercises: 5,
     duration: '3m',
+    reasonImage: '/problems/uneven-shoulders-reason.png',
+    reasonLead: `Most people develop uneven shoulders due to:
+
+Sitting with weight shifted to one side
+Carrying bags on the same shoulder
+Crossing legs consistently (pelvic shift)
+Poor desk setup (monitor not centered)
+Muscle imbalances (dominant side overuse)`,
+    reasonRest: `👉 Over time:
+
+One shoulder appears higher than the other
+Neck muscles on one side get tight
+Opposite side becomes weak and lengthened
+Scapula positioning becomes asymmetric
+Spine may slightly compensate (side bending)`,
     description: 'Uneven shoulders—one side higher than the other—can come from muscle imbalance, favored carrying patterns, scoliosis, or compensation elsewhere. Gentle symmetry and mobility work can help alongside professional assessment.',
     affectedAreas: ['Upper trapezius', 'Levator scapulae', 'Shoulder girdle', 'Neck'],
     cardBg: '#F8FAFC',
@@ -260,6 +275,6 @@ This creates functional winging (not nerve damage, but poor control).`,
       { id: 'wand-pass', name: 'Overhead Dowel Pass', duration: 45, description: 'Improve shoulder elevation symmetry with feedback.', emoji: '🪄',
         instructions: ['Hold stick with wide grip', 'Lift overhead in pain-free range', 'Keep ribs quiet', '8 slow reps'] },
     ],
-    tips: ['Balance backpack and bag weight', 'Check workstation monitor height', 'Avoid prolonged one-sided phone holding', 'See a professional if asymmetry is new or severe'],
+    tips: ['Stretch the tight side (elevated shoulder)', 'Strengthen the weak side (lower trap & serratus)', 'Keep shoulders level during daily activities', 'Adjust desk setup (screen centered!)', 'Train both sides equally'],
   },
 ];
