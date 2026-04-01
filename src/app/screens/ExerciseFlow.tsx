@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import YoutubeModal from '../components/YoutubeModal';
 import { postureProblems } from '../data/postureData';
 
 const ExerciseFlow: React.FC = () => {
@@ -7,6 +8,7 @@ const ExerciseFlow: React.FC = () => {
   const navigate = useNavigate();
   const problem = postureProblems.find(p => p.id === problemId);
   const [exIdx, setExIdx] = useState(0);
+  const [ytModal, setYtModal] = useState<{ url: string; title: string } | null>(null);
   const [phase, setPhase] = useState<'intro' | 'active' | 'rest'>('intro');
   const [timeLeft, setTimeLeft] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -45,6 +47,10 @@ const ExerciseFlow: React.FC = () => {
     }, 1000);
     return () => clearInterval(t);
   }, [phase, timeLeft]);
+
+  useEffect(() => {
+    setYtModal(null);
+  }, [exIdx]);
 
   if (!problem || !ex) return <div style={{ padding: 40, textAlign: 'center' }}>Not found</div>;
 
@@ -95,6 +101,32 @@ const ExerciseFlow: React.FC = () => {
                 </div>
               ))}
             </div>
+            {ex.youtubeUrl && (
+              <button
+                type="button"
+                onClick={() => setYtModal({ url: ex.youtubeUrl!, title: ex.name })}
+                style={{
+                  width: '100%',
+                  padding: 14,
+                  borderRadius: 18,
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-primary)',
+                  fontSize: 15,
+                  fontWeight: 700,
+                  marginTop: 14,
+                  border: '2px solid var(--color-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-display)',
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21" /></svg>
+                Watch demo
+              </button>
+            )}
             <button onClick={beginEx} style={{ width: '100%', padding: 15, borderRadius: 18, background: 'var(--color-primary)', color: 'white', fontSize: 15, fontWeight: 700, marginTop: 22, marginBottom: 22, boxShadow: '0 6px 20px rgba(79,70,229,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', border: 'none' }}>
               Start <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21" /></svg>
             </button>
@@ -126,6 +158,7 @@ const ExerciseFlow: React.FC = () => {
           </div>
         )}
       </div>
+      <YoutubeModal open={!!ytModal} watchUrl={ytModal?.url ?? ''} title={ytModal?.title} onClose={() => setYtModal(null)} />
     </div>
   );
 };

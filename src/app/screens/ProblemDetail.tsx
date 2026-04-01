@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+import YoutubeModal from '../components/YoutubeModal';
 import { postureProblems } from '../data/postureData';
 
 const ProblemDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const problem = postureProblems.find(p => p.id === id);
+  const [youtube, setYoutube] = useState<{ url: string; title: string } | null>(null);
 
   if (!problem) {
     return <Layout><div style={{ padding: 40, textAlign: 'center' }}>Not found</div></Layout>;
@@ -58,20 +60,58 @@ const ProblemDetail: React.FC = () => {
           {/* Exercises */}
           <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', marginBottom: 12, animation: 'slideUp 0.4s ease 0.1s both' }}>Exercises</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, animation: 'slideUp 0.4s ease 0.14s both' }}>
-            {problem.exerciseList.map((ex, i) => (
-              <div key={ex.id} style={{
+            {problem.exerciseList.map((ex, i) => {
+              const rowStyle: React.CSSProperties = {
                 display: 'flex', alignItems: 'center', gap: 14,
                 background: 'var(--color-surface)', borderRadius: 16, padding: 14,
                 border: '1px solid var(--color-border-light)',
-              }}>
-                <div style={{ width: 44, height: 44, borderRadius: 14, background: problem.cardBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, border: `1px solid ${problem.cardBorder}` }}>{ex.emoji}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{ex.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--color-text-tert)', marginTop: 2 }}>{ex.duration}s</div>
+                width: '100%',
+                textAlign: 'left',
+                transition: 'box-shadow 0.2s ease',
+              };
+              const body = (
+                <>
+                  <div style={{ width: 44, height: 44, borderRadius: 14, background: problem.cardBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, border: `1px solid ${problem.cardBorder}` }}>{ex.emoji}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{ex.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--color-text-tert)', marginTop: 2 }}>
+                      {ex.duration}s
+                      {ex.youtubeUrl ? ' · Tap for video' : ''}
+                    </div>
+                  </div>
+                  {ex.youtubeUrl ? (
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} aria-hidden>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21" /></svg>
+                    </div>
+                  ) : (
+                    <div style={{ width: 26, height: 26, borderRadius: 8, background: problem.cardBg, color: 'var(--color-text-sec)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, border: `1px solid ${problem.cardBorder}`, flexShrink: 0 }}>{i + 1}</div>
+                  )}
+                </>
+              );
+              if (ex.youtubeUrl) {
+                return (
+                  <button
+                    key={ex.id}
+                    type="button"
+                    onClick={() => setYoutube({ url: ex.youtubeUrl!, title: ex.name })}
+                    style={{
+                      ...rowStyle,
+                      cursor: 'pointer',
+                      font: 'inherit',
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                    }}
+                  >
+                    {body}
+                  </button>
+                );
+              }
+              return (
+                <div key={ex.id} style={{ ...rowStyle, cursor: 'default' }}>
+                  {body}
                 </div>
-                <div style={{ width: 26, height: 26, borderRadius: 8, background: problem.cardBg, color: 'var(--color-text-sec)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, border: `1px solid ${problem.cardBorder}` }}>{i + 1}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Reason */}
@@ -146,6 +186,12 @@ const ProblemDetail: React.FC = () => {
           </button>
         </div>
       </div>
+      <YoutubeModal
+        open={!!youtube}
+        watchUrl={youtube?.url ?? ''}
+        title={youtube?.title}
+        onClose={() => setYoutube(null)}
+      />
     </Layout>
   );
 };

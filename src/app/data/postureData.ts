@@ -5,6 +5,8 @@ export interface Exercise {
   description: string;
   instructions: string[];
   emoji: string;
+  /** Optional demo (opens in-app YouTube embed) */
+  youtubeUrl?: string;
 }
 
 export interface PostureProblem {
@@ -34,22 +36,48 @@ export const postureProblems: PostureProblem[] = [
     cardImage: '/problems/forward-head.png',
     exercises: 5,
     duration: '3m',
-    description: 'Forward head posture occurs when your head shifts forward past your shoulders, commonly caused by prolonged screen use. This puts extra strain on your cervical spine.',
+    reasonImage: '/problems/forward-head-reason.png',
+    reasonLead: `Most people spend hours:
+
+Sitting
+Looking down at phones/laptops
+With rounded shoulders`,
+    reasonRest: `👉 Over time:
+
+Neck muscles (front) get weak
+Upper neck and shoulder muscles get tight
+The head shifts forward from its natural position`,
+    description: `Most people spend hours:
+
+Sitting
+Looking down at phones/laptops
+With rounded shoulders
+
+👉 Over time:
+
+Neck muscles (front) get weak
+Upper neck and shoulder muscles get tight
+The head shifts forward from its natural position`,
     affectedAreas: ['Cervical spine', 'Upper trapezius', 'Suboccipitals', 'SCM'],
     cardBg: '#E8F4FE',
     cardBorder: '#C5E3FC',
     emoji: '🦒',
     exerciseList: [
-      { id: 'chin-tuck', name: 'Chin Tucks', duration: 30, description: 'Retract your chin straight back, creating a double chin.', emoji: '🧘',
-        instructions: ['Sit or stand tall with shoulders relaxed', 'Look straight ahead, eyes level', 'Draw chin straight back', 'Hold 5 seconds', 'Repeat 10 times'] },
-      { id: 'neck-flexor', name: 'Neck Flexor Stretch', duration: 45, description: 'Tilt head to each side stretching the SCM.', emoji: '🙆',
-        instructions: ['Sit tall, hands on thighs', 'Tilt right ear to right shoulder', 'Apply gentle pressure', 'Hold 15-20 seconds', 'Switch sides'] },
-      { id: 'wall-angel', name: 'Wall Angels', duration: 60, description: 'Slide arms up and down against a wall.', emoji: '👼',
-        instructions: ['Back flat against wall', 'Press head, upper back, hips to wall', 'Arms at 90° goalpost', 'Slide arms overhead', 'Lower slowly, 10 reps'] },
-      { id: 'thoracic-ext', name: 'Thoracic Extension', duration: 45, description: 'Extend upper back over a foam roller.', emoji: '🤸',
-        instructions: ['Place foam roller under upper back', 'Support head with hands', 'Extend back over roller', 'Hold 5 seconds', 'Move roller and repeat'] },
-      { id: 'levator-stretch', name: 'Levator Scapulae Stretch', duration: 30, description: 'Target the muscle connecting neck to shoulder blade.', emoji: '💆',
-        instructions: ['Turn head 45° to one side', 'Look down toward armpit', 'Gently pull head down', 'Hold 20 seconds', 'Switch sides'] },
+      { id: 'wall-posture-hold', name: 'Wall Posture Hold', duration: 45, description: 'Use the wall as feedback to stack head, shoulders, and hips in better alignment.', emoji: '🧱',
+        youtubeUrl: 'https://www.youtube.com/shorts/X6t9aVDugyg',
+        instructions: ['Stand with back lightly touching the wall', 'Soften ribs so lower back isn’t overly arched', 'Gently tuck chin so head meets wall without straining', 'Hold easy breathing, relax shoulders down', 'Build up time gradually'] },
+      { id: 'doorway-chest-stretch', name: 'Doorway Chest Stretch', duration: 45, description: 'Open the front of the shoulders and chest to counter forward-head and rounded shoulders.', emoji: '🚪',
+        youtubeUrl: 'https://www.youtube.com/shorts/O8rJw_TmC1Y',
+        instructions: ['Forearms on a door frame at about shoulder height', 'Step through until you feel a mild stretch in the chest', 'Keep neck long—don’t jut the chin forward', 'Breathe into the ribcage, hold 20–30 seconds', 'Repeat 2–3 rounds'] },
+      { id: 'scapular-retraction-fh', name: 'Scapular Retraction', duration: 30, description: 'Draw shoulder blades back and down to support an upright neck.', emoji: '🤝',
+        youtubeUrl: 'https://www.youtube.com/shorts/LbqxzzTA7pA',
+        instructions: ['Sit or stand tall with arms relaxed', 'Imagine tucking shoulder blades into back pockets', 'Squeeze gently—no shrugging toward ears', 'Hold 3–5 seconds, release slowly', 'Repeat 12–15 times'] },
+      { id: 'upper-trap-stretch', name: 'Upper Trap Stretch', duration: 45, description: 'Ease tension at the base of the neck and top of the shoulders.', emoji: '🙆',
+        youtubeUrl: 'https://www.youtube.com/shorts/Kvqlsyo28N8',
+        instructions: ['Sit tall; optionally anchor one hand under your chair', 'Gently tilt ear toward opposite shoulder', 'Keep opposite shoulder relaxed downward', 'Hold 20–30 seconds, switch sides', 'Only go to a comfortable stretch'] },
+      { id: 'chin-tuck', name: 'Chin Tuck', duration: 30, description: 'Train deep neck flexors by sliding the chin straight back.', emoji: '🧘',
+        youtubeUrl: 'https://www.youtube.com/shorts/hBJBx1QN3-c',
+        instructions: ['Eyes level; imagine a string pulling the crown of your head up', 'Slide chin straight back (not down toward chest)', 'Hold 5 seconds with light effort', 'Relax and repeat 8–12 reps', 'You may feel a mild stretch at the base of the skull'] },
     ],
     tips: ['Position screen at eye level', 'Break every 30 minutes', 'Use supportive pillow', 'Strengthen deep neck flexors'],
   },
@@ -84,22 +112,48 @@ export const postureProblems: PostureProblem[] = [
     cardImage: '/problems/anterior-pelvic.png',
     exercises: 5,
     duration: '4m',
-    description: 'Anterior pelvic tilt occurs when the pelvis tilts forward, increasing lower back curve and weakening glutes and core.',
+    reasonImage: '/problems/anterior-pelvic-reason.png',
+    reasonLead: `Most people spend hours:
+
+Sitting
+Looking at phones/laptops
+With poor hip and lower back posture`,
+    reasonRest: `👉 Over time:
+
+Hip flexor muscles get tight
+Glutes and core muscles get weak
+The pelvis tilts forward from its neutral position`,
+    description: `Most people spend hours:
+
+Sitting
+Looking at phones/laptops
+With poor hip and lower back posture
+
+👉 Over time:
+
+Hip flexor muscles get tight
+Glutes and core muscles get weak
+The pelvis tilts forward from its neutral position`,
     affectedAreas: ['Hip flexors', 'Lumbar spine', 'Glutes', 'Core'],
     cardBg: '#F0EEFE',
     cardBorder: '#DDD9FC',
     emoji: '🦴',
     exerciseList: [
-      { id: 'half-kneel', name: 'Half-Kneeling Stretch', duration: 60, description: 'Deep hip flexor stretch in a lunge position.', emoji: '🦵',
-        instructions: ['Kneel on right knee', 'Left foot forward', 'Shift weight forward', 'Squeeze right glute', 'Hold 30s, switch'] },
-      { id: 'glute-bridge', name: 'Glute Bridges', duration: 45, description: 'Strengthen glutes and stretch hip flexors.', emoji: '🌉',
-        instructions: ['Lie back, knees bent', 'Drive through heels', 'Squeeze glutes at top', 'Hold 3 seconds', '15 reps'] },
-      { id: 'dead-bug', name: 'Dead Bug', duration: 60, description: 'Core stabilization for spinal control.', emoji: '🪲',
-        instructions: ['Lie back, arms to ceiling', 'Knees at 90° tabletop', 'Press lower back to floor', 'Extend opposite arm and leg', '10 reps each side'] },
-      { id: 'cat-cow', name: 'Cat-Cow Stretch', duration: 50, description: 'Mobilize the spine with alternating movements.', emoji: '🐱',
-        instructions: ['Hands and knees', 'Inhale: belly drops, chest lifts', 'Exhale: round spine, tuck chin', 'Move with breath', '10-15 cycles'] },
-      { id: 'pelvic-tilt', name: 'Posterior Pelvic Tilts', duration: 30, description: 'Learn to control pelvic position.', emoji: '🔄',
-        instructions: ['Lie on back, knees bent', 'Flatten lower back to floor', 'Tilt pelvis upward', 'Hold 5 seconds', 'Repeat 15 times'] },
+      { id: 'glute-bridge', name: 'Glute Bridges', duration: 45, description: 'Strengthen glutes to help pull the pelvis toward neutral.', emoji: '🌉',
+        youtubeUrl: 'https://www.youtube.com/shorts/QX0xvlPuruM',
+        instructions: ['Lie on your back, knees bent, feet hip-width', 'Brace lightly through your core', 'Drive through heels and lift hips', 'Squeeze glutes at the top without overarching the low back', 'Lower with control, 12–15 reps'] },
+      { id: 'dead-bug', name: 'Dead Bug', duration: 60, description: 'Train the deep core while keeping the lower back stable.', emoji: '🪲',
+        youtubeUrl: 'https://www.youtube.com/shorts/8hpYXi4XGEU',
+        instructions: ['Lie on back, arms toward ceiling, knees at 90°', 'Press low back gently toward the floor', 'Slowly extend opposite arm and leg', 'Return with control and switch sides', 'Keep ribs down', '8–10 each side'] },
+      { id: 'lunge-stretch', name: 'Lunge Stretch', duration: 60, description: 'Stretch the hip flexors that pull the pelvis into anterior tilt.', emoji: '🦵',
+        youtubeUrl: 'https://www.youtube.com/shorts/VRUpNw-jfWk',
+        instructions: ['Half-kneel or lunge with back knee down', 'Tuck pelvis slightly (don’t dump into the low back)', 'Shift weight forward until you feel a mild stretch in the front hip', 'Squeeze the back glute for more stretch', 'Hold 30–45 seconds each side'] },
+      { id: 'tall-plank-shoulder-tap', name: 'Tall Plank Shoulder Tap', duration: 45, description: 'Build anti-extension core control in a tall plank position.', emoji: '🧘',
+        youtubeUrl: 'https://www.youtube.com/shorts/niAvJrDrxMo',
+        instructions: ['Set up in a high plank, hands under shoulders', 'Press the floor away; ribs stay in toward hips', 'Tap one shoulder with the opposite hand without rocking hips', 'Alternate sides with control', '8–12 taps each side'] },
+      { id: 'active-hamstring-stretch', name: 'Active Hamstring Stretch', duration: 45, description: 'Improve hamstring mobility with active control (often tight with APT).', emoji: '🦿',
+        youtubeUrl: 'https://www.youtube.com/shorts/bUE5PEkCsK0',
+        instructions: ['Lie on your back or use a strap for one leg', 'Extend the leg up toward hip height without forcing', 'Gently flex and extend within a comfortable range', 'Keep opposite leg relaxed or bent', 'Switch legs after 30–45 seconds'] },
     ],
     tips: ['Avoid prolonged sitting', 'Strengthen core and glutes', 'Stretch hip flexors daily', 'Practice neutral pelvis standing'],
   },
@@ -140,16 +194,21 @@ This creates functional winging (not nerve damage, but poor control).`,
     cardBorder: '#C5D9FC',
     emoji: '🪽',
     exerciseList: [
-      { id: 'wall-slide', name: 'Wall Slides (Serratus)', duration: 45, description: 'Reach along the wall to activate serratus anterior.', emoji: '🧱',
-        instructions: ['Stand facing wall, forearms on wall', 'Slide arms up keeping contact', 'Think of wrapping scapula forward', 'Lower with control', '12 slow reps'] },
-      { id: 'push-up-plus', name: 'Push-Up Plus', duration: 40, description: 'Protract the scapula at the top of a push-up.', emoji: '💪',
-        instructions: ['High plank or knees plank', 'Lower chest toward floor', 'Press up', 'At top, push upper back toward ceiling', '10 reps'] },
-      { id: 'band-punch', name: 'Band Punch Forward', duration: 45, description: 'Resisted reach trains upward rotation.', emoji: '🎯',
-        instructions: ['Anchor band behind you', 'Hold at shoulder height', 'Punch forward with straight arm', 'Let shoulder blade glide', '12 each arm'] },
-      { id: 'wall-angel-2', name: 'Wall Angels', duration: 60, description: 'Control scapula as arms move overhead.', emoji: '👼',
-        instructions: ['Back to wall, head and hips touch', 'Arms 90° goalpost on wall', 'Slide up toward ceiling', 'Keep ribs down', '10 reps'] },
-      { id: 'blade-squeeze-ws', name: 'Shoulder Blade Squeeze', duration: 30, description: 'Retraction to balance protraction work.', emoji: '🤝',
-        instructions: ['Stand tall, palms forward', 'Pull shoulder blades together', 'Hold 5 seconds without shrugging', 'Repeat 15 times'] },
+      { id: 'wall-push-up', name: 'Wall Push-Up', duration: 40, description: 'Wall-based push-up pattern to protract the scapula and wake up serratus.', emoji: '💪',
+        youtubeUrl: 'https://www.youtube.com/shorts/yZVsAWcZRQ8',
+        instructions: ['Hands on wall at chest height, body angled in', 'Keep ribs quiet, neck long', 'Lower chest toward wall with control', 'Press away and finish with a slight “plus”—push upper back toward ceiling', '8–12 reps'] },
+      { id: 'scapular-retraction', name: 'Scapular Retraction', duration: 30, description: 'Pinch shoulder blades together without hiking the shoulders.', emoji: '🤝',
+        youtubeUrl: 'https://www.youtube.com/shorts/LbqxzzTA7pA',
+        instructions: ['Stand or sit tall, arms at sides or 90° elbows bent', 'Draw shoulder blades back and slightly down', 'Hold 3–5 seconds', 'Relax and repeat 12–15 times'] },
+      { id: 'wall-slide', name: 'Scapular Wall Slides', duration: 45, description: 'Slide forearms up the wall while keeping contact and rib control.', emoji: '🧱',
+        youtubeUrl: 'https://www.youtube.com/shorts/OtgQDv7u1TM',
+        instructions: ['Stand facing wall, forearms and backs of hands on wall', 'Slide upward in a “W to Y” path if comfortable', 'Keep ribs from flaring', 'Lower with control, 10 slow reps'] },
+      { id: 'serratus-punch', name: 'Serratus Punch', duration: 45, description: 'Straight-arm punch pattern to train serratus reach.', emoji: '🎯',
+        youtubeUrl: 'https://www.youtube.com/shorts/WV1JN8XH7Z4',
+        instructions: ['Band anchored behind you or light cable', 'Start elbow slightly bent, then punch forward and slightly up', 'Let the shoulder blade glide around the rib cage', 'Control the return, 10–12 each arm'] },
+      { id: 'prone-y-ws', name: 'Prone Y', duration: 60, description: 'Lift arms in a Y to strengthen lower traps and posterior shoulder.', emoji: '🏋️',
+        youtubeUrl: 'https://www.youtube.com/shorts/_uvCj0C1NA0',
+        instructions: ['Lie face down, forehead or towel under forehead', 'Arms overhead in a Y, thumbs up or out', 'Lift chest and arms slightly off floor', 'Lower slowly, 10–12 reps'] },
     ],
     tips: ['Avoid prolonged elbow-plank shrugging', 'Strengthen serratus gradually', 'Check desk elbow height', 'See a clinician if pain or numbness'],
   },
