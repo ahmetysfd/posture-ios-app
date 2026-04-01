@@ -5,8 +5,22 @@ export interface Exercise {
   description: string;
   instructions: string[];
   emoji: string;
-  /** Optional demo (opens in-app YouTube embed) */
+  /** Full YouTube URL for in-app video embed (youtu.be / shorts / watch) */
   youtubeUrl?: string;
+  /** YouTube video ID — alternative to youtubeUrl */
+  videoId?: string;
+  /** Icon type for outline icon system */
+  iconType?: 'neck' | 'chest' | 'side' | 'shoulder' | 'back' | 'core' | 'hip' | 'generic';
+}
+
+export interface PremiumLayout {
+  whyItHappens: Array<{ bold: string; text: string }>;
+  whatChanges: Array<{ bold: string; text: string }>;
+  howToFix: {
+    stretch: string[];
+    strength: string[];
+    habits: string[];
+  };
 }
 
 export interface PostureProblem {
@@ -27,6 +41,8 @@ export interface PostureProblem {
   reasonImage?: string;
   reasonLead?: string;
   reasonRest?: string;
+  /** Optional: premium 3-card layout */
+  premiumLayout?: PremiumLayout;
 }
 
 export const postureProblems: PostureProblem[] = [
@@ -65,10 +81,10 @@ The head shifts forward from its natural position`,
     exerciseList: [
       { id: 'wall-posture-hold', name: 'Wall Posture Hold', duration: 45, description: 'Use the wall as feedback to stack head, shoulders, and hips in better alignment.', emoji: '🧱',
         youtubeUrl: 'https://www.youtube.com/shorts/X6t9aVDugyg',
-        instructions: ['Stand with back lightly touching the wall', 'Soften ribs so lower back isn’t overly arched', 'Gently tuck chin so head meets wall without straining', 'Hold easy breathing, relax shoulders down', 'Build up time gradually'] },
+        instructions: ['Stand with back lightly touching the wall', "Soften ribs so lower back isn't overly arched", 'Gently tuck chin so head meets wall without straining', 'Hold easy breathing, relax shoulders down', 'Build up time gradually'] },
       { id: 'doorway-chest-stretch', name: 'Doorway Chest Stretch', duration: 45, description: 'Open the front of the shoulders and chest to counter forward-head and rounded shoulders.', emoji: '🚪',
         youtubeUrl: 'https://www.youtube.com/shorts/O8rJw_TmC1Y',
-        instructions: ['Forearms on a door frame at about shoulder height', 'Step through until you feel a mild stretch in the chest', 'Keep neck long—don’t jut the chin forward', 'Breathe into the ribcage, hold 20–30 seconds', 'Repeat 2–3 rounds'] },
+        instructions: ['Forearms on a door frame at about shoulder height', 'Step through until you feel a mild stretch in the chest', "Keep neck long—don't jut the chin forward", 'Breathe into the ribcage, hold 20–30 seconds', 'Repeat 2–3 rounds'] },
       { id: 'scapular-retraction-fh', name: 'Scapular Retraction', duration: 30, description: 'Draw shoulder blades back and down to support an upright neck.', emoji: '🤝',
         youtubeUrl: 'https://www.youtube.com/shorts/LbqxzzTA7pA',
         instructions: ['Sit or stand tall with arms relaxed', 'Imagine tucking shoulder blades into back pockets', 'Squeeze gently—no shrugging toward ears', 'Hold 3–5 seconds, release slowly', 'Repeat 12–15 times'] },
@@ -93,18 +109,69 @@ The head shifts forward from its natural position`,
     cardBorder: '#C5FADA',
     emoji: '🫧',
     exerciseList: [
-      { id: 'doorway-stretch', name: 'Doorway Pec Stretch', duration: 45, description: 'Open up your chest using a doorway.', emoji: '🚪',
-        instructions: ['Stand in doorway, arms at 90°', 'Place forearms on frame', 'Step forward gently', 'Lean into stretch', 'Hold 30s, repeat 3x'] },
-      { id: 'band-pull', name: 'Band Pull Aparts', duration: 45, description: 'Strengthen upper back with resistance bands.', emoji: '💪',
-        instructions: ['Hold band at shoulder width', 'Squeeze shoulder blades', 'Pull band to chest', 'Return slowly', '15 reps × 3 sets'] },
-      { id: 'y-raise', name: 'Prone Y-Raises', duration: 60, description: 'Strengthen lower traps lying face down.', emoji: '🤸',
-        instructions: ['Lie face down', 'Arms at 30° forming Y', 'Thumbs to ceiling', 'Lift arms, squeeze blades', 'Hold 3s, 12 reps'] },
-      { id: 'blade-squeeze', name: 'Shoulder Blade Squeeze', duration: 30, description: 'Activate mid-back muscles.', emoji: '🎯',
-        instructions: ['Sit or stand tall', 'Arms at sides', 'Squeeze shoulder blades together', 'Hold 5 seconds', 'Repeat 15 times'] },
-      { id: 'chest-opener', name: 'Chest Opener Stretch', duration: 40, description: 'Open the chest with clasped hands behind back.', emoji: '🧘',
-        instructions: ['Stand tall', 'Clasp hands behind back', 'Straighten arms', 'Lift hands away from body', 'Hold 20 seconds'] },
+      {
+        id: 'doorway-chest-rs', name: 'Doorway Chest Stretch', duration: 35,
+        description: 'Releases the tight pectorals that are the primary driver pulling the shoulders into a rounded position.',
+        emoji: '🚪', iconType: 'chest', videoId: 'O8rJw_TmC1Y',
+        instructions: ['Stand in a doorway, forearms on the frame at 90°', 'Step one foot forward through the door', 'Lean gently forward until you feel a stretch across the chest', 'Keep chin tucked and shoulders down', 'Hold 30–35 seconds, breathe steadily'],
+      },
+      {
+        id: 'wall-angels-rs', name: 'Wall Angels', duration: 40,
+        description: 'Simultaneously trains scapular retraction and thoracic extension against a wall for real-time feedback.',
+        emoji: '🧱', iconType: 'back', videoId: 'BdEXk-wHyfE',
+        instructions: ['Stand with back flat against the wall, feet 6 inches from the base', 'Press head, upper back, and hips into the wall', 'Raise arms to a 90° goalpost position', 'Slowly slide arms overhead while keeping full wall contact', 'Lower with control — 10 reps'],
+      },
+      {
+        id: 'prone-yt-rs', name: 'Prone Y-T Raise', duration: 40,
+        description: 'Directly strengthens the mid and lower trapezius to actively pull the shoulder blades into correct position.',
+        emoji: '💪', iconType: 'shoulder', videoId: 'w1AWGKubE5U',
+        instructions: ['Lie face down on a mat, forehead resting lightly', 'For Y: extend arms at 45°, thumbs pointing up', 'Lift arms slightly, squeezing shoulder blades together', 'For T: move arms out to 90° and repeat the lift', 'Perform 8–10 reps per position, keep neck neutral'],
+      },
+      {
+        id: 'chin-tuck-rs', name: 'Chin Tuck', duration: 30,
+        description: 'Resets the forward head position that accompanies rounded shoulders by reactivating the deep neck flexors.',
+        emoji: '🧘', iconType: 'neck', videoId: 'zpuL7KYvEi0',
+        instructions: ['Sit or stand tall, eyes level', 'Draw chin straight back — not down', 'Feel a gentle lengthening at the back of the neck', 'Hold 3–5 seconds', 'Release and repeat 10–12 times'],
+      },
+      {
+        id: 'arm-circles-rs', name: 'Arm Circles', duration: 35,
+        description: 'Warms up the shoulder girdle and restores full rotational mobility lost from chronic forward positioning.',
+        emoji: '🔄', iconType: 'shoulder', videoId: '35h5gdlm46w',
+        instructions: ['Stand tall with arms extended out to the sides', 'Begin with small forward circles, gradually increasing size', 'Complete 10 reps forward, then reverse direction', 'Keep shoulders down and chest open throughout', 'Maintain a steady, controlled speed'],
+      },
     ],
     tips: ['Set up ergonomic workstation', 'Strengthen upper back', 'Stretch chest daily', 'Watch shoulder position'],
+    premiumLayout: {
+      whyItHappens: [
+        { bold: 'Prolonged sitting', text: 'keeps shoulders locked in a forward, protracted position for hours' },
+        { bold: 'Excessive phone and laptop use', text: 'continuously reinforces rounded posture throughout the day' },
+        { bold: 'Tight chest muscles', text: 'shorten and pull the shoulders inward with increasing force' },
+        { bold: 'Weak upper back muscles', text: 'lose the endurance to hold the shoulder blades back and down' },
+        { bold: 'Poor posture habits', text: 'cause the nervous system to accept the rounded position as normal' },
+      ],
+      whatChanges: [
+        { bold: 'Shoulders migrate forward', text: 'protraction becomes the resting position of the shoulder girdle' },
+        { bold: 'Chest tightens and shortens', text: 'restricting full shoulder flexion and breathing depth' },
+        { bold: 'Upper back muscles weaken', text: 'mid and lower traps lose activation without regular use' },
+        { bold: 'Scapular control decreases', text: 'shoulder blades lose proper tracking during arm movements' },
+        { bold: 'Neck and upper back discomfort', text: 'develop as surrounding structures compensate for poor alignment' },
+      ],
+      howToFix: {
+        stretch: [
+          'Doorway chest stretch — 35s, twice daily minimum',
+          'Arm circles — full range, forward and backward daily',
+        ],
+        strength: [
+          'Prone Y-T raises — 8–10 reps, slow and controlled',
+          'Wall angels — 10 reps with full wall contact for feedback',
+        ],
+        habits: [
+          'Set your screen at eye level to stop the forward lean',
+          'Check your shoulder position every 30 minutes at your desk',
+          'Perform chin tucks throughout the day to reset head position',
+        ],
+      },
+    },
   },
   {
     id: 'anterior-pelvic',
@@ -139,23 +206,69 @@ The pelvis tilts forward from its neutral position`,
     cardBorder: '#DDD9FC',
     emoji: '🦴',
     exerciseList: [
-      { id: 'glute-bridge', name: 'Glute Bridges', duration: 45, description: 'Strengthen glutes to help pull the pelvis toward neutral.', emoji: '🌉',
-        youtubeUrl: 'https://www.youtube.com/shorts/QX0xvlPuruM',
-        instructions: ['Lie on your back, knees bent, feet hip-width', 'Brace lightly through your core', 'Drive through heels and lift hips', 'Squeeze glutes at the top without overarching the low back', 'Lower with control, 12–15 reps'] },
-      { id: 'dead-bug', name: 'Dead Bug', duration: 60, description: 'Train the deep core while keeping the lower back stable.', emoji: '🪲',
-        youtubeUrl: 'https://www.youtube.com/shorts/8hpYXi4XGEU',
-        instructions: ['Lie on back, arms toward ceiling, knees at 90°', 'Press low back gently toward the floor', 'Slowly extend opposite arm and leg', 'Return with control and switch sides', 'Keep ribs down', '8–10 each side'] },
-      { id: 'lunge-stretch', name: 'Lunge Stretch', duration: 60, description: 'Stretch the hip flexors that pull the pelvis into anterior tilt.', emoji: '🦵',
-        youtubeUrl: 'https://www.youtube.com/shorts/VRUpNw-jfWk',
-        instructions: ['Half-kneel or lunge with back knee down', 'Tuck pelvis slightly (don’t dump into the low back)', 'Shift weight forward until you feel a mild stretch in the front hip', 'Squeeze the back glute for more stretch', 'Hold 30–45 seconds each side'] },
-      { id: 'tall-plank-shoulder-tap', name: 'Tall Plank Shoulder Tap', duration: 45, description: 'Build anti-extension core control in a tall plank position.', emoji: '🧘',
-        youtubeUrl: 'https://www.youtube.com/shorts/niAvJrDrxMo',
-        instructions: ['Set up in a high plank, hands under shoulders', 'Press the floor away; ribs stay in toward hips', 'Tap one shoulder with the opposite hand without rocking hips', 'Alternate sides with control', '8–12 taps each side'] },
-      { id: 'active-hamstring-stretch', name: 'Active Hamstring Stretch', duration: 45, description: 'Improve hamstring mobility with active control (often tight with APT).', emoji: '🦿',
-        youtubeUrl: 'https://www.youtube.com/shorts/bUE5PEkCsK0',
-        instructions: ['Lie on your back or use a strap for one leg', 'Extend the leg up toward hip height without forcing', 'Gently flex and extend within a comfortable range', 'Keep opposite leg relaxed or bent', 'Switch legs after 30–45 seconds'] },
+      {
+        id: 'half-kneel-apt', name: 'Half-Kneeling Hip Flexor Stretch', duration: 45,
+        description: 'Directly targets the iliopsoas — the primary muscle that pulls the pelvis into an anterior tilt.',
+        emoji: '🦵', iconType: 'hip', youtubeUrl: 'https://youtu.be/DXuStgWuJV8',
+        instructions: ['Kneel on your right knee, left foot forward at 90°', 'Keep torso upright, hands on hips', 'Squeeze right glute and gently shift hips forward', 'Feel the stretch deep in the front of the right hip', 'Hold 30–40 seconds, then switch sides'],
+      },
+      {
+        id: 'glute-bridge-apt', name: 'Glute Bridge', duration: 40,
+        description: 'Activates the glutes that have become inhibited from prolonged sitting and restores pelvic control.',
+        emoji: '🌉', iconType: 'hip', youtubeUrl: 'https://youtu.be/XLXGydU5DdU',
+        instructions: ['Lie on your back, knees bent, feet hip-width apart', 'Press firmly through both heels', 'Drive hips up, squeezing glutes at the top', 'Keep ribs down, avoid arching the lower back', 'Hold 3 seconds at the top — 12–15 reps'],
+      },
+      {
+        id: 'dead-bug-apt', name: 'Dead Bug', duration: 45,
+        description: 'Trains anti-extension core control to keep the pelvis neutral under limb loading.',
+        emoji: '🪲', iconType: 'core', youtubeUrl: 'https://youtu.be/jbWmbhElf3Q',
+        instructions: ['Lie on your back, arms straight to the ceiling', 'Raise knees to 90° tabletop position', 'Press lower back firmly into the floor throughout', 'Slowly extend opposite arm and leg toward the floor', 'Return and alternate — 8–10 reps each side'],
+      },
+      {
+        id: 'cat-cow-apt', name: 'Cat–Cow', duration: 35,
+        description: 'Restores spinal mobility and teaches conscious control of pelvic positioning through both ranges.',
+        emoji: '🐱', iconType: 'back', youtubeUrl: 'https://youtu.be/LIVJZZyZ2qM',
+        instructions: ['Start on hands and knees, wrists under shoulders', 'Cow: inhale, let belly drop, lift tailbone and chest', 'Cat: exhale, round spine upward, tuck chin and pelvis', 'Move slowly and with full breath control', '10–12 smooth cycles'],
+      },
+      {
+        id: 'posterior-tilt-apt', name: 'Posterior Pelvic Tilt', duration: 30,
+        description: 'Directly trains the corrective movement pattern — flattening the lower back to counter the forward tilt.',
+        emoji: '🔄', iconType: 'core', youtubeUrl: 'https://youtu.be/zHfuVboAWVM',
+        instructions: ['Lie on your back, knees bent, feet flat', 'Flatten lower back completely into the floor', 'Tilt pelvis upward by engaging abs and glutes', 'Hold 5 seconds, feel the lumbar spine flatten', 'Release and repeat 12–15 times'],
+      },
     ],
     tips: ['Avoid prolonged sitting', 'Strengthen core and glutes', 'Stretch hip flexors daily', 'Practice neutral pelvis standing'],
+    premiumLayout: {
+      whyItHappens: [
+        { bold: 'Prolonged sitting', text: 'shortens the hip flexors and trains the pelvis to tilt forward' },
+        { bold: 'Weak glutes', text: 'cannot generate enough force to pull the pelvis back into neutral' },
+        { bold: 'Weak core', text: 'loses the control needed to maintain pelvic stability' },
+        { bold: 'Habitual lower back arching', text: 'reinforces the tilt pattern until it becomes the default position' },
+        { bold: 'Lack of movement', text: 'allows muscles to permanently adapt to an imbalanced position' },
+      ],
+      whatChanges: [
+        { bold: 'Lower back arch deepens', text: 'excessive lordosis compresses lumbar joints over time' },
+        { bold: 'Pelvis tips persistently forward', text: 'shifting the centre of gravity and stressing the spine' },
+        { bold: 'Hip flexors become chronically tight', text: 'restricting stride length and hip extension' },
+        { bold: 'Glutes become inhibited', text: 'losing both strength and neuromuscular activation' },
+        { bold: 'Lower back discomfort develops', text: 'as compressed segments carry uneven load daily' },
+      ],
+      howToFix: {
+        stretch: [
+          'Half-kneeling hip flexor stretch — 40s each side, daily',
+          'Cat–Cow — 10 slow cycles to restore pelvic range',
+        ],
+        strength: [
+          'Glute bridges — 12–15 reps, pause at the top',
+          'Dead bug — focus on keeping lower back flat throughout',
+        ],
+        habits: [
+          'Stand up and walk for 2 minutes every 30 minutes',
+          'Practice posterior pelvic tilt while seated at your desk',
+          'Check your standing posture — pelvis should be neutral, not arched',
+        ],
+      },
+    },
   },
   {
     id: 'winging-scapula',
@@ -224,24 +337,75 @@ This creates functional winging (not nerve damage, but poor control).`,
     cardBorder: '#C7D2FE',
     emoji: '📐',
     exerciseList: [
-      { id: 'thoracic-ext-ky', name: 'Thoracic Extension', duration: 45, description: 'Extend the upper back over support.', emoji: '🤸',
-        instructions: ['Place foam roller at mid-back', 'Support head lightly', 'Extend over roller in small segments', 'Pause 3–5 breaths each spot', 'Move roller 2–3 times'] },
-      { id: 'cat-cow-ky', name: 'Cat-Cow', duration: 50, description: 'Mobilize thoracic spine with breath.', emoji: '🐱',
-        instructions: ['Hands and knees', 'Inhale gently extend spine', 'Exhale round and spread shoulder blades', '10–15 slow cycles'] },
-      { id: 'doorway-ky', name: 'Doorway Pec Stretch', duration: 45, description: 'Open tight chest that rounds the upper back.', emoji: '🚪',
-        instructions: ['Forearms on door frame at ~90°', 'Step through until mild stretch in chest', 'Breathe into ribs', 'Hold 30s × 2'] },
-      { id: 'prone-y', name: 'Prone Y-Raises', duration: 60, description: 'Strengthen lower traps and extend thoracic spine.', emoji: '🏋️',
-        instructions: ['Lie face down', 'Arms in Y, thumbs up', 'Lift chest slightly off floor', 'Lower slowly', '10–12 reps'] },
-      { id: 'wall-stand-ky', name: 'Wall Stand', duration: 30, description: 'Stack joints for neutral upper-back alignment.', emoji: '🧱',
-        instructions: ['Heels, hips, shoulders, head to wall', 'Tuck chin lightly', 'Arms relaxed or W on wall', 'Hold 30–45 seconds'] },
+      {
+        id: 'wall-angels-ky', name: 'Wall Angels', duration: 40,
+        description: 'Trains scapular control and thoracic extension simultaneously against a wall for feedback.',
+        emoji: '🧱', iconType: 'back', videoId: 'BdEXk-wHyfE',
+        instructions: ['Stand with back flat against the wall', 'Feet 6 inches from the base', 'Press head, upper back, and hips into the wall', 'Raise arms to a 90° goalpost position', 'Slowly slide arms overhead while keeping contact', 'Lower with control — 10 reps'],
+      },
+      {
+        id: 'doorway-chest-ky', name: 'Doorway Chest Stretch', duration: 35,
+        description: 'Releases the tight pectorals that pull the upper back into a rounded position.',
+        emoji: '🚪', iconType: 'chest', videoId: 'O8rJw_TmC1Y',
+        instructions: ['Stand in a doorway, forearms on the frame at 90°', 'Step one foot forward through the door', 'Lean gently forward until you feel a stretch across the chest', 'Keep chin tucked and shoulders down', 'Hold 30–35 seconds, breathe steadily'],
+      },
+      {
+        id: 'thoracic-ext-ky', name: 'Thoracic Extension', duration: 45,
+        description: 'Directly mobilises the stiff thoracic segments that cause the kyphotic curve.',
+        emoji: '🤸', iconType: 'back', videoId: 'EOHei8z22fY',
+        instructions: ['Sit in a chair or lie over a foam roller at mid-back', 'Support your head with your hands', 'Gently extend backward over the support point', 'Pause and breathe for 3–5 seconds', 'Shift position and repeat 3–4 times along the upper back'],
+      },
+      {
+        id: 'chin-tuck-ky', name: 'Chin Tuck', duration: 30,
+        description: 'Resets forward head position that accompanies kyphosis by activating deep neck flexors.',
+        emoji: '🧘', iconType: 'neck', videoId: 'zpuL7KYvEi0',
+        instructions: ['Sit or stand tall, eyes level', 'Draw chin straight back (not down)', 'Feel a gentle lengthening at the back of the neck', 'Hold 3–5 seconds', 'Release and repeat 10–12 times'],
+      },
+      {
+        id: 'prone-yt-ky', name: 'Prone Y-T Raise', duration: 40,
+        description: 'Strengthens the lower and middle trapezius to actively counteract upper-back rounding.',
+        emoji: '💪', iconType: 'shoulder', videoId: 'w1AWGKubE5U',
+        instructions: ['Lie face down on a mat, forehead resting lightly', 'For Y: extend arms at 45° from shoulders, thumbs up', 'Lift arms slightly off the floor, squeeze shoulder blades', 'For T: move arms to 90° (T shape) and repeat', 'Perform 8–10 reps per position, keep neck neutral'],
+      },
     ],
     tips: ['Bring screen to eye height', 'Take movement breaks hourly', 'Pair stretching with upper-back strength', 'Seek evaluation for severe or painful curve'],
+    premiumLayout: {
+      whyItHappens: [
+        { bold: 'Prolonged sitting', text: 'keeps the spine locked in a flexed position for hours' },
+        { bold: 'Looking down at screens', text: 'pulls the head and upper back progressively forward' },
+        { bold: 'Weak upper back muscles', text: 'lose the endurance needed to hold you upright' },
+        { bold: 'Tight chest muscles', text: 'shorten and pull the shoulders inward over time' },
+        { bold: 'Limited thoracic mobility', text: 'makes the upper spine stiff and resistant to extension' },
+      ],
+      whatChanges: [
+        { bold: 'Upper back becomes more rounded', text: 'the thoracic curve deepens and stiffens' },
+        { bold: 'Head shifts forward', text: 'adding up to 10 lbs of load per inch of displacement' },
+        { bold: 'Chest tightens and shortens', text: 'making full shoulder movement harder' },
+        { bold: 'Shoulder blades lose position', text: 'drifting away from the spine and tipping forward' },
+        { bold: 'Breathing capacity may decrease', text: 'as the ribcage has less room to fully expand' },
+      ],
+      howToFix: {
+        stretch: [
+          'Doorway chest stretch — hold 30s, 2× daily',
+          'Thoracic extension over a roller — 3–4 segments',
+        ],
+        strength: [
+          'Prone Y-T raises — 8–10 reps, focus on lower traps',
+          'Wall angels — 10 slow reps with full wall contact',
+        ],
+        habits: [
+          'Raise your screen to eye level',
+          'Set a posture reminder every 30 minutes',
+          'Practice chin tucks throughout the day',
+        ],
+      },
+    },
   },
   {
     id: 'uneven-shoulders',
     title: 'Uneven Shoulders',
     cardImage: '/problems/uneven-shoulders.png',
-    exercises: 5,
+    exercises: 4,
     duration: '3m',
     reasonImage: '/problems/uneven-shoulders-reason.png',
     reasonLead: `Most people develop uneven shoulders due to:
@@ -264,17 +428,62 @@ Spine may slightly compensate (side bending)`,
     cardBorder: '#E2E8F0',
     emoji: '⚖️',
     exerciseList: [
-      { id: 'ear-stretch-hi', name: 'Side Neck Stretch (High Side)', duration: 45, description: 'Lengthen the typically tighter upper side.', emoji: '🙆',
-        instructions: ['Sit tall', 'Gently tilt ear away from higher shoulder', 'Opposite hand can extend down', 'Light pressure only', '20–30 seconds each side'] },
-      { id: 'shoulder-roll', name: 'Controlled Shoulder Rolls', duration: 30, description: 'Reduce guarding and encourage smooth motion.', emoji: '🔄',
-        instructions: ['Slow circles both directions', 'Keep neck long', '10 reps each way'] },
-      { id: 'uni-shrug', name: 'One-Sided Shrug Lowering', duration: 35, description: 'Teach the elevated side to relax down.', emoji: '🤷',
-        instructions: ['Shrug both shoulders up', 'Lower the higher side first, slowly', 'Match the other side', '10 reps'] },
-      { id: 'rib-breath', name: 'Ribcage Breathing', duration: 40, description: 'Encourage even expansion side to side.', emoji: '🫁',
-        instructions: ['Hand on low ribs', 'Inhale 360° into ribs', 'Exhale fully', '5–8 breaths'] },
-      { id: 'wand-pass', name: 'Overhead Dowel Pass', duration: 45, description: 'Improve shoulder elevation symmetry with feedback.', emoji: '🪄',
-        instructions: ['Hold stick with wide grip', 'Lift overhead in pain-free range', 'Keep ribs quiet', '8 slow reps'] },
+      {
+        id: 'levator-stretch', name: 'Levator Scapulae Stretch', duration: 40,
+        description: 'Releases the tight muscle that elevates the shoulder blade toward the neck.',
+        emoji: '🙆', iconType: 'neck', videoId: 'YVv1ul6b6Cc',
+        instructions: ['Sit tall, feet flat on the floor', 'Rotate head 45° toward your armpit', 'Gently nod chin down toward that armpit', 'Place hand on the back of your head for light pressure', 'Hold 30–40 seconds, then switch sides'],
+      },
+      {
+        id: 'chest-opener', name: 'Chest Opener Stretch', duration: 35,
+        description: 'Opens the chest and front shoulder to counteract rounded, uneven posture.',
+        emoji: '🤸', iconType: 'chest', videoId: 'Cka38QWoVeY',
+        instructions: ['Stand tall or sit upright', 'Clasp hands behind your back', 'Squeeze shoulder blades together', 'Lift chest up and slightly back', 'Hold 30–35 seconds, breathe deeply'],
+      },
+      {
+        id: 'side-lat-stretch', name: 'Side Body & Lat Stretch', duration: 40,
+        description: 'Lengthens the lateral chain from hip to shoulder, correcting side-bending compensation.',
+        emoji: '🧘', iconType: 'side', videoId: 'Vko-SJok-fk',
+        instructions: ['Stand with feet hip-width apart', 'Raise one arm overhead', 'Lean smoothly to the opposite side', 'Keep hips square, do not rotate', 'Hold 30–40 seconds each side'],
+      },
+      {
+        id: 'scapular-depression', name: 'Scapular Depression Control', duration: 45,
+        description: 'Trains the lower trapezius to actively pull the elevated shoulder blade down.',
+        emoji: '💪', iconType: 'shoulder', videoId: 'maKLqBSn_Vo',
+        instructions: ['Sit or stand tall', 'Let both shoulders relax completely', 'Slowly pull only the elevated shoulder blade down and back', 'Hold the depressed position for 5 seconds', 'Release and repeat 10 times on that side'],
+      },
     ],
     tips: ['Stretch the tight side (elevated shoulder)', 'Strengthen the weak side (lower trap & serratus)', 'Keep shoulders level during daily activities', 'Adjust desk setup (screen centered!)', 'Train both sides equally'],
+    premiumLayout: {
+      whyItHappens: [
+        { bold: 'Leaning to one side', text: 'shifts pelvis and raises one shoulder' },
+        { bold: 'Carrying bags on one shoulder', text: 'overloads one side continuously' },
+        { bold: 'Crossing legs consistently', text: 'creates a pelvic tilt that ripples upward' },
+        { bold: 'Off-center monitor', text: 'forces head and shoulder to compensate' },
+        { bold: 'Dominant side overuse', text: 'builds muscle imbalance over time' },
+      ],
+      whatChanges: [
+        { bold: 'One shoulder sits visibly higher', text: 'upper trap becomes chronically tight' },
+        { bold: 'Neck muscles tighten on one side', text: 'pulling the head slightly off-center' },
+        { bold: 'Opposite side weakens', text: 'lower trap and serratus lose activation' },
+        { bold: 'Scapula positioning shifts', text: 'asymmetric shoulder blade placement' },
+        { bold: 'Spine compensates', text: 'mild side-bending becomes the new normal' },
+      ],
+      howToFix: {
+        stretch: [
+          'Side neck stretch — hold 30s on the tight side',
+          'Upper trap release — ear-to-shoulder, 3× daily',
+        ],
+        strength: [
+          'Single-arm row — focus on the weaker side',
+          'Side-lying lateral raise — activate the lower shoulder',
+        ],
+        habits: [
+          'Center your screen at eye level',
+          'Alternate which shoulder carries your bag',
+          'Reset your posture every 30 min at your desk',
+        ],
+      },
+    },
   },
 ];
