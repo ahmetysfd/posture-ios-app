@@ -28,6 +28,8 @@ export interface PostureProblem {
   title: string;
   /** Public URL for home grid / detail hero (files in /public/problems/) */
   cardImage: string;
+  /** Optional focal point for card hero image */
+  cardImageObjectPosition?: string;
   exercises: number;
   duration: string;
   description: string;
@@ -98,80 +100,59 @@ The head shifts forward from its natural position`,
     tips: ['Position screen at eye level', 'Break every 30 minutes', 'Use supportive pillow', 'Strengthen deep neck flexors'],
   },
   {
-    id: 'rounded-shoulders',
-    title: 'Rounded Shoulders',
-    cardImage: '/problems/rounded-shoulders.png',
+    id: 'winging-scapula',
+    title: 'Winging Scapula',
+    cardImage: '/problems/winging-scapula.png',
     exercises: 5,
     duration: '3m',
-    description: 'Rounded shoulders happen when chest muscles tighten and upper back muscles weaken, pulling shoulders forward from desk work.',
-    affectedAreas: ['Pectorals', 'Anterior deltoids', 'Upper back', 'Rotator cuff'],
-    cardBg: '#E8FEF1',
-    cardBorder: '#C5FADA',
-    emoji: '🫧',
+    reasonImage: '/problems/desk-work-upper.png',
+    reasonLead: `Most people spend hours:
+
+Sitting
+Looking at phones/laptops
+With rounded shoulders`,
+    reasonRest: `👉 Over time:
+
+Chest muscles get tight
+Upper back muscles (including scapular stabilizers) get weak
+The scapula loses its stable position
+
+This creates functional winging (not nerve damage, but poor control).`,
+    description: `Most people spend hours:
+
+Sitting
+Looking at phones/laptops
+With rounded shoulders
+
+👉 Over time:
+
+Chest muscles get tight
+Upper back muscles (including scapular stabilizers) get weak
+The scapula loses its stable position
+
+This creates functional winging (not nerve damage, but poor control).`,
+    affectedAreas: ['Serratus anterior', 'Rhomboids', 'Trapezius', 'Scapula'],
+    cardBg: '#E8F0FE',
+    cardBorder: '#C5D9FC',
+    emoji: '🪽',
     exerciseList: [
-      {
-        id: 'doorway-chest-rs', name: 'Doorway Chest Stretch', duration: 35,
-        description: 'Releases the tight pectorals that are the primary driver pulling the shoulders into a rounded position.',
-        emoji: '🚪', iconType: 'chest', videoId: 'O8rJw_TmC1Y',
-        instructions: ['Stand in a doorway, forearms on the frame at 90°', 'Step one foot forward through the door', 'Lean gently forward until you feel a stretch across the chest', 'Keep chin tucked and shoulders down', 'Hold 30–35 seconds, breathe steadily'],
-      },
-      {
-        id: 'wall-angels-rs', name: 'Wall Angels', duration: 40,
-        description: 'Simultaneously trains scapular retraction and thoracic extension against a wall for real-time feedback.',
-        emoji: '🧱', iconType: 'back', videoId: 'BdEXk-wHyfE',
-        instructions: ['Stand with back flat against the wall, feet 6 inches from the base', 'Press head, upper back, and hips into the wall', 'Raise arms to a 90° goalpost position', 'Slowly slide arms overhead while keeping full wall contact', 'Lower with control — 10 reps'],
-      },
-      {
-        id: 'prone-yt-rs', name: 'Prone Y-T Raise', duration: 40,
-        description: 'Directly strengthens the mid and lower trapezius to actively pull the shoulder blades into correct position.',
-        emoji: '💪', iconType: 'shoulder', videoId: 'w1AWGKubE5U',
-        instructions: ['Lie face down on a mat, forehead resting lightly', 'For Y: extend arms at 45°, thumbs pointing up', 'Lift arms slightly, squeezing shoulder blades together', 'For T: move arms out to 90° and repeat the lift', 'Perform 8–10 reps per position, keep neck neutral'],
-      },
-      {
-        id: 'chin-tuck-rs', name: 'Chin Tuck', duration: 30,
-        description: 'Resets the forward head position that accompanies rounded shoulders by reactivating the deep neck flexors.',
-        emoji: '🧘', iconType: 'neck', videoId: 'zpuL7KYvEi0',
-        instructions: ['Sit or stand tall, eyes level', 'Draw chin straight back — not down', 'Feel a gentle lengthening at the back of the neck', 'Hold 3–5 seconds', 'Release and repeat 10–12 times'],
-      },
-      {
-        id: 'arm-circles-rs', name: 'Arm Circles', duration: 35,
-        description: 'Warms up the shoulder girdle and restores full rotational mobility lost from chronic forward positioning.',
-        emoji: '🔄', iconType: 'shoulder', videoId: '35h5gdlm46w',
-        instructions: ['Stand tall with arms extended out to the sides', 'Begin with small forward circles, gradually increasing size', 'Complete 10 reps forward, then reverse direction', 'Keep shoulders down and chest open throughout', 'Maintain a steady, controlled speed'],
-      },
+      { id: 'wall-push-up', name: 'Wall Push-Up', duration: 40, description: 'Wall-based push-up pattern to protract the scapula and wake up serratus.', emoji: '💪',
+        youtubeUrl: 'https://www.youtube.com/shorts/yZVsAWcZRQ8',
+        instructions: ['Hands on wall at chest height, body angled in', 'Keep ribs quiet, neck long', 'Lower chest toward wall with control', 'Press away and finish with a slight “plus”—push upper back toward ceiling', '8–12 reps'] },
+      { id: 'scapular-retraction', name: 'Scapular Retraction', duration: 30, description: 'Pinch shoulder blades together without hiking the shoulders.', emoji: '🤝',
+        youtubeUrl: 'https://www.youtube.com/shorts/LbqxzzTA7pA',
+        instructions: ['Stand or sit tall, arms at sides or 90° elbows bent', 'Draw shoulder blades back and slightly down', 'Hold 3–5 seconds', 'Relax and repeat 12–15 times'] },
+      { id: 'wall-slide', name: 'Scapular Wall Slides', duration: 45, description: 'Slide forearms up the wall while keeping contact and rib control.', emoji: '🧱',
+        youtubeUrl: 'https://www.youtube.com/shorts/OtgQDv7u1TM',
+        instructions: ['Stand facing wall, forearms and backs of hands on wall', 'Slide upward in a “W to Y” path if comfortable', 'Keep ribs from flaring', 'Lower with control, 10 slow reps'] },
+      { id: 'serratus-punch', name: 'Serratus Punch', duration: 45, description: 'Straight-arm punch pattern to train serratus reach.', emoji: '🎯',
+        youtubeUrl: 'https://www.youtube.com/shorts/WV1JN8XH7Z4',
+        instructions: ['Band anchored behind you or light cable', 'Start elbow slightly bent, then punch forward and slightly up', 'Let the shoulder blade glide around the rib cage', 'Control the return, 10–12 each arm'] },
+      { id: 'prone-y-ws', name: 'Prone Y', duration: 60, description: 'Lift arms in a Y to strengthen lower traps and posterior shoulder.', emoji: '🏋️',
+        youtubeUrl: 'https://www.youtube.com/shorts/_uvCj0C1NA0',
+        instructions: ['Lie face down, forehead or towel under forehead', 'Arms overhead in a Y, thumbs up or out', 'Lift chest and arms slightly off floor', 'Lower slowly, 10–12 reps'] },
     ],
-    tips: ['Set up ergonomic workstation', 'Strengthen upper back', 'Stretch chest daily', 'Watch shoulder position'],
-    premiumLayout: {
-      whyItHappens: [
-        { bold: 'Prolonged sitting', text: 'keeps shoulders locked in a forward, protracted position for hours' },
-        { bold: 'Excessive phone and laptop use', text: 'continuously reinforces rounded posture throughout the day' },
-        { bold: 'Tight chest muscles', text: 'shorten and pull the shoulders inward with increasing force' },
-        { bold: 'Weak upper back muscles', text: 'lose the endurance to hold the shoulder blades back and down' },
-        { bold: 'Poor posture habits', text: 'cause the nervous system to accept the rounded position as normal' },
-      ],
-      whatChanges: [
-        { bold: 'Shoulders migrate forward', text: 'protraction becomes the resting position of the shoulder girdle' },
-        { bold: 'Chest tightens and shortens', text: 'restricting full shoulder flexion and breathing depth' },
-        { bold: 'Upper back muscles weaken', text: 'mid and lower traps lose activation without regular use' },
-        { bold: 'Scapular control decreases', text: 'shoulder blades lose proper tracking during arm movements' },
-        { bold: 'Neck and upper back discomfort', text: 'develop as surrounding structures compensate for poor alignment' },
-      ],
-      howToFix: {
-        stretch: [
-          'Doorway chest stretch — 35s, twice daily minimum',
-          'Arm circles — full range, forward and backward daily',
-        ],
-        strength: [
-          'Prone Y-T raises — 8–10 reps, slow and controlled',
-          'Wall angels — 10 reps with full wall contact for feedback',
-        ],
-        habits: [
-          'Set your screen at eye level to stop the forward lean',
-          'Check your shoulder position every 30 minutes at your desk',
-          'Perform chin tucks throughout the day to reset head position',
-        ],
-      },
-    },
+    tips: ['Avoid prolonged elbow-plank shrugging', 'Strengthen serratus gradually', 'Check desk elbow height', 'See a clinician if pain or numbness'],
   },
   {
     id: 'anterior-pelvic',
@@ -271,59 +252,80 @@ The pelvis tilts forward from its neutral position`,
     },
   },
   {
-    id: 'winging-scapula',
-    title: 'Winging Scapula',
-    cardImage: '/problems/winging-scapula.png',
+    id: 'rounded-shoulders',
+    title: 'Rounded Shoulders',
+    cardImage: '/problems/rounded-shoulders.png',
     exercises: 5,
     duration: '3m',
-    reasonImage: '/problems/desk-work-upper.png',
-    reasonLead: `Most people spend hours:
-
-Sitting
-Looking at phones/laptops
-With rounded shoulders`,
-    reasonRest: `👉 Over time:
-
-Chest muscles get tight
-Upper back muscles (including scapular stabilizers) get weak
-The scapula loses its stable position
-
-This creates functional winging (not nerve damage, but poor control).`,
-    description: `Most people spend hours:
-
-Sitting
-Looking at phones/laptops
-With rounded shoulders
-
-👉 Over time:
-
-Chest muscles get tight
-Upper back muscles (including scapular stabilizers) get weak
-The scapula loses its stable position
-
-This creates functional winging (not nerve damage, but poor control).`,
-    affectedAreas: ['Serratus anterior', 'Rhomboids', 'Trapezius', 'Scapula'],
-    cardBg: '#E8F0FE',
-    cardBorder: '#C5D9FC',
-    emoji: '🪽',
+    description: 'Rounded shoulders happen when chest muscles tighten and upper back muscles weaken, pulling shoulders forward from desk work.',
+    affectedAreas: ['Pectorals', 'Anterior deltoids', 'Upper back', 'Rotator cuff'],
+    cardBg: '#E8FEF1',
+    cardBorder: '#C5FADA',
+    emoji: '🫧',
     exerciseList: [
-      { id: 'wall-push-up', name: 'Wall Push-Up', duration: 40, description: 'Wall-based push-up pattern to protract the scapula and wake up serratus.', emoji: '💪',
-        youtubeUrl: 'https://www.youtube.com/shorts/yZVsAWcZRQ8',
-        instructions: ['Hands on wall at chest height, body angled in', 'Keep ribs quiet, neck long', 'Lower chest toward wall with control', 'Press away and finish with a slight “plus”—push upper back toward ceiling', '8–12 reps'] },
-      { id: 'scapular-retraction', name: 'Scapular Retraction', duration: 30, description: 'Pinch shoulder blades together without hiking the shoulders.', emoji: '🤝',
-        youtubeUrl: 'https://www.youtube.com/shorts/LbqxzzTA7pA',
-        instructions: ['Stand or sit tall, arms at sides or 90° elbows bent', 'Draw shoulder blades back and slightly down', 'Hold 3–5 seconds', 'Relax and repeat 12–15 times'] },
-      { id: 'wall-slide', name: 'Scapular Wall Slides', duration: 45, description: 'Slide forearms up the wall while keeping contact and rib control.', emoji: '🧱',
-        youtubeUrl: 'https://www.youtube.com/shorts/OtgQDv7u1TM',
-        instructions: ['Stand facing wall, forearms and backs of hands on wall', 'Slide upward in a “W to Y” path if comfortable', 'Keep ribs from flaring', 'Lower with control, 10 slow reps'] },
-      { id: 'serratus-punch', name: 'Serratus Punch', duration: 45, description: 'Straight-arm punch pattern to train serratus reach.', emoji: '🎯',
-        youtubeUrl: 'https://www.youtube.com/shorts/WV1JN8XH7Z4',
-        instructions: ['Band anchored behind you or light cable', 'Start elbow slightly bent, then punch forward and slightly up', 'Let the shoulder blade glide around the rib cage', 'Control the return, 10–12 each arm'] },
-      { id: 'prone-y-ws', name: 'Prone Y', duration: 60, description: 'Lift arms in a Y to strengthen lower traps and posterior shoulder.', emoji: '🏋️',
-        youtubeUrl: 'https://www.youtube.com/shorts/_uvCj0C1NA0',
-        instructions: ['Lie face down, forehead or towel under forehead', 'Arms overhead in a Y, thumbs up or out', 'Lift chest and arms slightly off floor', 'Lower slowly, 10–12 reps'] },
+      {
+        id: 'doorway-chest-rs', name: 'Doorway Chest Stretch', duration: 35,
+        description: 'Releases the tight pectorals that are the primary driver pulling the shoulders into a rounded position.',
+        emoji: '🚪', iconType: 'chest', videoId: 'O8rJw_TmC1Y',
+        instructions: ['Stand in a doorway, forearms on the frame at 90°', 'Step one foot forward through the door', 'Lean gently forward until you feel a stretch across the chest', 'Keep chin tucked and shoulders down', 'Hold 30–35 seconds, breathe steadily'],
+      },
+      {
+        id: 'wall-angels-rs', name: 'Wall Angels', duration: 40,
+        description: 'Simultaneously trains scapular retraction and thoracic extension against a wall for real-time feedback.',
+        emoji: '🧱', iconType: 'back', videoId: 'BdEXk-wHyfE',
+        instructions: ['Stand with back flat against the wall, feet 6 inches from the base', 'Press head, upper back, and hips into the wall', 'Raise arms to a 90° goalpost position', 'Slowly slide arms overhead while keeping full wall contact', 'Lower with control — 10 reps'],
+      },
+      {
+        id: 'prone-yt-rs', name: 'Prone Y-T Raise', duration: 40,
+        description: 'Directly strengthens the mid and lower trapezius to actively pull the shoulder blades into correct position.',
+        emoji: '💪', iconType: 'shoulder', videoId: 'w1AWGKubE5U',
+        instructions: ['Lie face down on a mat, forehead resting lightly', 'For Y: extend arms at 45°, thumbs pointing up', 'Lift arms slightly, squeezing shoulder blades together', 'For T: move arms out to 90° and repeat the lift', 'Perform 8–10 reps per position, keep neck neutral'],
+      },
+      {
+        id: 'chin-tuck-rs', name: 'Chin Tuck', duration: 30,
+        description: 'Resets the forward head position that accompanies rounded shoulders by reactivating the deep neck flexors.',
+        emoji: '🧘', iconType: 'neck', videoId: 'zpuL7KYvEi0',
+        instructions: ['Sit or stand tall, eyes level', 'Draw chin straight back — not down', 'Feel a gentle lengthening at the back of the neck', 'Hold 3–5 seconds', 'Release and repeat 10–12 times'],
+      },
+      {
+        id: 'arm-circles-rs', name: 'Arm Circles', duration: 35,
+        description: 'Warms up the shoulder girdle and restores full rotational mobility lost from chronic forward positioning.',
+        emoji: '🔄', iconType: 'shoulder', videoId: '35h5gdlm46w',
+        instructions: ['Stand tall with arms extended out to the sides', 'Begin with small forward circles, gradually increasing size', 'Complete 10 reps forward, then reverse direction', 'Keep shoulders down and chest open throughout', 'Maintain a steady, controlled speed'],
+      },
     ],
-    tips: ['Avoid prolonged elbow-plank shrugging', 'Strengthen serratus gradually', 'Check desk elbow height', 'See a clinician if pain or numbness'],
+    tips: ['Set up ergonomic workstation', 'Strengthen upper back', 'Stretch chest daily', 'Watch shoulder position'],
+    premiumLayout: {
+      whyItHappens: [
+        { bold: 'Prolonged sitting', text: 'keeps shoulders locked in a forward, protracted position for hours' },
+        { bold: 'Excessive phone and laptop use', text: 'continuously reinforces rounded posture throughout the day' },
+        { bold: 'Tight chest muscles', text: 'shorten and pull the shoulders inward with increasing force' },
+        { bold: 'Weak upper back muscles', text: 'lose the endurance to hold the shoulder blades back and down' },
+        { bold: 'Poor posture habits', text: 'cause the nervous system to accept the rounded position as normal' },
+      ],
+      whatChanges: [
+        { bold: 'Shoulders migrate forward', text: 'protraction becomes the resting position of the shoulder girdle' },
+        { bold: 'Chest tightens and shortens', text: 'restricting full shoulder flexion and breathing depth' },
+        { bold: 'Upper back muscles weaken', text: 'mid and lower traps lose activation without regular use' },
+        { bold: 'Scapular control decreases', text: 'shoulder blades lose proper tracking during arm movements' },
+        { bold: 'Neck and upper back discomfort', text: 'develop as surrounding structures compensate for poor alignment' },
+      ],
+      howToFix: {
+        stretch: [
+          'Doorway chest stretch — 35s, twice daily minimum',
+          'Arm circles — full range, forward and backward daily',
+        ],
+        strength: [
+          'Prone Y-T raises — 8–10 reps, slow and controlled',
+          'Wall angels — 10 reps with full wall contact for feedback',
+        ],
+        habits: [
+          'Set your screen at eye level to stop the forward lean',
+          'Check your shoulder position every 30 minutes at your desk',
+          'Perform chin tucks throughout the day to reset head position',
+        ],
+      },
+    },
   },
   {
     id: 'kyphosis',

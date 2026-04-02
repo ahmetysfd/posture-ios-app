@@ -14,8 +14,8 @@ const PostureCard: React.FC<PostureCardProps> = ({ problem, index }) => {
     <button
       onClick={() => navigate(`/problem/${problem.id}`)}
       style={{
-        background: problem.cardBg,
-        border: `1.5px solid ${problem.cardBorder}`,
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
         borderRadius: 20,
         padding: 0,
         overflow: 'hidden',
@@ -29,7 +29,13 @@ const PostureCard: React.FC<PostureCardProps> = ({ problem, index }) => {
         src={problem.cardImage}
         alt=""
         draggable={false}
-        style={{ width: '100%', height: 132, objectFit: 'cover', display: 'block' }}
+        style={{
+          width: '100%',
+          height: 132,
+          objectFit: 'cover',
+          objectPosition: problem.cardImageObjectPosition ?? 'center',
+          display: 'block',
+        }}
       />
     </button>
   );

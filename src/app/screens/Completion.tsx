@@ -34,7 +34,7 @@ const Completion: React.FC = () => {
             </div>
           ))}
         </div>
-        <button onClick={() => navigate('/')} style={{ width: '100%', padding: 15, borderRadius: 18, background: 'var(--color-primary)', color: 'white', fontSize: 15, fontWeight: 700, marginBottom: 10, boxShadow: '0 6px 20px rgba(79,70,229,0.25)', cursor: 'pointer', border: 'none' }}>Back to Home</button>
+        <button onClick={() => navigate('/')} style={{ width: '100%', padding: 15, borderRadius: 18, background: 'var(--color-primary)', color: 'white', fontSize: 15, fontWeight: 700, marginBottom: 10, boxShadow: 'var(--shadow-button)', cursor: 'pointer', border: 'none' }}>Back to Home</button>
         <button onClick={() => navigate('/progress')} style={{ width: '100%', padding: 15, borderRadius: 18, background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: 14, fontWeight: 600, border: '1px solid var(--color-border)', cursor: 'pointer' }}>View Progress</button>
       </div>
     </div>

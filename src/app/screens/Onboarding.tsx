@@ -6,22 +6,22 @@ const slides = [
     emoji: '🧘',
     title: 'Fix Your Posture',
     description: 'Guided exercises designed to correct common posture problems from daily habits like sitting and screen use.',
-    color: '#4F46E5',
-    bgGradient: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)',
+    color: '#e53535',
+    bgGradient: 'linear-gradient(165deg, #1a1214 0%, #0a0a0a 55%)',
   },
   {
     emoji: '📱',
     title: 'Personalized Routines',
     description: 'Choose from targeted routines for neck, shoulder, back, hip, and wrist issues. Each exercise comes with clear step-by-step instructions.',
-    color: '#8B5CF6',
-    bgGradient: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)',
+    color: '#ff6b6b',
+    bgGradient: 'linear-gradient(165deg, #141018 0%, #0a0a0a 55%)',
   },
   {
     emoji: '📊',
     title: 'Track Your Progress',
     description: 'Build a daily streak, see your improvement over time, and stay motivated with visual progress tracking.',
-    color: '#10B981',
-    bgGradient: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
+    color: '#34d399',
+    bgGradient: 'linear-gradient(165deg, #0f1a16 0%, #0a0a0a 55%)',
   },
 ];
 
@@ -48,7 +48,7 @@ const Onboarding: React.FC = () => {
       flexDirection: 'column',
       fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
       transition: 'background 0.5s ease',
-      boxShadow: '0 0 60px rgba(0,0,0,0.08)',
+      boxShadow: '0 0 60px rgba(0,0,0,0.5)',
     }}>
       {/* Skip button */}
       <div style={{
@@ -61,12 +61,12 @@ const Onboarding: React.FC = () => {
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: 'var(--color-text-secondary, #64748B)',
+            color: 'var(--color-text-sec)',
             padding: '8px 16px',
             borderRadius: 10,
-            background: 'rgba(255,255,255,0.5)',
+            background: 'rgba(20,20,20,0.85)',
             backdropFilter: 'blur(4px)',
-            border: 'none',
+            border: '1px solid rgba(255,255,255,0.06)',
             cursor: 'pointer',
           }}
         >
@@ -91,7 +91,7 @@ const Onboarding: React.FC = () => {
             width: 140,
             height: 140,
             borderRadius: 40,
-            background: 'rgba(255,255,255,0.6)',
+            background: 'rgba(30,30,30,0.85)',
             backdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
@@ -111,7 +111,7 @@ const Onboarding: React.FC = () => {
           style={{
             fontSize: 28,
             fontWeight: 800,
-            color: '#0F172A',
+            color: 'var(--color-text)',
             marginBottom: 12,
             letterSpacing: '-0.02em',
             lineHeight: 1.2,
@@ -126,7 +126,7 @@ const Onboarding: React.FC = () => {
           key={`desc-${current}`}
           style={{
             fontSize: 15,
-            color: '#64748B',
+            color: 'var(--color-text-sec)',
             lineHeight: 1.65,
             maxWidth: 300,
             animation: 'slideUp 0.5s ease 0.2s both',

@@ -48,7 +48,7 @@ const Progress: React.FC = () => {
               return (
                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-primary)', opacity: last ? 1 : 0 }}>{d.ex}</div>
-                  <div style={{ width: '100%', maxWidth: 32, height: `${h}%`, minHeight: 4, borderRadius: 8, background: last ? 'linear-gradient(180deg, var(--color-primary), var(--color-primary-light))' : '#E0E7FF', boxShadow: last ? '0 4px 10px rgba(79,70,229,0.18)' : 'none' }} />
+                  <div style={{ width: '100%', maxWidth: 32, height: `${h}%`, minHeight: 4, borderRadius: 8, background: last ? 'linear-gradient(180deg, var(--color-primary), var(--color-primary-light))' : 'rgba(229,53,53,0.15)', boxShadow: last ? '0 4px 12px rgba(229,53,53,0.25)' : 'none' }} />
                   <div style={{ fontSize: 10, fontWeight: last ? 700 : 500, color: last ? 'var(--color-primary)' : 'var(--color-text-tert)' }}>{d.day}</div>
                 </div>
               );

@@ -20,7 +20,7 @@ const Settings: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--color-surface)', borderRadius: 18, padding: 18, marginBottom: 24, border: '1px solid var(--color-border-light)', animation: 'slideUp 0.4s ease 0.08s both' }}>
-          <div style={{ width: 52, height: 52, borderRadius: 16, background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-light))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'white', fontWeight: 800, boxShadow: '0 4px 14px rgba(79,70,229,0.2)' }}>PF</div>
+          <div style={{ width: 52, height: 52, borderRadius: 16, background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'white', fontWeight: 800, boxShadow: 'var(--shadow-button)' }}>PF</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)' }}>PostureFix User</div>
             <div style={{ fontSize: 12, color: 'var(--color-text-sec)', marginTop: 2 }}>Beginner</div>
@@ -38,7 +38,7 @@ const Settings: React.FC = () => {
               <button onClick={() => toggle(s.id)} style={{
                 width: 48, height: 28, borderRadius: 14, position: 'relative', cursor: 'pointer',
                 border: s.on ? 'none' : '1px solid var(--color-border)',
-                background: s.on ? 'var(--color-primary)' : '#ECEEF1',
+                background: s.on ? 'var(--color-primary)' : 'var(--color-surface-elevated)',
                 transition: 'all 0.3s',
               }}>
                 <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'white', position: 'absolute', top: 3, left: s.on ? 23 : 3, transition: 'left 0.3s cubic-bezier(0.4,0,0.2,1)', boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }} />
