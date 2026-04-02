@@ -1,60 +1,183 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ProgressBodyImageMap from '../components/ProgressBodyImageMap';
 import Layout from '../components/Layout';
-
-const progressData = [
-  { day: 'Mon', ex: 6, dur: 12 }, { day: 'Tue', ex: 9, dur: 18 },
-  { day: 'Wed', ex: 4, dur: 8 }, { day: 'Thu', ex: 8, dur: 15 },
-  { day: 'Fri', ex: 7, dur: 14 }, { day: 'Sat', ex: 10, dur: 20 },
-  { day: 'Sun', ex: 5, dur: 10 },
-];
+import {
+  BODY_REGION_LABELS,
+  getHighlightedProblems,
+  type PostureReport,
+  VIEW_LABELS,
+} from '../services/PostureAnalysisEngine';
 
 const Progress: React.FC = () => {
-  const maxEx = Math.max(...progressData.map(d => d.ex));
-  const totalEx = progressData.reduce((s, d) => s + d.ex, 0);
-  const totalMins = progressData.reduce((s, d) => s + d.dur, 0);
+  const navigate = useNavigate();
+  const [report, setReport] = useState<PostureReport | null>(null);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem('postureReport');
+    if (!raw) return;
+    try {
+      setReport(JSON.parse(raw));
+    } catch {
+      setReport(null);
+    }
+  }, []);
+
+  const highlighted = report ? getHighlightedProblems(report.problems, 4) : [];
+  const measuredRegions = report ? new Set(report.problems.map(problem => problem.bodyRegion)).size : 0;
+  const lastScanLabel = report
+    ? new Date(report.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : null;
 
   return (
     <Layout>
       <div style={{ padding: '0 20px' }}>
         <div style={{ paddingTop: 52, marginBottom: 24, animation: 'fadeIn 0.5s ease' }}>
           <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--color-text)', letterSpacing: '-0.02em' }}>Progress</h1>
-          <p style={{ fontSize: 13, color: 'var(--color-text-sec)', marginTop: 4 }}>Track your posture journey</p>
+          <p style={{ fontSize: 13, color: 'var(--color-text-sec)', marginTop: 4 }}>Track your latest body-map scan</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24, animation: 'slideUp 0.4s ease 0.08s both' }}>
-          {[
-            { v: totalEx, l: 'Exercises', c: 'var(--color-primary)', e: '💪' },
-            { v: `${totalMins}m`, l: 'Duration', c: 'var(--color-accent)', e: '⏱️' },
-            { v: '7', l: 'Streak', c: '#F59E0B', e: '🔥' },
-            { v: Math.round(totalEx / 7), l: 'Avg/Day', c: '#EC4899', e: '📊' },
-          ].map((st, i) => (
-            <div key={i} style={{ background: 'var(--color-surface)', borderRadius: 16, padding: 16, border: '1px solid var(--color-border-light)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <span style={{ fontSize: 16 }}>{st.e}</span>
-                <span style={{ fontSize: 11, color: 'var(--color-text-tert)', fontWeight: 500 }}>{st.l}</span>
-              </div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: st.c }}>{st.v}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ background: 'var(--color-surface)', borderRadius: 20, padding: 20, marginBottom: 16, border: '1px solid var(--color-border-light)', animation: 'slideUp 0.4s ease 0.16s both' }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 18 }}>This Week</h3>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 130, paddingBottom: 26, position: 'relative' }}>
-            <div style={{ position: 'absolute', left: 0, right: 0, bottom: 26, height: 1, background: 'var(--color-border-light)' }} />
-            {progressData.map((d, i) => {
-              const h = maxEx > 0 ? (d.ex / maxEx) * 100 : 0;
-              const last = i === progressData.length - 1;
-              return (
-                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-primary)', opacity: last ? 1 : 0 }}>{d.ex}</div>
-                  <div style={{ width: '100%', maxWidth: 32, height: `${h}%`, minHeight: 4, borderRadius: 8, background: last ? 'linear-gradient(180deg, var(--color-primary), var(--color-primary-light))' : 'rgba(229,53,53,0.15)', boxShadow: last ? '0 4px 12px rgba(229,53,53,0.25)' : 'none' }} />
-                  <div style={{ fontSize: 10, fontWeight: last ? 700 : 500, color: last ? 'var(--color-primary)' : 'var(--color-text-tert)' }}>{d.day}</div>
-                </div>
-              );
-            })}
+        {!report ? (
+          <div style={{
+            background: 'var(--color-surface)',
+            borderRadius: 22,
+            padding: 22,
+            border: '1px solid var(--color-border-light)',
+            animation: 'slideUp 0.4s ease 0.08s both',
+          }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text)', marginBottom: 8 }}>No scan yet</h2>
+            <p style={{ fontSize: 13, color: 'var(--color-text-sec)', lineHeight: 1.6, marginBottom: 16 }}>
+              Take a front, side, and back posture scan to unlock your body-region map and latest health percentages.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/scan')}
+              style={{
+                width: '100%',
+                padding: 14,
+                borderRadius: 16,
+                background: 'var(--color-primary)',
+                color: '#fff',
+                fontSize: 15,
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: 'var(--shadow-button)',
+              }}
+            >
+              Start body scan
+            </button>
           </div>
-        </div>
+        ) : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24, animation: 'slideUp 0.4s ease 0.08s both' }}>
+              {[
+                { v: report.overallScore, l: 'Overall score', c: 'var(--color-primary)' },
+                { v: `${highlighted.length}`, l: 'Focus areas', c: 'var(--color-warning)' },
+                { v: `${measuredRegions}`, l: 'Regions screened', c: 'var(--color-accent)' },
+                { v: `${report.viewsCombined?.length ?? 1}`, l: 'Views used', c: '#7DD3FC' },
+              ].map((st, i) => (
+                <div key={i} style={{ background: 'var(--color-surface)', borderRadius: 16, padding: 16, border: '1px solid var(--color-border-light)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--color-text-tert)', fontWeight: 500, marginBottom: 8 }}>{st.l}</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: st.c }}>{st.v}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{
+              background: 'var(--color-surface)',
+              borderRadius: 20,
+              padding: 20,
+              marginBottom: 16,
+              border: '1px solid var(--color-border-light)',
+              animation: 'slideUp 0.4s ease 0.16s both',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
+                <div>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', marginBottom: 6 }}>Latest body map</h3>
+                  <p style={{ fontSize: 12, color: 'var(--color-text-tert)', lineHeight: 1.5 }}>
+                    Your latest posture findings are pinned directly onto the front, side, and back body views.
+                  </p>
+                </div>
+                {lastScanLabel && (
+                  <span style={{ fontSize: 11, color: 'var(--color-text-tert)' }}>Updated {lastScanLabel}</span>
+                )}
+              </div>
+              <ProgressBodyImageMap findings={report.problems} maxFindings={4} />
+            </div>
+
+            <div style={{
+              background: 'var(--color-surface)',
+              borderRadius: 20,
+              padding: 20,
+              marginBottom: 16,
+              border: '1px solid var(--color-border-light)',
+              animation: 'slideUp 0.4s ease 0.24s both',
+            }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 14 }}>Top regions to watch</h3>
+              {highlighted.length > 0 ? highlighted.map((problem, index) => (
+                <div key={problem.id} style={{
+                  padding: '12px 0',
+                  borderBottom: index < highlighted.length - 1 ? '1px solid var(--color-border-light)' : 'none',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>
+                      {BODY_REGION_LABELS[problem.bodyRegion]}
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>
+                      {problem.displayPercent}% health
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--color-text-tert)', lineHeight: 1.5 }}>
+                    {problem.confidenceLabel} Dominant view: {VIEW_LABELS[problem.dominantView]}.
+                  </div>
+                </div>
+              )) : (
+                <p style={{ fontSize: 13, color: 'var(--color-text-sec)', lineHeight: 1.5 }}>
+                  No major body-region issues were flagged in the latest scan.
+                </p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate('/scan/results')}
+              style={{
+                width: '100%',
+                padding: 14,
+                borderRadius: 18,
+                background: 'var(--color-primary)',
+                color: '#fff',
+                fontSize: 15,
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: 'var(--shadow-button)',
+                marginBottom: 10,
+              }}
+            >
+              Open full report
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/scan')}
+              style={{
+                width: '100%',
+                padding: 14,
+                borderRadius: 18,
+                background: 'var(--color-surface)',
+                color: 'var(--color-text)',
+                fontSize: 14,
+                fontWeight: 600,
+                border: '1px solid var(--color-border)',
+                cursor: 'pointer',
+                marginBottom: 24,
+              }}
+            >
+              Take another scan
+            </button>
+          </>
+        )}
       </div>
     </Layout>
   );

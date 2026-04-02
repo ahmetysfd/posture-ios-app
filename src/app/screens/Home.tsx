@@ -88,6 +88,28 @@ const Home: React.FC = () => {
           </div>
         </div>
 
+        <button
+          type="button"
+          onClick={() => navigate('/scan')}
+          style={{
+            width: '100%',
+            padding: 14,
+            borderRadius: 18,
+            marginBottom: 22,
+            background: 'var(--color-primary)',
+            color: '#fff',
+            fontSize: 15,
+            fontWeight: 700,
+            border: 'none',
+            cursor: 'pointer',
+            boxShadow: 'var(--shadow-button)',
+            fontFamily: 'var(--font-display)',
+            animation: 'slideUp 0.4s ease 0.08s both',
+          }}
+        >
+          Body scan — personalized check
+        </button>
+
         <div style={{
           fontSize: 11,
           fontWeight: 600,
@@ -107,97 +129,87 @@ const Home: React.FC = () => {
           marginBottom: 24,
         }}>
           {postureProblems.map((problem, i) => {
-            const exCount = problem.exerciseList.length;
-            const totalDur = Math.ceil(
-              problem.exerciseList.reduce((a, e) => a + e.duration, 0) / 60
-            );
             return (
-              <button
+              <div
                 key={problem.id}
-                type="button"
-                onClick={() => navigate(`/problem/${problem.id}`)}
-                aria-label={problem.title}
                 style={{
-                  position: 'relative',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'stretch',
-                  textAlign: 'left',
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 20,
-                  padding: 0,
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  minHeight: 0,
+                  gap: 10,
                   animation: `slideUp 0.4s ease ${0.14 + i * 0.05}s both`,
                 }}
               >
+                <button
+                  type="button"
+                  onClick={() => navigate(`/problem/${problem.id}`)}
+                  aria-label={problem.title}
+                  style={{
+                    position: 'relative',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 20,
+                    padding: 0,
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    display: 'block',
+                    lineHeight: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: -20,
+                      right: -20,
+                      width: 96,
+                      height: 96,
+                      borderRadius: '50%',
+                      background: problem.cardBorder,
+                      opacity: 0.08,
+                      filter: 'blur(20px)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                  <img
+                    src={problem.cardImage}
+                    alt=""
+                    draggable={false}
+                    style={{
+                      width: '100%',
+                      height: 150,
+                      objectFit: 'cover',
+                      objectPosition: problem.cardImageObjectPosition ?? 'center',
+                      display: 'block',
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 16,
+                      right: 16,
+                      height: 2,
+                      borderRadius: 999,
+                      background: problem.cardBorder,
+                      opacity: 0.35,
+                    }}
+                  />
+                </button>
+
                 <div
                   style={{
-                    position: 'absolute',
-                    top: -20,
-                    right: -20,
-                    width: 96,
-                    height: 96,
-                    borderRadius: '50%',
-                    background: problem.cardBorder,
-                    opacity: 0.08,
-                    filter: 'blur(20px)',
-                    pointerEvents: 'none',
-                  }}
-                />
-                <div style={{ position: 'relative', padding: '12px 12px 0 12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 26, lineHeight: 1 }}>{problem.emoji}</span>
-                  </div>
-                  <div style={{
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                    border: `1px solid ${problem.cardBorder}55`,
-                  }}>
-                    <img
-                      src={problem.cardImage}
-                      alt=""
-                      draggable={false}
-                      style={{
-                        width: '100%',
-                        height: 108,
-                        objectFit: 'cover',
-                        objectPosition: problem.cardImageObjectPosition ?? 'center',
-                        display: 'block',
-                      }}
-                    />
-                  </div>
-                </div>
-                <div style={{ padding: '12px 14px 14px', position: 'relative', zIndex: 1 }}>
-                  <p style={{
-                    fontSize: 14,
+                    textAlign: 'center',
+                    fontSize: 13.5,
                     fontWeight: 700,
                     color: 'var(--color-text)',
                     fontFamily: 'var(--font-display)',
                     lineHeight: 1.25,
-                    marginBottom: 4,
-                  }}>
-                    {problem.title}
-                  </p>
-                  <p style={{ fontSize: 11, color: '#555555' }}>
-                    {exCount} exercises · {totalDur}m
-                  </p>
-                </div>
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 16,
-                    right: 16,
-                    height: 2,
-                    borderRadius: 999,
-                    background: problem.cardBorder,
-                    opacity: 0.35,
+                    padding: '0 2px',
                   }}
-                />
-              </button>
+                >
+                  {problem.title}
+                </div>
+              </div>
             );
           })}
         </div>
