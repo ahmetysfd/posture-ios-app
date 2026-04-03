@@ -1,6 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PoseGuideOverlay, { type PoseGuideVariant } from '../components/PoseGuideOverlay';
 import PostureBodyMap from '../components/PostureBodyMap';
 import {
   loadMediaPipeScripts,
@@ -21,10 +20,10 @@ import {
   type IntendedView,
 } from '../services/PostureAnalysisEngine';
 
-const STEPS: { key: IntendedView; title: string; subtitle: string; guide: PoseGuideVariant }[] = [
-  { key: 'front', title: 'Front', subtitle: 'Face the camera with both feet visible and relaxed arms slightly away from the body.', guide: 'front' },
-  { key: 'side', title: 'Side', subtitle: 'Turn 90 degrees so your nose, shoulders, hips, knees, and feet stay in one profile line.', guide: 'side' },
-  { key: 'back', title: 'Back', subtitle: 'Keep your back to the camera with shoulders and hips centered on the guide.', guide: 'back' },
+const STEPS: { key: IntendedView; title: string; subtitle: string }[] = [
+  { key: 'front', title: 'Front', subtitle: 'Face the camera with head to knees visible, arms relaxed slightly away from the body.' },
+  { key: 'side', title: 'Side', subtitle: 'Turn 90 degrees so your nose, shoulders, hips, and knees stay in one profile line.' },
+  { key: 'back', title: 'Back', subtitle: 'Keep your back to the camera with head to knees visible and body centered on the guide.' },
 ];
 
 async function downscaleDataUrl(dataUrl: string, maxW = 720): Promise<string> {
@@ -54,6 +53,10 @@ const emptyPhotos = (): Record<IntendedView, string | null> => ({
   back: null,
 });
 
+function getNativeCaptureFacing(view: IntendedView): 'user' | 'environment' {
+  return view === 'front' ? 'user' : 'environment';
+}
+
 const BodyScanScreen: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,6 +78,7 @@ const BodyScanScreen: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [reeditFromReview, setReeditFromReview] = useState(false);
   const [captureCountdown, setCaptureCountdown] = useState<number | null>(null);
+  const [uploadCaptureMode, setUploadCaptureMode] = useState<'user' | 'environment' | undefined>(undefined);
 
   const currentStep = STEPS[stepIndex];
   const highlightedProblems = report ? getHighlightedProblems(report.problems, 3) : [];
@@ -116,8 +120,9 @@ const BodyScanScreen: React.FC = () => {
     setFlow('pick');
   }, []);
 
-  const openUpload = useCallback(() => {
+  const openUpload = useCallback((source: 'library' | 'camera' = 'library') => {
     uploadTargetRef.current = currentStep.key;
+    setUploadCaptureMode(source === 'camera' ? getNativeCaptureFacing(currentStep.key) : undefined);
     fileInputRef.current?.click();
   }, [currentStep.key]);
 
@@ -138,24 +143,78 @@ const BodyScanScreen: React.FC = () => {
       setError(null);
     } catch {
       setError('Could not read that image.');
+    } finally {
+      setUploadCaptureMode(undefined);
     }
   }, []);
 
   const startCamera = useCallback(async () => {
+    const hasLiveCameraApi = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+
+    if (!hasLiveCameraApi) {
+      setError(
+        typeof window !== 'undefined' && !window.isSecureContext
+          ? 'Live camera needs HTTPS in Safari on iPhone. Opening the native camera instead.'
+          : 'Live camera is unavailable here. Opening the native camera instead.',
+      );
+      openUpload('camera');
+      return;
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } },
-      });
+      const stream =
+        await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'user' }, width: { ideal: 720 }, height: { ideal: 960 } },
+        }).catch(async (firstError: unknown) => {
+          const errorName = firstError instanceof DOMException ? firstError.name : '';
+          if (errorName === 'NotAllowedError' || errorName === 'SecurityError') {
+            throw firstError;
+          }
+
+          return navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'user' } },
+          }).catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
+        });
+
       setCameraStream(stream);
       setFlow('camera');
       setError(null);
       setTimeout(() => {
-        if (videoRef.current) videoRef.current.srcObject = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current?.play().catch(() => undefined);
+          };
+        }
       }, 50);
-    } catch {
-      setError('Camera blocked or unavailable. Use upload instead.');
+    } catch (cameraError) {
+      const errorName = cameraError instanceof DOMException ? cameraError.name : '';
+
+      if (typeof window !== 'undefined' && !window.isSecureContext) {
+        setError('Safari on iPhone only allows live camera on HTTPS pages. Use HTTPS or the native camera fallback.');
+        openUpload('camera');
+        return;
+      }
+
+      if (errorName === 'NotAllowedError' || errorName === 'SecurityError') {
+        setError('Camera permission was denied in Safari. Allow camera access and try again.');
+        return;
+      }
+
+      if (errorName === 'NotReadableError' || errorName === 'AbortError') {
+        setError('The camera is busy or blocked by another app. Close other camera apps and try again.');
+        return;
+      }
+
+      if (errorName === 'NotFoundError' || errorName === 'OverconstrainedError') {
+        setError('This camera mode is unavailable on your device. Opening the native camera instead.');
+        openUpload('camera');
+        return;
+      }
+
+      setError('Live camera is unavailable here. Use the native camera or upload instead.');
     }
-  }, []);
+  }, [openUpload]);
 
   const cancelCamera = useCallback(() => {
     if (captureTimeoutRef.current) {
@@ -380,7 +439,14 @@ const BodyScanScreen: React.FC = () => {
           </div>
         )}
 
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} style={{ display: 'none' }} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture={uploadCaptureMode}
+          onChange={handleFileSelect}
+          style={{ display: 'none' }}
+        />
 
         {flow === 'intro' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14 }}>
@@ -397,7 +463,7 @@ const BodyScanScreen: React.FC = () => {
               </p>
               <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--color-text-sec)', fontSize: 13, lineHeight: 1.55 }}>
                 <li>Plain wall, even light</li>
-                <li>Step back until your head and feet stay inside the frame</li>
+                <li>Step back until your head and knees stay inside the frame</li>
                 <li>Use fitted clothing when possible for cleaner landmark detection</li>
                 <li>Educational only — not medical advice</li>
               </ul>
@@ -437,17 +503,8 @@ const BodyScanScreen: React.FC = () => {
               background: 'linear-gradient(180deg, rgba(124,211,255,0.08), rgba(255,255,255,0.02))',
               border: '1px solid rgba(124,211,255,0.18)',
             }}>
-              <div style={{
-                position: 'relative',
-                borderRadius: 18,
-                overflow: 'hidden',
-                background: 'linear-gradient(180deg, rgba(8,12,18,0.96), rgba(11,15,19,0.88))',
-                aspectRatio: '3/4',
-              }}>
-                <PoseGuideOverlay variant={currentStep.guide} />
-              </div>
-              <div style={{ marginTop: 10, fontSize: 12, color: 'var(--color-text-tert)', lineHeight: 1.5 }}>
-                Headroom and foot baseline should both stay visible. Center yourself on the guide before you capture.
+              <div style={{ fontSize: 12, color: 'var(--color-text-tert)', lineHeight: 1.6 }}>
+                Take one clear {currentStep.title.toLowerCase()} photo against a plain wall with your head and knees visible.
               </div>
             </div>
             <button
@@ -463,11 +520,11 @@ const BodyScanScreen: React.FC = () => {
                 boxShadow: modelStatus === 'ready' ? 'var(--shadow-button)' : 'none',
               }}
             >
-              Take photo (with guide)
+              Take photo
             </button>
             <button
               type="button"
-              onClick={openUpload}
+              onClick={() => openUpload('library')}
               disabled={modelStatus !== 'ready'}
               style={{
                 width: '100%', padding: 16, borderRadius: 18,
@@ -556,10 +613,9 @@ const BodyScanScreen: React.FC = () => {
                   fontSize: 11,
                   fontWeight: 600,
                 }}>
-                  Full body
+                  Head to knees
                 </div>
               </div>
-              <PoseGuideOverlay variant={currentStep.guide} />
             </div>
             <div style={{
               background: 'var(--color-surface)',
@@ -568,7 +624,9 @@ const BodyScanScreen: React.FC = () => {
               border: '1px solid var(--color-border)',
             }}>
               <p style={{ fontSize: 12, color: 'var(--color-text-sec)', lineHeight: 1.5 }}>
-                {captureCountdown !== null ? `Capturing in ${captureCountdown}… keep your position steady.` : currentStep.subtitle}
+                {captureCountdown !== null
+                  ? `Capturing in ${captureCountdown}… keep your position steady.`
+                  : currentStep.subtitle}
               </p>
             </div>
             <div style={{ display: 'flex', gap: 12 }}>
@@ -590,7 +648,7 @@ const BodyScanScreen: React.FC = () => {
 
         {flow === 'preview' && previewUrl && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 24 }}>
-            <p style={{ fontSize: 12, color: 'var(--color-text-tert)' }}>Confirm your {currentStep.title.toLowerCase()} framing or retake if head/feet are cropped.</p>
+            <p style={{ fontSize: 12, color: 'var(--color-text-tert)' }}>Confirm your {currentStep.title.toLowerCase()} framing or retake if head/knees are cropped.</p>
             <div style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', background: '#000' }}>
               <img src={previewUrl} alt="" style={{ width: '100%', display: 'block' }} />
             </div>

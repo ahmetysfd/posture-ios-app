@@ -88,28 +88,6 @@ const Home: React.FC = () => {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => navigate('/scan')}
-          style={{
-            width: '100%',
-            padding: 14,
-            borderRadius: 18,
-            marginBottom: 22,
-            background: 'var(--color-primary)',
-            color: '#fff',
-            fontSize: 15,
-            fontWeight: 700,
-            border: 'none',
-            cursor: 'pointer',
-            boxShadow: 'var(--shadow-button)',
-            fontFamily: 'var(--font-display)',
-            animation: 'slideUp 0.4s ease 0.08s both',
-          }}
-        >
-          Body scan — personalized check
-        </button>
-
         <div style={{
           fontSize: 11,
           fontWeight: 600,

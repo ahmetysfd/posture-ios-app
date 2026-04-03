@@ -14,38 +14,48 @@ interface ProgressBodyImageMapProps {
 }
 
 type MarkerPosition = {
-  left: string;
-  top: string;
+  hotspotX: number;
+  hotspotY: number;
+  labelX: number;
+  labelY: number;
+};
+
+const preferredViewByRegion: Record<BodyRegion, IntendedView> = {
+  neck: 'side',
+  shoulders: 'front',
+  upperBack: 'side',
+  pelvis: 'side',
+  knees: 'side',
 };
 
 const markerPositions: Record<IntendedView, Record<BodyRegion, MarkerPosition>> = {
   front: {
-    neck: { left: '50%', top: '8.5%' },
-    shoulders: { left: '50%', top: '13.5%' },
-    upperBack: { left: '50%', top: '18.5%' },
-    pelvis: { left: '50%', top: '27.5%' },
-    knees: { left: '50%', top: '36%' },
+    neck: { hotspotX: 50, hotspotY: 9.5, labelX: 18, labelY: 8.5 },
+    shoulders: { hotspotX: 50, hotspotY: 15.3, labelX: 18, labelY: 14.4 },
+    upperBack: { hotspotX: 50, hotspotY: 21.2, labelX: 18, labelY: 20.5 },
+    pelvis: { hotspotX: 50, hotspotY: 31.5, labelX: 21, labelY: 30.8 },
+    knees: { hotspotX: 50, hotspotY: 42.2, labelX: 21, labelY: 41.5 },
   },
   side: {
-    neck: { left: '53.5%', top: '41%' },
-    shoulders: { left: '53.5%', top: '46%' },
-    upperBack: { left: '53%', top: '52%' },
-    pelvis: { left: '52.5%', top: '61.5%' },
-    knees: { left: '52%', top: '71%' },
+    neck: { hotspotX: 44.8, hotspotY: 40.8, labelX: 79, labelY: 39.8 },
+    shoulders: { hotspotX: 45.2, hotspotY: 46.7, labelX: 80, labelY: 45.8 },
+    upperBack: { hotspotX: 43.6, hotspotY: 53.6, labelX: 79.5, labelY: 52.8 },
+    pelvis: { hotspotX: 45.8, hotspotY: 64.2, labelX: 79.5, labelY: 63.4 },
+    knees: { hotspotX: 45.4, hotspotY: 76.2, labelX: 79.5, labelY: 75.2 },
   },
   back: {
-    neck: { left: '50%', top: '74.5%' },
-    shoulders: { left: '50%', top: '79.5%' },
-    upperBack: { left: '50%', top: '85%' },
-    pelvis: { left: '50%', top: '93.5%' },
-    knees: { left: '50%', top: '99%' },
+    neck: { hotspotX: 50, hotspotY: 75.2, labelX: 18.5, labelY: 74.2 },
+    shoulders: { hotspotX: 50, hotspotY: 80.8, labelX: 18.5, labelY: 79.9 },
+    upperBack: { hotspotX: 50, hotspotY: 87.1, labelX: 18.5, labelY: 86.2 },
+    pelvis: { hotspotX: 50, hotspotY: 95.6, labelX: 21.5, labelY: 94.8 },
+    knees: { hotspotX: 50, hotspotY: 99.3, labelX: 21.5, labelY: 98.5 },
   },
 };
 
-function getMarkerColor(healthScore: number): string {
-  if (healthScore >= 85) return '#34D399';
-  if (healthScore >= 70) return '#FBBF24';
-  return '#FB7185';
+function getIssueColor(score: number): string {
+  if (score >= 65) return '#FF4D4F';
+  if (score >= 40) return '#FF8A3D';
+  return '#FFC53D';
 }
 
 const ProgressBodyImageMap: React.FC<ProgressBodyImageMapProps> = ({
@@ -69,49 +79,99 @@ const ProgressBodyImageMap: React.FC<ProgressBodyImageMapProps> = ({
           style={{ width: '100%', display: 'block' }}
         />
 
-        {visibleFindings.map((finding) => {
-          const position = markerPositions[finding.dominantView][finding.bodyRegion];
-          const color = getMarkerColor(finding.displayPercent);
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+          aria-hidden="true"
+        >
+          <defs>
+            <filter id="hotspot-blur">
+              <feGaussianBlur stdDeviation="1.4" />
+            </filter>
+          </defs>
 
-          return (
-            <div
-              key={finding.id}
-              style={{
-                position: 'absolute',
-                left: position.left,
-                top: position.top,
-                transform: 'translate(-50%, -50%)',
-                pointerEvents: 'none',
-              }}
-            >
-              <div style={{
-                width: 18,
-                height: 18,
-                borderRadius: '50%',
-                background: 'rgba(10,10,10,0.86)',
-                border: `3px solid ${color}`,
-                boxShadow: `0 0 0 6px ${color}22`,
-              }} />
-              <div style={{
-                position: 'absolute',
-                left: '50%',
-                top: 'calc(100% + 6px)',
-                transform: 'translateX(-50%)',
-                whiteSpace: 'nowrap',
-                padding: '4px 8px',
-                borderRadius: 999,
-                background: 'rgba(10,10,10,0.84)',
-                border: `1px solid ${color}66`,
-                color: '#fff',
-                fontSize: 11,
-                fontWeight: 700,
-                lineHeight: 1,
-              }}>
-                {finding.displayPercent}%
-              </div>
-            </div>
-          );
-        })}
+          {visibleFindings.map((finding) => {
+            const markerView = preferredViewByRegion[finding.bodyRegion] ?? finding.dominantView;
+            const position = markerPositions[markerView][finding.bodyRegion];
+            const color = getIssueColor(finding.score);
+            const lineStartX = position.labelX < position.hotspotX ? position.labelX + 10 : position.labelX - 10;
+            const lineMidX = position.labelX < position.hotspotX ? position.hotspotX - 5 : position.hotspotX + 5;
+
+            return (
+              <g key={finding.id}>
+                <circle
+                  cx={position.hotspotX}
+                  cy={position.hotspotY}
+                  r="4.5"
+                  fill={`${color}55`}
+                  filter="url(#hotspot-blur)"
+                />
+                <circle
+                  cx={position.hotspotX}
+                  cy={position.hotspotY}
+                  r="2.4"
+                  fill={`${color}AA`}
+                />
+                <circle
+                  cx={position.hotspotX}
+                  cy={position.hotspotY}
+                  r="1.2"
+                  fill={color}
+                />
+
+                <path
+                  d={`M ${lineStartX} ${position.labelY} L ${lineMidX} ${position.labelY} L ${position.hotspotX} ${position.hotspotY}`}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth="0.35"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                <rect
+                  x={position.labelX - 10}
+                  y={position.labelY - 3}
+                  width="20"
+                  height="6"
+                  rx="1.2"
+                  fill="rgba(6,10,14,0.88)"
+                  stroke={color}
+                  strokeWidth="0.2"
+                />
+                <rect
+                  x={position.labelX - 10}
+                  y={position.labelY - 3}
+                  width="1.4"
+                  height="6"
+                  rx="0.5"
+                  fill={color}
+                />
+                <text
+                  x={position.labelX - 8}
+                  y={position.labelY - 0.3}
+                  fill="rgba(255,255,255,0.92)"
+                  fontSize="1.7"
+                  fontFamily="system-ui, sans-serif"
+                  fontWeight="700"
+                >
+                  {BODY_REGION_LABELS[finding.bodyRegion]}
+                </text>
+                <text
+                  x={position.labelX + 8}
+                  y={position.labelY - 0.3}
+                  fill={color}
+                  fontSize="1.7"
+                  fontFamily="system-ui, sans-serif"
+                  fontWeight="800"
+                  textAnchor="end"
+                >
+                  {finding.displayPercent}%
+                </text>
+              </g>
+            );
+          })}
+        </svg>
       </div>
 
       <div style={{

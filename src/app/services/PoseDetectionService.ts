@@ -144,7 +144,8 @@ export function drawSkeleton(
   canvas: HTMLCanvasElement,
   landmarks: Landmark[],
   displayWidth: number,
-  displayHeight: number
+  displayHeight: number,
+  accentColor = LINE,
 ): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -174,7 +175,7 @@ export function drawSkeleton(
     if (!la || !lb) return;
     if (la.visibility > 0.3 && lb.visibility > 0.3) {
       ctx.beginPath();
-      ctx.strokeStyle = LINE;
+      ctx.strokeStyle = accentColor;
       ctx.moveTo(la.x * displayWidth, la.y * displayHeight);
       ctx.lineTo(lb.x * displayWidth, lb.y * displayHeight);
       ctx.stroke();
@@ -186,7 +187,7 @@ export function drawSkeleton(
     const key = [0, 7, 8, 11, 12, 23, 24, 25, 26, 27, 28].includes(i);
     ctx.beginPath();
     ctx.arc(lm.x * displayWidth, lm.y * displayHeight, key ? 5 : 3.5, 0, 2 * Math.PI);
-    ctx.fillStyle = key ? DOT : DOT_DIM;
+    ctx.fillStyle = key ? accentColor : accentColor;
     ctx.fill();
     ctx.strokeStyle = 'rgba(10,10,10,0.85)';
     ctx.lineWidth = 1.5;

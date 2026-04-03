@@ -273,40 +273,6 @@ function checkSlouching(landmarks: Landmark[]): PostureProblem {
   });
 }
 
-function checkKneeHyperextension(landmarks: Landmark[]): PostureProblem {
-  const hip = landmarks[23];
-  const knee = landmarks[25];
-  const ankle = landmarks[27];
-  const hipR = landmarks[24];
-  const kneeR = landmarks[26];
-  const ankleR = landmarks[28];
-  const useLeft = knee.visibility > kneeR.visibility;
-  const h = useLeft ? hip : hipR;
-  const k = useLeft ? knee : kneeR;
-  const a = useLeft ? ankle : ankleR;
-  const kneeAngle = calculateAngle(h, k, a);
-  const overextension = Math.max(0, kneeAngle - 175);
-  const score = Math.min(100, Math.round((overextension / 15) * 100));
-  return finalizeProblem({
-    id: 'knee-hyperextension',
-    name: 'Knee Alignment',
-    severity: getSeverity(score),
-    score,
-    bodyRegion: 'knees',
-    dominantView: 'side',
-    confidenceLevel: 'single-view',
-    confidenceLabel: getSingleViewConfidenceLabel('side'),
-    angle: Math.round(kneeAngle),
-    idealAngle: 175,
-    description: score >= 15
-      ? `Knee angle ~${Math.round(kneeAngle)}° — possible locked knees.`
-      : 'Knee alignment looks acceptable.',
-    details: score >= 15
-      ? 'Try a soft micro-bend in the knees when standing long periods.'
-      : 'No major knee-hyperextension signal here.',
-  });
-}
-
 function checkShoulderAsymmetry(landmarks: Landmark[]): PostureProblem {
   const leftShoulder = landmarks[11];
   const rightShoulder = landmarks[12];
@@ -361,7 +327,6 @@ const VIEW_WEIGHT: Record<string, Partial<Record<IntendedView, number>>> = {
   'rounded-shoulders': { side: 0.95, front: 0.8, back: 0.72 },
   'anterior-pelvic': { side: 1, front: 0.45, back: 0.45 },
   'slouching': { side: 1, front: 0.4, back: 0.35 },
-  'knee-hyperextension': { side: 1, front: 0.5, back: 0.5 },
   'shoulder-asymmetry': { front: 1, side: 0.3, back: 0.88 },
   'hip-alignment': { front: 1, side: 0.3, back: 0.92 },
 };
@@ -376,7 +341,6 @@ export function analyzePosture(landmarks: Landmark[]): PostureReport {
     checkRoundedShoulders(landmarks),
     checkAnteriorPelvicTilt(landmarks),
     checkSlouching(landmarks),
-    checkKneeHyperextension(landmarks),
     checkShoulderAsymmetry(landmarks),
     checkHipAlignment(landmarks),
   ];
@@ -519,9 +483,6 @@ function generateRecommendations(problems: PostureProblem[]): string[] {
   if (has('slouching')) {
     recs.push('Short thoracic extension breaks over a chair edge or foam roller.');
     recs.push('Wall posture cue: head, upper back, hips stacked.');
-  }
-  if (has('knee-hyperextension')) {
-    recs.push('Use a soft-knee stance instead of locking out the knees.');
   }
   if (has('shoulder-asymmetry')) {
     recs.push('Check one-sided carry habits and add balanced pulling strength work.');
