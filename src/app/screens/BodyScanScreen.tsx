@@ -771,7 +771,7 @@ const BodyScanScreen: React.FC = () => {
                       <div key={problem.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>
-                            {BODY_REGION_LABELS[problem.bodyRegion]}
+                            {problem.mapLabel ?? BODY_REGION_LABELS[problem.bodyRegion]}
                           </div>
                           <div style={{ fontSize: 11, color: 'var(--color-text-tert)', marginTop: 3 }}>
                             {problem.confidenceLabel}

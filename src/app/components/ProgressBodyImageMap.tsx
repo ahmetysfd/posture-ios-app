@@ -1,9 +1,10 @@
 import React from 'react';
 import referenceBodyMapImage from '../../assets/posture-body-map-reference.png';
 import {
-  BODY_REGION_LABELS,
-  getHighlightedProblems,
+  getBodyMapPins,
+  VIEW_LABELS,
   type BodyRegion,
+  type BodyMapPin,
   type IntendedView,
   type PostureProblem,
 } from '../services/PostureAnalysisEngine';
@@ -13,44 +14,78 @@ interface ProgressBodyImageMapProps {
   maxFindings?: number;
 }
 
-type MarkerPosition = {
+/** Stacked reference: top third = front, middle = side, bottom = back. */
+const PANEL_Y: Record<IntendedView, { y0: number; y1: number }> = {
+  front: { y0: 0, y1: 100 / 3 },
+  side: { y0: 100 / 3, y1: (100 * 2) / 3 },
+  back: { y0: (100 * 2) / 3, y1: 100 },
+};
+
+type LocalKey = BodyRegion | 'chest' | 'winging';
+
+function markerKey(finding: PostureProblem): LocalKey {
+  if (finding.id === 'chest-ribcage') return 'chest';
+  if (finding.id === 'winging-scapula') return 'winging';
+  if (finding.id === 'forward-head') return 'neck';
+  return finding.bodyRegion;
+}
+
+type LocalMarker = { lx: number; ly: number; labelSide: 'left' | 'right' };
+
+/** lx, ly are 0–100 within that panel’s figure (ly=0 top of figure). */
+const LOCAL: Record<IntendedView, Record<LocalKey, LocalMarker>> = {
+  front: {
+    neck: { lx: 50, ly: 10, labelSide: 'left' },
+    shoulders: { lx: 50, ly: 22, labelSide: 'left' },
+    upperBack: { lx: 50, ly: 34, labelSide: 'left' },
+    chest: { lx: 50, ly: 28, labelSide: 'left' },
+    pelvis: { lx: 50, ly: 50, labelSide: 'left' },
+    knees: { lx: 50, ly: 72, labelSide: 'left' },
+    winging: { lx: 44, ly: 32, labelSide: 'left' },
+  },
+  side: {
+    neck: { lx: 46, ly: 10, labelSide: 'right' },
+    shoulders: { lx: 47, ly: 22, labelSide: 'right' },
+    upperBack: { lx: 41, ly: 35, labelSide: 'right' },
+    chest: { lx: 45, ly: 29, labelSide: 'right' },
+    pelvis: { lx: 46, ly: 52, labelSide: 'right' },
+    knees: { lx: 45, ly: 73, labelSide: 'right' },
+    winging: { lx: 42, ly: 34, labelSide: 'right' },
+  },
+  back: {
+    neck: { lx: 50, ly: 10, labelSide: 'left' },
+    shoulders: { lx: 50, ly: 24, labelSide: 'left' },
+    upperBack: { lx: 50, ly: 36, labelSide: 'left' },
+    chest: { lx: 50, ly: 30, labelSide: 'left' },
+    pelvis: { lx: 50, ly: 52, labelSide: 'left' },
+    knees: { lx: 50, ly: 74, labelSide: 'left' },
+    winging: { lx: 38, ly: 32, labelSide: 'left' },
+  },
+};
+
+function toGlobal(panel: IntendedView, lx: number, ly: number): { x: number; y: number } {
+  const { y0, y1 } = PANEL_Y[panel];
+  const gy = y0 + (ly / 100) * (y1 - y0);
+  return { x: lx, y: gy };
+}
+
+function layoutPin(pin: BodyMapPin): {
   hotspotX: number;
   hotspotY: number;
   labelX: number;
   labelY: number;
-};
-
-const preferredViewByRegion: Record<BodyRegion, IntendedView> = {
-  neck: 'side',
-  shoulders: 'front',
-  upperBack: 'side',
-  pelvis: 'side',
-  knees: 'side',
-};
-
-const markerPositions: Record<IntendedView, Record<BodyRegion, MarkerPosition>> = {
-  front: {
-    neck: { hotspotX: 50, hotspotY: 9.5, labelX: 18, labelY: 8.5 },
-    shoulders: { hotspotX: 50, hotspotY: 15.3, labelX: 18, labelY: 14.4 },
-    upperBack: { hotspotX: 50, hotspotY: 21.2, labelX: 18, labelY: 20.5 },
-    pelvis: { hotspotX: 50, hotspotY: 31.5, labelX: 21, labelY: 30.8 },
-    knees: { hotspotX: 50, hotspotY: 42.2, labelX: 21, labelY: 41.5 },
-  },
-  side: {
-    neck: { hotspotX: 44.8, hotspotY: 40.8, labelX: 79, labelY: 39.8 },
-    shoulders: { hotspotX: 45.2, hotspotY: 46.7, labelX: 80, labelY: 45.8 },
-    upperBack: { hotspotX: 43.6, hotspotY: 53.6, labelX: 79.5, labelY: 52.8 },
-    pelvis: { hotspotX: 45.8, hotspotY: 64.2, labelX: 79.5, labelY: 63.4 },
-    knees: { hotspotX: 45.4, hotspotY: 76.2, labelX: 79.5, labelY: 75.2 },
-  },
-  back: {
-    neck: { hotspotX: 50, hotspotY: 75.2, labelX: 18.5, labelY: 74.2 },
-    shoulders: { hotspotX: 50, hotspotY: 80.8, labelX: 18.5, labelY: 79.9 },
-    upperBack: { hotspotX: 50, hotspotY: 87.1, labelX: 18.5, labelY: 86.2 },
-    pelvis: { hotspotX: 50, hotspotY: 95.6, labelX: 21.5, labelY: 94.8 },
-    knees: { hotspotX: 50, hotspotY: 99.3, labelX: 21.5, labelY: 98.5 },
-  },
-};
+} {
+  const key = markerKey(pin.problem);
+  const local = LOCAL[pin.panel][key] ?? LOCAL[pin.panel].upperBack;
+  const g = toGlobal(pin.panel, local.lx, local.ly);
+  const labelX = local.labelSide === 'left' ? 14 : 86;
+  return {
+    hotspotX: g.x,
+    hotspotY: g.y,
+    labelX,
+    labelY: g.y,
+  };
+}
 
 function getIssueColor(score: number): string {
   if (score >= 65) return '#FF4D4F';
@@ -62,7 +97,8 @@ const ProgressBodyImageMap: React.FC<ProgressBodyImageMapProps> = ({
   findings,
   maxFindings = 4,
 }) => {
-  const visibleFindings = getHighlightedProblems(findings, maxFindings);
+  const pinBudget = Math.min(12, Math.max(maxFindings * 3, 8));
+  const pins = getBodyMapPins(findings, pinBudget);
 
   return (
     <div>
@@ -91,15 +127,14 @@ const ProgressBodyImageMap: React.FC<ProgressBodyImageMapProps> = ({
             </filter>
           </defs>
 
-          {visibleFindings.map((finding) => {
-            const markerView = preferredViewByRegion[finding.bodyRegion] ?? finding.dominantView;
-            const position = markerPositions[markerView][finding.bodyRegion];
-            const color = getIssueColor(finding.score);
+          {pins.map((pin) => {
+            const position = layoutPin(pin);
+            const color = getIssueColor(pin.problem.score);
             const lineStartX = position.labelX < position.hotspotX ? position.labelX + 10 : position.labelX - 10;
             const lineMidX = position.labelX < position.hotspotX ? position.hotspotX - 5 : position.hotspotX + 5;
 
             return (
-              <g key={finding.id}>
+              <g key={pin.key}>
                 <circle
                   cx={position.hotspotX}
                   cy={position.hotspotY}
@@ -130,43 +165,43 @@ const ProgressBodyImageMap: React.FC<ProgressBodyImageMapProps> = ({
                 />
 
                 <rect
-                  x={position.labelX - 10}
-                  y={position.labelY - 3}
-                  width="20"
-                  height="6"
+                  x={position.labelX - 12}
+                  y={position.labelY - 3.2}
+                  width="24"
+                  height="6.4"
                   rx="1.2"
                   fill="rgba(6,10,14,0.88)"
                   stroke={color}
                   strokeWidth="0.2"
                 />
                 <rect
-                  x={position.labelX - 10}
-                  y={position.labelY - 3}
+                  x={position.labelX - 12}
+                  y={position.labelY - 3.2}
                   width="1.4"
-                  height="6"
+                  height="6.4"
                   rx="0.5"
                   fill={color}
                 />
                 <text
-                  x={position.labelX - 8}
-                  y={position.labelY - 0.3}
+                  x={position.labelX - 10}
+                  y={position.labelY - 0.2}
                   fill="rgba(255,255,255,0.92)"
-                  fontSize="1.7"
+                  fontSize="1.55"
                   fontFamily="system-ui, sans-serif"
                   fontWeight="700"
                 >
-                  {BODY_REGION_LABELS[finding.bodyRegion]}
+                  {pin.label}
                 </text>
                 <text
-                  x={position.labelX + 8}
-                  y={position.labelY - 0.3}
+                  x={position.labelX + 10}
+                  y={position.labelY - 0.2}
                   fill={color}
-                  fontSize="1.7"
+                  fontSize="1.55"
                   fontFamily="system-ui, sans-serif"
                   fontWeight="800"
                   textAnchor="end"
                 >
-                  {finding.displayPercent}%
+                  {pin.problem.displayPercent}%
                 </text>
               </g>
             );
@@ -180,9 +215,9 @@ const ProgressBodyImageMap: React.FC<ProgressBodyImageMapProps> = ({
         gap: 8,
         marginTop: 12,
       }}>
-        {visibleFindings.length > 0 ? visibleFindings.map((finding) => (
+        {pins.length > 0 ? pins.map((pin) => (
           <span
-            key={finding.id}
+            key={pin.key}
             style={{
               fontSize: 12,
               fontWeight: 600,
@@ -193,7 +228,7 @@ const ProgressBodyImageMap: React.FC<ProgressBodyImageMapProps> = ({
               border: '1px solid rgba(255,255,255,0.08)',
             }}
           >
-            {BODY_REGION_LABELS[finding.bodyRegion]} {finding.displayPercent}%
+            {pin.label} · {VIEW_LABELS[pin.panel]} {pin.problem.displayPercent}%
           </span>
         )) : (
           <span style={{ fontSize: 12, color: 'var(--color-text-tert)' }}>

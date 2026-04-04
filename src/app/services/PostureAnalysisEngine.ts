@@ -43,6 +43,10 @@ export interface PostureProblem {
   details: string;
   angle?: number;
   idealAngle?: number;
+  /** Where to place pins on the 3-panel (front / side / back) reference image */
+  mapPanels?: IntendedView[];
+  /** Optional shorter label on the triptych map */
+  mapLabel?: string;
 }
 
 export interface PostureReport {
@@ -142,33 +146,65 @@ export function detectViewType(landmarks: Landmark[]): 'side' | 'front' {
 }
 
 function checkForwardHead(landmarks: Landmark[]): PostureProblem {
-  const ear = landmarks[7];
-  const shoulder = landmarks[11];
-  const earR = landmarks[8];
+  const viewType = detectViewType(landmarks);
+
+  if (viewType === 'side') {
+    const ear = landmarks[7];
+    const shoulder = landmarks[11];
+    const earR = landmarks[8];
+    const shoulderR = landmarks[12];
+    const useLeft = ear.visibility > earR.visibility;
+    const earPoint = useLeft ? ear : earR;
+    const shoulderPoint = useLeft ? shoulder : shoulderR;
+    const forwardOffset = Math.abs(earPoint.x - shoulderPoint.x);
+    const angle = angleFromVertical(earPoint, shoulderPoint);
+    const score = Math.min(100, Math.round((forwardOffset / 0.18) * 100));
+    return finalizeProblem({
+      id: 'forward-head',
+      name: 'Forward Head Posture',
+      severity: getSeverity(score),
+      score,
+      bodyRegion: 'neck',
+      dominantView: 'side',
+      confidenceLevel: 'single-view',
+      confidenceLabel: getSingleViewConfidenceLabel('side'),
+      angle: Math.round(angle),
+      idealAngle: 0,
+      description: score >= 15
+        ? `Your head is positioned ${Math.round(angle)}° forward of your shoulders.`
+        : 'Your head alignment looks good!',
+      details: score >= 15
+        ? 'Extra strain on the cervical spine is common with forward head posture.'
+        : 'Ear-over-shoulder alignment looks reasonable in this image.',
+      mapLabel: 'Forward head',
+    });
+  }
+
+  const nose = landmarks[0];
+  const shoulderL = landmarks[11];
   const shoulderR = landmarks[12];
-  const useLeft = ear.visibility > earR.visibility;
-  const earPoint = useLeft ? ear : earR;
-  const shoulderPoint = useLeft ? shoulder : shoulderR;
-  const forwardOffset = Math.abs(earPoint.x - shoulderPoint.x);
-  const angle = angleFromVertical(earPoint, shoulderPoint);
-  const score = Math.min(100, Math.round((forwardOffset / 0.18) * 100));
+  const shoulderMid = midpoint(shoulderL, shoulderR);
+  const forwardOffset = Math.abs(nose.x - shoulderMid.x);
+  const angle = angleFromVertical(nose, shoulderMid);
+  const score = Math.min(100, Math.round((forwardOffset / 0.08) * 100));
   return finalizeProblem({
     id: 'forward-head',
     name: 'Forward Head Posture',
     severity: getSeverity(score),
     score,
     bodyRegion: 'neck',
-    dominantView: 'side',
+    dominantView: 'front',
     confidenceLevel: 'single-view',
-    confidenceLabel: getSingleViewConfidenceLabel('side'),
+    confidenceLabel: getSingleViewConfidenceLabel('front'),
     angle: Math.round(angle),
     idealAngle: 0,
     description: score >= 15
-      ? `Your head is positioned ${Math.round(angle)}° forward of your shoulders.`
-      : 'Your head alignment looks good!',
+      ? `Head sits forward of the shoulder line in the front view (~${Math.round(angle)}° offset).`
+      : 'Head alignment looks centered over the shoulders from the front.',
     details: score >= 15
-      ? 'Extra strain on the cervical spine is common with forward head posture.'
-      : 'Ear-over-shoulder alignment looks reasonable in this image.',
+      ? 'Front-view screening: nose should stack closer over the mid-shoulders for less neck strain.'
+      : 'Front head position looks fair in this photo.',
+    mapLabel: 'Forward head',
   });
 }
 
@@ -202,6 +238,101 @@ function checkRoundedShoulders(landmarks: Landmark[]): PostureProblem {
     details: score >= 15
       ? 'Often linked to tight chest muscles and prolonged desk posture.'
       : 'Shoulders sit fairly well over the hips.',
+    mapLabel: 'Rounded shoulders',
+  });
+}
+
+/** Front / back camera: shoulder line vs hip width and level (internal rotation / “closed chest” proxy). */
+function checkRoundedShouldersFrontal(landmarks: Landmark[]): PostureProblem {
+  const ls = landmarks[11];
+  const rs = landmarks[12];
+  const lh = landmarks[23];
+  const rh = landmarks[24];
+  const shoulderW = Math.abs(ls.x - rs.x);
+  const hipW = Math.abs(lh.x - rh.x);
+  const ratio = shoulderW / (hipW + 0.03);
+  const narrowScore = ratio < 1.05
+    ? Math.min(100, Math.round(((1.05 - ratio) / 1.05) * 100 * 1.35))
+    : 0;
+  const shoulderTilt = Math.abs(ls.y - rs.y);
+  const tiltScore = Math.min(100, Math.round((shoulderTilt / 0.06) * 100));
+  const score = Math.round(narrowScore * 0.62 + tiltScore * 0.38);
+  return finalizeProblem({
+    id: 'rounded-shoulders',
+    name: 'Rounded Shoulders',
+    severity: getSeverity(score),
+    score,
+    bodyRegion: 'shoulders',
+    dominantView: 'front',
+    confidenceLevel: 'single-view',
+    confidenceLabel: getSingleViewConfidenceLabel('front'),
+    description: score >= 15
+      ? 'Shoulder line appears narrow or uneven relative to the hips — a common desk posture signal.'
+      : 'Shoulder position looks fairly open from the front.',
+    details: score >= 15
+      ? 'Often pairs with tight chest tissues; pair stretches with upper-back strength.'
+      : 'Shoulders look reasonably balanced in this frame.',
+    mapLabel: 'Rounded shoulders',
+  });
+}
+
+function checkChestRibcage(landmarks: Landmark[]): PostureProblem {
+  const ls = landmarks[11];
+  const rs = landmarks[12];
+  const lh = landmarks[23];
+  const rh = landmarks[24];
+  const shoulderW = Math.abs(ls.x - rs.x);
+  const hipW = Math.abs(lh.x - rh.x);
+  const ratio = shoulderW / (hipW + 0.03);
+  const le = landmarks[13];
+  const re = landmarks[14];
+  const elbowDepth = Math.abs(midpoint(le, re).z - midpoint(ls, rs).z);
+  const narrow = ratio < 0.98 ? Math.min(100, Math.round(((0.98 - ratio) / 0.98) * 110)) : 0;
+  const depth = Math.min(100, Math.round(elbowDepth * 95));
+  const score = Math.round(narrow * 0.55 + depth * 0.45);
+  return finalizeProblem({
+    id: 'chest-ribcage',
+    name: 'Chest / rib cage tightness',
+    severity: getSeverity(score),
+    score,
+    bodyRegion: 'upperBack',
+    dominantView: 'front',
+    confidenceLevel: 'single-view',
+    confidenceLabel: getSingleViewConfidenceLabel('front'),
+    description: score >= 15
+      ? 'Front view suggests a “closed” chest pattern (narrow shoulder line vs hips / inward arm line).'
+      : 'Chest and rib cage look fairly open in this photo.',
+    details: score >= 15
+      ? 'Educational cue only: breathe wide into the ribs and balance with upper-back activation.'
+      : 'No strong chest compression signal from this frame.',
+    mapLabel: 'Chest / ribs',
+  });
+}
+
+function checkWingingScapula(landmarks: Landmark[]): PostureProblem {
+  const ls = landmarks[11];
+  const rs = landmarks[12];
+  const zDiff = Math.abs(ls.z - rs.z);
+  const yDiff = Math.abs(ls.y - rs.y);
+  const zScore = Math.min(100, Math.round(zDiff * 220));
+  const yScore = Math.min(100, Math.round((yDiff / 0.045) * 100));
+  const score = Math.round(zScore * 0.52 + yScore * 0.48);
+  return finalizeProblem({
+    id: 'winging-scapula',
+    name: 'Winging scapula risk',
+    severity: getSeverity(score),
+    score,
+    bodyRegion: 'shoulders',
+    dominantView: 'back',
+    confidenceLevel: 'single-view',
+    confidenceLabel: getSingleViewConfidenceLabel('back'),
+    description: score >= 15
+      ? 'Back view shows notable shoulder-blade asymmetry (depth or height) — a loose screen for scapular dyskinesis.'
+      : 'Shoulder blades look fairly balanced from behind.',
+    details: score >= 15
+      ? 'Not a diagnosis; serratus and lower-trap strength often help — see a clinician if painful.'
+      : 'No strong winging signal in this capture.',
+    mapLabel: 'Winging scapula',
   });
 }
 
@@ -236,10 +367,12 @@ function checkAnteriorPelvicTilt(landmarks: Landmark[]): PostureProblem {
     details: score >= 15
       ? 'Can correlate with tight hip flexors and increased lumbar arch — screen with a pro if pain persists.'
       : 'No strong anterior tilt signal from this single photo.',
+    mapLabel: 'Pelvic tilt',
   });
 }
 
-function checkSlouching(landmarks: Landmark[]): PostureProblem {
+/** Side profile: ear–shoulder–hip chain. */
+function checkSlouchingProfile(landmarks: Landmark[]): PostureProblem {
   const ear = landmarks[7];
   const shoulder = landmarks[11];
   const hip = landmarks[23];
@@ -270,6 +403,96 @@ function checkSlouching(landmarks: Landmark[]): PostureProblem {
     details: score >= 15
       ? 'May indicate thoracic rounding; combine with movement breaks and upper-back strengthening.'
       : 'Alignment from ear to hip looks fair in this capture.',
+    mapLabel: 'Kyphosis',
+  });
+}
+
+/** Front camera: nose–shoulder–hip as a stacked-angle curve screen. */
+function checkSlouchingFrontal(landmarks: Landmark[]): PostureProblem {
+  const nose = landmarks[0];
+  const ls = landmarks[11];
+  const rs = landmarks[12];
+  const lh = landmarks[23];
+  const rh = landmarks[24];
+  const sm = midpoint(ls, rs);
+  const hm = midpoint(lh, rh);
+  const slouchAngle = calculateAngle(nose, sm, hm);
+  const deviation = Math.max(0, 172 - slouchAngle);
+  const score = Math.min(100, Math.round((deviation / 38) * 100));
+  return finalizeProblem({
+    id: 'slouching',
+    name: 'Slouching / Kyphosis Pattern',
+    severity: getSeverity(score),
+    score,
+    bodyRegion: 'upperBack',
+    dominantView: 'front',
+    confidenceLevel: 'single-view',
+    confidenceLabel: getSingleViewConfidenceLabel('front'),
+    angle: Math.round(slouchAngle),
+    idealAngle: 172,
+    description: score >= 15
+      ? `Front view shows a flexed upper-torso line (~${Math.round(slouchAngle)}° nose–shoulder–hip).`
+      : 'Upper-back line looks fairly tall from the front.',
+    details: score >= 15
+      ? 'Often reflects thoracic flexion habits; pair chest opening with upper-back extension.'
+      : 'No strong kyphotic line in this front photo.',
+    mapLabel: 'Kyphosis',
+  });
+}
+
+/** Back camera: ears if visible, else shallow shoulder-depth heuristic. */
+function checkSlouchingFromBehind(landmarks: Landmark[]): PostureProblem {
+  const ls = landmarks[11];
+  const rs = landmarks[12];
+  const lh = landmarks[23];
+  const rh = landmarks[24];
+  const sm = midpoint(ls, rs);
+  const hm = midpoint(lh, rh);
+  const el = landmarks[7];
+  const er = landmarks[8];
+  const earVis = Math.max(el.visibility, er.visibility);
+  if (earVis > 0.35) {
+    const e = el.visibility > er.visibility ? el : er;
+    const slouchAngle = calculateAngle(e, sm, hm);
+    const deviation = Math.max(0, 168 - slouchAngle);
+    const score = Math.min(100, Math.round((deviation / 40) * 100));
+    return finalizeProblem({
+      id: 'slouching',
+      name: 'Slouching / Kyphosis Pattern',
+      severity: getSeverity(score),
+      score,
+      bodyRegion: 'upperBack',
+      dominantView: 'back',
+      confidenceLevel: 'single-view',
+      confidenceLabel: getSingleViewConfidenceLabel('back'),
+      angle: Math.round(slouchAngle),
+      idealAngle: 168,
+      description: score >= 15
+        ? `Behind view suggests upper-back rounding (~${Math.round(slouchAngle)}°).`
+        : 'Upper-back looks fairly neutral from behind.',
+      details: score >= 15
+        ? 'Thoracic mobility + scapular control are common complements — not a diagnosis.'
+        : 'No strong rounding signal from this rear photo.',
+      mapLabel: 'Kyphosis',
+    });
+  }
+  const zScore = Math.min(100, Math.round((Math.abs(ls.z) + Math.abs(rs.z)) * 85));
+  return finalizeProblem({
+    id: 'slouching',
+    name: 'Slouching / Kyphosis Pattern',
+    severity: getSeverity(zScore),
+    score: zScore,
+    bodyRegion: 'upperBack',
+    dominantView: 'back',
+    confidenceLevel: 'single-view',
+    confidenceLabel: getSingleViewConfidenceLabel('back'),
+    description: zScore >= 15
+      ? 'Behind view shows heavier shoulder depth cues — a soft screen for thoracic flexion patterns.'
+      : 'Behind view looks fairly even.',
+    details: zScore >= 15
+      ? 'Re-scan with ears visible for a clearer rear-profile line when possible.'
+      : 'Limited ear landmarks; result is lower confidence.',
+    mapLabel: 'Kyphosis',
   });
 }
 
@@ -294,6 +517,7 @@ function checkShoulderAsymmetry(landmarks: Landmark[]): PostureProblem {
     details: score >= 15
       ? 'Can reflect habits, strength imbalance, or other causes; consider clinical assessment if significant.'
       : 'Good bilateral symmetry in this frame.',
+    mapLabel: 'Uneven shoulders',
   });
 }
 
@@ -321,68 +545,84 @@ function checkHipAlignment(landmarks: Landmark[]): PostureProblem {
   });
 }
 
-/** How much each finding trusts a given intended camera angle (0–1). */
-const VIEW_WEIGHT: Record<string, Partial<Record<IntendedView, number>>> = {
-  'forward-head': { side: 1, front: 0.4, back: 0.2 },
-  'rounded-shoulders': { side: 0.95, front: 0.8, back: 0.72 },
-  'anterior-pelvic': { side: 1, front: 0.45, back: 0.45 },
-  'slouching': { side: 1, front: 0.4, back: 0.35 },
-  'shoulder-asymmetry': { front: 1, side: 0.3, back: 0.88 },
-  'hip-alignment': { front: 1, side: 0.3, back: 0.92 },
+/**
+ * Which reference-image panels each finding should use on the stacked front | side | back graphic.
+ * (Several findings intentionally appear on more than one panel.)
+ */
+export const BODY_MAP_PANELS_BY_ID: Record<string, IntendedView[]> = {
+  'forward-head': ['front'],
+  'rounded-shoulders': ['front', 'side'],
+  'chest-ribcage': ['front'],
+  'anterior-pelvic': ['side'],
+  'slouching': ['front', 'back'],
+  'shoulder-asymmetry': ['back'],
+  'winging-scapula': ['back'],
+  'hip-alignment': ['front'],
+};
+
+/** When merging 3 photos, blend scores toward the angle that best validates that finding. */
+const BEST_SOURCE_VIEW_BY_ID: Partial<Record<string, IntendedView>> = {
+  'forward-head': 'side',
+  'rounded-shoulders': 'side',
+  'chest-ribcage': 'front',
+  'anterior-pelvic': 'side',
+  'slouching': 'side',
+  'shoulder-asymmetry': 'back',
+  'winging-scapula': 'back',
+  'hip-alignment': 'front',
 };
 
 export function analyzePosture(landmarks: Landmark[]): PostureReport {
   if (!landmarks || landmarks.length < 33) {
     throw new Error('Need 33 landmarks from MediaPipe Pose');
   }
-  const viewType = detectViewType(landmarks);
-  const allProblems: PostureProblem[] = [
-    checkForwardHead(landmarks),
-    checkRoundedShoulders(landmarks),
-    checkAnteriorPelvicTilt(landmarks),
-    checkSlouching(landmarks),
-    checkShoulderAsymmetry(landmarks),
-    checkHipAlignment(landmarks),
-  ];
-  const detectedProblems = allProblems.filter(p => p.score >= 15);
-  const avgProblemScore = allProblems.reduce((sum, p) => sum + p.score, 0) / allProblems.length;
-  const overallScore = Math.max(0, Math.round(100 - avgProblemScore));
-  return {
-    overallScore,
-    problems: allProblems
-      .map(problem => finalizeProblem({
-        ...problem,
-        dominantView: viewType === 'side' ? 'side' : 'front',
-        confidenceLevel: 'single-view',
-        confidenceLabel: 'Single-photo screening result.',
-      }))
-      .sort((a, b) => b.score - a.score),
-    viewType,
-    recommendations: generateRecommendations(detectedProblems),
-    timestamp: Date.now(),
-  };
+  const vt = detectViewType(landmarks);
+  return analyzePostureForView(landmarks, vt === 'side' ? 'side' : 'front');
 }
 
-/** Same landmark checks, but scores are weighted by which photo angle you intended (front / side / back). */
+/** Runs only the checks that match the camera you intended (stronger 3-photo workflow). */
 export function analyzePostureForView(landmarks: Landmark[], intended: IntendedView): PostureReport {
-  const raw = analyzePosture(landmarks);
-  const weighted = raw.problems.map(p => {
-    const w = VIEW_WEIGHT[p.id]?.[intended] ?? 0.55;
-    const score = Math.min(100, Math.round(p.score * w));
-    return finalizeProblem({
-      ...p,
-      score,
-      severity: getSeverity(score),
-      dominantView: intended,
-      confidenceLevel: 'single-view',
-      confidenceLabel: getSingleViewConfidenceLabel(intended),
-    });
-  });
-  const detected = weighted.filter(p => p.score >= 15);
-  const avg = weighted.reduce((sum, p) => sum + p.score, 0) / weighted.length;
+  if (!landmarks || landmarks.length < 33) {
+    throw new Error('Need 33 landmarks from MediaPipe Pose');
+  }
+  let raw: PostureProblem[] = [];
+  if (intended === 'front') {
+    raw = [
+      checkForwardHead(landmarks),
+      checkRoundedShouldersFrontal(landmarks),
+      checkSlouchingFrontal(landmarks),
+      checkShoulderAsymmetry(landmarks),
+      checkHipAlignment(landmarks),
+      checkChestRibcage(landmarks),
+    ];
+  } else if (intended === 'side') {
+    raw = [
+      checkForwardHead(landmarks),
+      checkRoundedShoulders(landmarks),
+      checkAnteriorPelvicTilt(landmarks),
+      checkSlouchingProfile(landmarks),
+    ];
+  } else {
+    raw = [
+      checkShoulderAsymmetry(landmarks),
+      checkWingingScapula(landmarks),
+      checkSlouchingFromBehind(landmarks),
+      checkHipAlignment(landmarks),
+    ];
+  }
+
+  const problems = raw.map(p => finalizeProblem({
+    ...p,
+    dominantView: intended,
+    confidenceLevel: 'single-view',
+    confidenceLabel: getSingleViewConfidenceLabel(intended),
+  }));
+
+  const detected = problems.filter(p => p.score >= 15);
+  const avg = problems.reduce((sum, p) => sum + p.score, 0) / problems.length;
   return {
     overallScore: Math.max(0, Math.round(100 - avg)),
-    problems: weighted.sort((a, b) => b.score - a.score),
+    problems: problems.sort((a, b) => b.score - a.score),
     viewType: intended === 'side' ? 'side' : 'front',
     recommendations: generateRecommendations(detected),
     timestamp: Date.now(),
@@ -412,28 +652,39 @@ export function mergePostureReports(items: { view: IntendedView; report: Posture
     const bestCandidate = candidates.reduce((best, current) =>
       current.problem.score > best.problem.score ? current : best,
     );
+    const preferredView = BEST_SOURCE_VIEW_BY_ID[id];
+    const preferredCandidate = preferredView
+      ? candidates.find(c => c.view === preferredView)
+      : undefined;
+    const anchor = preferredCandidate && preferredCandidate.problem.score >= 12
+      ? preferredCandidate
+      : bestCandidate;
+
     const averageScore = Math.round(
       candidates.reduce((sum, candidate) => sum + candidate.problem.score, 0) / candidates.length,
     );
-    const mergedScore = bestCandidate.problem.score >= 15
-      ? Math.round(bestCandidate.problem.score * 0.75 + averageScore * 0.25)
-      : averageScore;
+    const mergedScore = anchor.problem.score >= 15
+      ? Math.round(anchor.problem.score * 0.72 + averageScore * 0.28)
+      : Math.round(averageScore * 0.85);
     const supportingViews = candidates
       .filter(candidate => candidate.problem.score >= 15)
       .map(candidate => candidate.view);
     const confidence = summarizeConfidence(
-      supportingViews.length ? supportingViews : [bestCandidate.view],
-      bestCandidate.view,
+      supportingViews.length ? supportingViews : [anchor.view],
+      anchor.view,
     );
 
+    const mapPanels = BODY_MAP_PANELS_BY_ID[id] ?? [anchor.view];
+
     merged.push(finalizeProblem({
-      ...bestCandidate.problem,
+      ...anchor.problem,
       score: mergedScore,
       severity: getSeverity(mergedScore),
-      dominantView: bestCandidate.view,
+      dominantView: anchor.view,
       confidenceLevel: confidence.confidenceLevel,
       confidenceLabel: confidence.confidenceLabel,
-      details: `${bestCandidate.problem.details} ${confidence.confidenceLabel}`.trim(),
+      details: `${anchor.problem.details} ${confidence.confidenceLabel}`.trim(),
+      mapPanels,
     }));
   }
 
@@ -450,19 +701,155 @@ export function mergePostureReports(items: { view: IntendedView; report: Posture
 }
 
 export function getHighlightedProblems(problems: PostureProblem[], max = 4): PostureProblem[] {
-  const bestByRegion = new Map<BodyRegion, PostureProblem>();
+  const bestById = new Map<string, PostureProblem>();
 
   problems
     .filter(problem => problem.score >= 15)
     .sort((a, b) => b.score - a.score)
     .forEach(problem => {
-      const current = bestByRegion.get(problem.bodyRegion);
+      const current = bestById.get(problem.id);
       if (!current || problem.score > current.score) {
-        bestByRegion.set(problem.bodyRegion, problem);
+        bestById.set(problem.id, problem);
       }
     });
 
-  return [...bestByRegion.values()].sort((a, b) => b.score - a.score).slice(0, max);
+  return [...bestById.values()].sort((a, b) => b.score - a.score).slice(0, max);
+}
+
+export type BodyMapPin = {
+  key: string;
+  problem: PostureProblem;
+  panel: IntendedView;
+  label: string;
+};
+
+/** Expands merged findings into one or more pins on the stacked front/side/back reference graphic. */
+export function getBodyMapPins(problems: PostureProblem[], maxPins = 10): BodyMapPin[] {
+  const pins: BodyMapPin[] = [];
+  const sorted = problems.filter(p => p.score >= 15).sort((a, b) => b.score - a.score);
+
+  for (const problem of sorted) {
+    const panels = problem.mapPanels?.length
+      ? problem.mapPanels
+      : BODY_MAP_PANELS_BY_ID[problem.id] ?? [problem.dominantView];
+
+    for (const panel of panels) {
+      pins.push({
+        key: `${problem.id}-${panel}`,
+        problem,
+        panel,
+        label: problem.mapLabel ?? BODY_REGION_LABELS[problem.bodyRegion],
+      });
+    }
+  }
+
+  return pins.slice(0, maxPins);
+}
+
+/**
+ * Heuristic daily mobility/stretch budget from your scan. Not medical advice and not a
+ * prediction of recovery time — exercise dosing literature generally supports short, frequent
+ * sessions (e.g. a few minutes most days) over occasional long marathons. We map severity
+ * to extra minutes so the estimate scales with how many regions are flagged and how strong
+ * the signal is.
+ */
+export interface StretchPrescription {
+  /** Total suggested focused stretching / mobility per day (minutes). */
+  dailyMinutesTotal: number;
+  /** 1 or 2 blocks per day. */
+  sessionsPerDay: 1 | 2;
+  /** When sessionsPerDay is 2, approximate minutes per block (totals ≈ dailyMinutesTotal). */
+  minutesPerSession: [number] | [number, number];
+  /** Rough band for when users often notice habits/posture feeling easier (not a guarantee). */
+  habitsTimelineWeeks: { min: number; max: number };
+  /** Short explanation for the UI. */
+  summary: string;
+  /** Bullet-sized reasoning tied to this scan. */
+  rationaleBullets: string[];
+  disclaimer: string;
+}
+
+function minutesChunkForFinding(p: PostureProblem): number {
+  if (p.score < 15) return 0;
+  if (p.score < 40) return 2 + Math.round((p.score - 15) / 25 * 1);
+  if (p.score < 65) return 4 + Math.round((p.score - 40) / 25 * 2);
+  return 7 + Math.min(3, Math.round((p.score - 65) / 35 * 3));
+}
+
+function roundToFriendlyMinutes(n: number): number {
+  const clamped = Math.max(8, Math.min(30, n));
+  const stepped = Math.round(clamped / 5) * 5;
+  return Math.max(10, Math.min(30, stepped));
+}
+
+export function deriveStretchPrescription(report: PostureReport): StretchPrescription {
+  const detected = report.problems.filter(p => p.score >= 15);
+  const n = detected.length;
+
+  let raw = 6;
+  if (n === 0) {
+    raw = 8;
+  } else {
+    for (const p of detected) {
+      raw += minutesChunkForFinding(p);
+    }
+    if (report.overallScore < 55) raw += 4;
+    else if (report.overallScore < 70) raw += 2;
+    if (n >= 3) raw += 2;
+    if (n >= 5) raw += 2;
+  }
+
+  const dailyMinutesTotal = n === 0 ? 8 : roundToFriendlyMinutes(raw);
+  const sessionsPerDay: 1 | 2 = dailyMinutesTotal >= 18 ? 2 : 1;
+  let minutesPerSession: [number] | [number, number];
+  if (sessionsPerDay === 1) {
+    minutesPerSession = [dailyMinutesTotal];
+  } else {
+    const a = Math.ceil(dailyMinutesTotal / 2);
+    const b = dailyMinutesTotal - a;
+    minutesPerSession = [a, b];
+  }
+
+  const maxSeverity = n
+    ? Math.max(...detected.map(p => p.score))
+    : 0;
+  const habitsTimelineWeeks = maxSeverity >= 65
+    ? { min: 6, max: 12 }
+    : maxSeverity >= 40
+      ? { min: 5, max: 10 }
+      : n >= 1
+        ? { min: 3, max: 8 }
+        : { min: 2, max: 6 };
+
+  const rationaleBullets: string[] = [];
+  if (n === 0) {
+    rationaleBullets.push('No strong flags — a short daily mobility habit still helps desk workers.');
+  } else {
+    rationaleBullets.push(
+      `${n} focus area${n === 1 ? '' : 's'} met the scan threshold (we add a few minutes per area by severity).`,
+    );
+    if (report.overallScore < 70) {
+      rationaleBullets.push('Lower overall score nudges the target up slightly toward consistency.');
+    }
+    if (sessionsPerDay === 2) {
+      rationaleBullets.push('Split into two short blocks matches how people usually stick with mobility work.');
+    }
+  }
+
+  const summary = n === 0
+    ? 'About 8 minutes a day of general mobility is a reasonable default when nothing major is flagged.'
+    : `About ${dailyMinutesTotal} minutes a day of targeted stretching and posture drills, based on your current scan.`;
+
+  return {
+    dailyMinutesTotal,
+    sessionsPerDay,
+    minutesPerSession,
+    habitsTimelineWeeks,
+    summary,
+    rationaleBullets,
+    disclaimer:
+      'Educational estimate only — not medical advice, not a personal treatment plan, and not a promise of outcomes. Pain, numbness, or injury needs an in-person clinician.',
+  };
 }
 
 function generateRecommendations(problems: PostureProblem[]): string[] {
@@ -489,6 +876,12 @@ function generateRecommendations(problems: PostureProblem[]): string[] {
   }
   if (has('hip-alignment')) {
     recs.push('Stand with weight spread evenly through both feet and monitor hip shift.');
+  }
+  if (has('chest-ribcage')) {
+    recs.push('Expand the chest with breath + gentle doorway pec stretches (not medical advice).');
+  }
+  if (has('winging-scapula')) {
+    recs.push('Serratus drills (wall slides, punch-outs) if you have pain get evaluated in person.');
   }
   if (recs.length === 0) {
     recs.push('Keep moving regularly; one photo is not a diagnosis.');
@@ -550,6 +943,14 @@ export function generatePersonalizedProgram(report: PostureReport): Personalized
       { name: 'Single-leg bridge', emoji: '🌉', duration: 45, targetProblem: 'Hip balance', priority: 'medium',
         instructions: ['Slow reps', '10 each leg', '2 sets'] },
     ],
+    'chest-ribcage': [
+      { name: 'Doorway chest opener', emoji: '🚪', duration: 45, targetProblem: 'Chest / ribs', priority: 'high',
+        instructions: ['Forearms on frame', 'Step through softly', '30s × 3'] },
+    ],
+    'winging-scapula': [
+      { name: 'Wall slide', emoji: '🧱', duration: 45, targetProblem: 'Scapula control', priority: 'high',
+        instructions: ['Back to wall', 'Slide arms', '10 slow reps'] },
+    ],
   };
 
   const detected = report.problems.filter(p => p.score >= 15);
@@ -580,4 +981,6 @@ export const SCAN_TO_APP_PROBLEM: Record<string, string> = {
   'slouching': 'kyphosis',
   'shoulder-asymmetry': 'uneven-shoulders',
   'hip-alignment': 'anterior-pelvic',
+  'chest-ribcage': 'rounded-shoulders',
+  'winging-scapula': 'winging-scapula',
 };

@@ -108,7 +108,8 @@ const PostureBodyMap: React.FC<PostureBodyMapProps> = ({
         <line x1="123" y1="23" x2="123" y2="182" stroke="rgba(255,255,255,0.08)" strokeDasharray="3 4" />
 
         {visibleFindings.map(finding => {
-          const anchor = finding.dominantView === 'side' ? sideAnchors[finding.bodyRegion] : frontAnchors[finding.bodyRegion];
+          const panel = finding.mapPanels?.[0] ?? finding.dominantView;
+          const anchor = panel === 'side' ? sideAnchors[finding.bodyRegion] : frontAnchors[finding.bodyRegion];
           const color = getHealthColor(finding.displayPercent);
           const lineEndX = anchor.align === 'end' ? anchor.textX + 4 : anchor.textX - 4;
 
@@ -125,7 +126,7 @@ const PostureBodyMap: React.FC<PostureBodyMapProps> = ({
                 fontWeight="700"
                 textAnchor={anchor.align}
               >
-                {BODY_REGION_LABELS[finding.bodyRegion]}
+                {finding.mapLabel ?? BODY_REGION_LABELS[finding.bodyRegion]}
               </text>
               <text
                 x={anchor.textX}

@@ -162,7 +162,7 @@ const AnalysisResultScreen: React.FC = () => {
               }}>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>
-                    {BODY_REGION_LABELS[problem.bodyRegion]}
+                    {problem.mapLabel ?? BODY_REGION_LABELS[problem.bodyRegion]}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--color-text-tert)', marginTop: 3 }}>
                     {problem.confidenceLabel}

@@ -4,6 +4,7 @@ import ProgressBodyImageMap from '../components/ProgressBodyImageMap';
 import Layout from '../components/Layout';
 import {
   BODY_REGION_LABELS,
+  deriveStretchPrescription,
   getHighlightedProblems,
   type PostureReport,
   VIEW_LABELS,
@@ -28,6 +29,8 @@ const Progress: React.FC = () => {
   const lastScanLabel = report
     ? new Date(report.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     : null;
+
+  const stretchPlan = report ? deriveStretchPrescription(report) : null;
 
   return (
     <Layout>
@@ -104,6 +107,70 @@ const Progress: React.FC = () => {
                 )}
               </div>
               <ProgressBodyImageMap findings={report.problems} maxFindings={4} />
+
+              {stretchPlan && (
+                <div style={{
+                  marginTop: 20,
+                  paddingTop: 18,
+                  borderTop: '1px solid var(--color-border-light)',
+                }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 8 }}>
+                    Daily stretch target
+                  </h3>
+                  <p style={{ fontSize: 13, color: 'var(--color-text-sec)', lineHeight: 1.55, marginBottom: 12 }}>
+                    {stretchPlan.summary}{' '}
+                    {stretchPlan.sessionsPerDay === 2
+                      ? `Try ~${stretchPlan.minutesPerSession[0]} min + ~${stretchPlan.minutesPerSession[1]} min on most days.`
+                      : `One ~${stretchPlan.minutesPerSession[0]} min session most days is enough.`}
+                  </p>
+                  <div style={{
+                    display: 'flex',
+                    gap: 10,
+                    marginBottom: 12,
+                    flexWrap: 'wrap',
+                  }}>
+                    <div style={{
+                      flex: '1 1 120px',
+                      background: 'rgba(124,211,255,0.1)',
+                      borderRadius: 14,
+                      padding: '12px 14px',
+                      border: '1px solid rgba(124,211,255,0.22)',
+                    }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-tert)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        Daily total
+                      </div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: '#7DD3FC', marginTop: 4 }}>
+                        {stretchPlan.dailyMinutesTotal} min
+                      </div>
+                    </div>
+                    <div style={{
+                      flex: '1 1 120px',
+                      background: 'rgba(255,255,255,0.03)',
+                      borderRadius: 14,
+                      padding: '12px 14px',
+                      border: '1px solid var(--color-border-light)',
+                    }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-tert)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        Habit timeline
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginTop: 6, lineHeight: 1.35 }}>
+                        Many people notice small wins in roughly {stretchPlan.habitsTimelineWeeks.min}–{stretchPlan.habitsTimelineWeeks.max} weeks
+                      </div>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-tert)', lineHeight: 1.5, marginBottom: 10 }}>
+                    How this is guessed: we add a few minutes per flagged issue using its severity, bump up slightly if the overall score is lower, and when the daily target reaches about 18 minutes we split it into two shorter sessions (“little and often”) — not a clinical formula.
+                  </p>
+                  <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--color-text-sec)', lineHeight: 1.55 }}>
+                    {stretchPlan.rationaleBullets.map((line, i) => (
+                      <li key={i}>{line}</li>
+                    ))}
+                  </ul>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-tert)', lineHeight: 1.45, marginTop: 12, marginBottom: 0 }}>
+                    {stretchPlan.disclaimer}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div style={{
@@ -122,7 +189,7 @@ const Progress: React.FC = () => {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>
-                      {BODY_REGION_LABELS[problem.bodyRegion]}
+                      {problem.mapLabel ?? BODY_REGION_LABELS[problem.bodyRegion]}
                     </div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>
                       {problem.displayPercent}% health
