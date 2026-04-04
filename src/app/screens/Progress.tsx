@@ -10,6 +10,45 @@ import {
   VIEW_LABELS,
 } from '../services/PostureAnalysisEngine';
 
+/* ─── design tokens ─────────────────────────────────────────────────── */
+const T = {
+  bg:        '#0A0A0A',
+  surface:   '#141414',
+  surface2:  '#1A1A1A',
+  border:    'rgba(255,255,255,0.06)',
+  border2:   'rgba(255,255,255,0.10)',
+  text:      '#EDEDED',
+  text2:     'rgba(160,160,155,1)',
+  text3:     'rgba(102,102,100,1)',
+  gold:      '#D9B84C',
+  orange:    '#E68C33',
+  green:     '#3DA878',
+  blue:      '#5BA8D9',
+  font:      "system-ui, -apple-system, 'Helvetica Neue', sans-serif",
+  mono:      "'SF Mono', 'Menlo', 'Consolas', monospace",
+};
+
+/* ─── tiny helpers ───────────────────────────────────────────────────── */
+const scoreColor = (s: number) => s >= 65 ? T.orange : s >= 40 ? T.gold : T.green;
+
+const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div style={{
+    fontSize: 15,
+    letterSpacing: '-0.01em',
+    color: T.text,
+    fontWeight: 500,
+    marginBottom: 14,
+    fontFamily: T.font,
+  }}>
+    {children}
+  </div>
+);
+
+const Divider = () => (
+  <div style={{ height: '1px', background: T.border, margin: '28px 24px 0' }} />
+);
+
+/* ─── component ─────────────────────────────────────────────────────── */
 const Progress: React.FC = () => {
   const navigate = useNavigate();
   const [report, setReport] = useState<PostureReport | null>(null);
@@ -17,210 +56,293 @@ const Progress: React.FC = () => {
   useEffect(() => {
     const raw = sessionStorage.getItem('postureReport');
     if (!raw) return;
-    try {
-      setReport(JSON.parse(raw));
-    } catch {
-      setReport(null);
-    }
+    try { setReport(JSON.parse(raw)); } catch { setReport(null); }
   }, []);
 
-  const highlighted = report ? getHighlightedProblems(report.problems, 4) : [];
-  const measuredRegions = report ? new Set(report.problems.map(problem => problem.bodyRegion)).size : 0;
-  const lastScanLabel = report
-    ? new Date(report.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  const highlighted     = report ? getHighlightedProblems(report.problems, 4) : [];
+  const measuredRegions = report ? new Set(report.problems.map(p => p.bodyRegion)).size : 0;
+  const lastScanLabel   = report
+    ? new Date(report.timestamp).toLocaleString([], {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+      })
     : null;
-
   const stretchPlan = report ? deriveStretchPrescription(report) : null;
 
   return (
     <Layout>
-      <div style={{ padding: '0 20px' }}>
-        <div style={{ paddingTop: 52, marginBottom: 24, animation: 'fadeIn 0.5s ease' }}>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--color-text)', letterSpacing: '-0.02em' }}>Progress</h1>
-          <p style={{ fontSize: 13, color: 'var(--color-text-sec)', marginTop: 4 }}>Track your latest body-map scan</p>
+      {/* ── Top bar ─────────────────────────────────────────────────── */}
+      <div style={{
+        padding: '56px 24px 20px',
+        borderBottom: `1px solid ${T.border}`,
+        animation: 'fadeIn 0.4s ease',
+      }}>
+        <div style={{
+          fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase',
+          color: T.text3, fontWeight: 500, marginBottom: 6, fontFamily: T.font,
+        }}>
+          Body scan
         </div>
-
-        {!report ? (
-          <div style={{
-            background: 'var(--color-surface)',
-            borderRadius: 22,
-            padding: 22,
-            border: '1px solid var(--color-border-light)',
-            animation: 'slideUp 0.4s ease 0.08s both',
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+          <h1 style={{
+            fontSize: 22, fontWeight: 500, color: T.text,
+            letterSpacing: '-0.02em', fontFamily: T.font,
           }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text)', marginBottom: 8 }}>No scan yet</h2>
-            <p style={{ fontSize: 13, color: 'var(--color-text-sec)', lineHeight: 1.6, marginBottom: 16 }}>
-              Take a front, side, and back posture scan to unlock your body-region map and latest health percentages.
-            </p>
-            <button
-              type="button"
-              onClick={() => navigate('/scan')}
-              style={{
-                width: '100%',
-                padding: 14,
-                borderRadius: 16,
-                background: 'var(--color-primary)',
-                color: '#fff',
-                fontSize: 15,
-                fontWeight: 700,
-                border: 'none',
-                cursor: 'pointer',
-                boxShadow: 'var(--shadow-button)',
-              }}
-            >
-              Start body scan
-            </button>
-          </div>
-        ) : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24, animation: 'slideUp 0.4s ease 0.08s both' }}>
-              {[
-                { v: report.overallScore, l: 'Overall score', c: 'var(--color-primary)' },
-                { v: `${highlighted.length}`, l: 'Focus areas', c: 'var(--color-warning)' },
-                { v: `${measuredRegions}`, l: 'Regions screened', c: 'var(--color-accent)' },
-                { v: `${report.viewsCombined?.length ?? 1}`, l: 'Views used', c: '#7DD3FC' },
-              ].map((st, i) => (
-                <div key={i} style={{ background: 'var(--color-surface)', borderRadius: 16, padding: 16, border: '1px solid var(--color-border-light)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--color-text-tert)', fontWeight: 500, marginBottom: 8 }}>{st.l}</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: st.c }}>{st.v}</div>
-                </div>
-              ))}
-            </div>
+            Progress
+          </h1>
+          {lastScanLabel && (
+            <span style={{ fontSize: 12, color: T.text3, fontFamily: T.font, letterSpacing: '0.01em' }}>
+              {lastScanLabel}
+            </span>
+          )}
+        </div>
+      </div>
 
-            <div style={{
-              background: 'var(--color-surface)',
-              borderRadius: 20,
-              padding: 20,
-              marginBottom: 16,
-              border: '1px solid var(--color-border-light)',
-              animation: 'slideUp 0.4s ease 0.16s both',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
-                <div>
-                  <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', marginBottom: 6 }}>Latest body map</h3>
-                  <p style={{ fontSize: 12, color: 'var(--color-text-tert)', lineHeight: 1.5 }}>
-                    Your latest posture findings are pinned directly onto the front, side, and back body views.
-                  </p>
-                </div>
-                {lastScanLabel && (
-                  <span style={{ fontSize: 11, color: 'var(--color-text-tert)' }}>Updated {lastScanLabel}</span>
-                )}
-              </div>
-              <ProgressBodyImageMap findings={report.problems} maxFindings={4} />
-
-              {stretchPlan && (
+      {!report ? (
+        /* ── Empty state ──────────────────────────────────────────── */
+        <div style={{ padding: '32px 24px', animation: 'slideUp 0.4s ease both' }}>
+          <p style={{
+            fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase',
+            color: T.text3, fontWeight: 500, marginBottom: 16, fontFamily: T.font,
+          }}>
+            No scan yet
+          </p>
+          <p style={{
+            fontSize: 14, color: T.text2, lineHeight: 1.6, marginBottom: 24,
+            fontFamily: T.font,
+          }}>
+            Take a front, side, and back posture scan to unlock your body-region map and health percentages.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/scan')}
+            style={{
+              width: '100%', padding: 15, borderRadius: 10,
+              background: T.gold, color: '#0A0A0A',
+              fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer',
+              fontFamily: T.font, letterSpacing: '0.01em',
+            }}
+          >
+            Start body scan
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* ── Stats grid ──────────────────────────────────────────── */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr',
+            gap: '1px', background: T.border,
+            animation: 'slideUp 0.35s ease 0.05s both',
+          }}>
+            {[
+              { label: 'Score',            value: report.overallScore,            color: T.orange },
+              { label: 'Focus areas',       value: highlighted.length,             color: T.gold  },
+              { label: 'Regions screened',  value: measuredRegions,                color: T.blue  },
+              { label: 'Views used',        value: report.viewsCombined?.length ?? 1, color: T.green },
+            ].map((st, i) => (
+              <div key={i} style={{ background: T.bg, padding: '18px 20px' }}>
                 <div style={{
-                  marginTop: 20,
-                  paddingTop: 18,
-                  borderTop: '1px solid var(--color-border-light)',
+                  fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase',
+                  color: T.text3, fontWeight: 500, marginBottom: 8, fontFamily: T.font,
                 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 8 }}>
-                    Daily stretch target
-                  </h3>
-                  <p style={{ fontSize: 13, color: 'var(--color-text-sec)', lineHeight: 1.55, marginBottom: 12 }}>
-                    {stretchPlan.summary}{' '}
-                    {stretchPlan.sessionsPerDay === 2
-                      ? `Try ~${stretchPlan.minutesPerSession[0]} min + ~${stretchPlan.minutesPerSession[1]} min on most days.`
-                      : `One ~${stretchPlan.minutesPerSession[0]} min session most days is enough.`}
-                  </p>
-                  <div style={{
-                    display: 'flex',
-                    gap: 10,
-                    marginBottom: 12,
-                    flexWrap: 'wrap',
-                  }}>
-                    <div style={{
-                      flex: '1 1 120px',
-                      background: 'rgba(124,211,255,0.1)',
-                      borderRadius: 14,
-                      padding: '12px 14px',
-                      border: '1px solid rgba(124,211,255,0.22)',
-                    }}>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-tert)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                        Daily total
-                      </div>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: '#7DD3FC', marginTop: 4 }}>
-                        {stretchPlan.dailyMinutesTotal} min
-                      </div>
-                    </div>
-                    <div style={{
-                      flex: '1 1 120px',
-                      background: 'rgba(255,255,255,0.03)',
-                      borderRadius: 14,
-                      padding: '12px 14px',
-                      border: '1px solid var(--color-border-light)',
-                    }}>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-tert)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                        Habit timeline
-                      </div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginTop: 6, lineHeight: 1.35 }}>
-                        Many people notice small wins in roughly {stretchPlan.habitsTimelineWeeks.min}–{stretchPlan.habitsTimelineWeeks.max} weeks
-                      </div>
-                    </div>
-                  </div>
-                  <p style={{ fontSize: 11, color: 'var(--color-text-tert)', lineHeight: 1.5, marginBottom: 10 }}>
-                    How this is guessed: we add a few minutes per flagged issue using its severity, bump up slightly if the overall score is lower, and when the daily target reaches about 18 minutes we split it into two shorter sessions (“little and often”) — not a clinical formula.
-                  </p>
-                  <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: 'var(--color-text-sec)', lineHeight: 1.55 }}>
-                    {stretchPlan.rationaleBullets.map((line, i) => (
-                      <li key={i}>{line}</li>
-                    ))}
-                  </ul>
-                  <p style={{ fontSize: 11, color: 'var(--color-text-tert)', lineHeight: 1.45, marginTop: 12, marginBottom: 0 }}>
-                    {stretchPlan.disclaimer}
-                  </p>
+                  {st.label}
                 </div>
+                <div style={{
+                  fontSize: 26, fontWeight: 600, color: st.color,
+                  letterSpacing: '-0.03em', lineHeight: 1, fontFamily: T.font,
+                }}>
+                  {st.value}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Body map ────────────────────────────────────────────── */}
+          <div style={{
+            padding: '28px 24px 0',
+            animation: 'slideUp 0.35s ease 0.1s both',
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between', marginBottom: 14,
+            }}>
+              <Label>Body map</Label>
+              <span style={{
+                fontSize: 12, color: T.text3, marginBottom: 14,
+                fontFamily: T.font, letterSpacing: '0.02em',
+              }}>
+                Front · Side · Back
+              </span>
+            </div>
+            <ProgressBodyImageMap findings={report.problems} maxFindings={4} />
+          </div>
+
+          <Divider />
+
+          {/* ── Stretch plan ────────────────────────────────────────── */}
+          {stretchPlan && (
+            <div style={{
+              padding: '24px 24px 0',
+              animation: 'slideUp 0.35s ease 0.15s both',
+            }}>
+              <Label>Daily stretch target</Label>
+
+              <p style={{
+                fontSize: 13, color: T.text2, lineHeight: 1.6, marginBottom: 16,
+                fontFamily: T.font,
+              }}>
+                {stretchPlan.summary}{' '}
+                {stretchPlan.sessionsPerDay === 2
+                  ? `Try ~${stretchPlan.minutesPerSession[0]} min + ~${stretchPlan.minutesPerSession[1]} min on most days.`
+                  : `One ~${stretchPlan.minutesPerSession[0]} min session most days is enough.`}
+              </p>
+
+              {/* Two cells */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: '1fr 1fr',
+                gap: '1px', background: T.border,
+                borderRadius: 10, overflow: 'hidden', marginBottom: 16,
+              }}>
+                <div style={{ background: T.surface, padding: 16 }}>
+                  <div style={{
+                    fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase',
+                    color: T.text3, fontWeight: 500, marginBottom: 6, fontFamily: T.font,
+                  }}>
+                    Daily total
+                  </div>
+                  <div style={{
+                    fontSize: 22, fontWeight: 600, color: T.blue,
+                    letterSpacing: '-0.02em', fontFamily: T.font,
+                  }}>
+                    {stretchPlan.dailyMinutesTotal} min
+                  </div>
+                </div>
+                <div style={{ background: T.surface, padding: 16 }}>
+                  <div style={{
+                    fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase',
+                    color: T.text3, fontWeight: 500, marginBottom: 6, fontFamily: T.font,
+                  }}>
+                    Habit timeline
+                  </div>
+                  <div style={{
+                    fontSize: 13, fontWeight: 500, color: T.text,
+                    lineHeight: 1.4, marginTop: 2, fontFamily: T.font,
+                  }}>
+                    Small wins in roughly {stretchPlan.habitsTimelineWeeks.min}–{stretchPlan.habitsTimelineWeeks.max} weeks
+                  </div>
+                </div>
+              </div>
+
+              <ul style={{ listStyle: 'none', padding: 0, marginBottom: 12 }}>
+                {stretchPlan.rationaleBullets.map((line, i) => (
+                  <li key={i} style={{
+                    fontSize: 12, color: T.text3, padding: '4px 0',
+                    paddingLeft: 16, position: 'relative', lineHeight: 1.55,
+                    fontFamily: T.font,
+                  }}>
+                    <span style={{ position: 'absolute', left: 0, color: T.text3 }}>—</span>
+                    {line}
+                  </li>
+                ))}
+              </ul>
+
+              <p style={{
+                fontSize: 11, color: T.text3, lineHeight: 1.55,
+                paddingTop: 12, borderTop: `1px solid ${T.border}`,
+                fontFamily: T.font,
+              }}>
+                {stretchPlan.disclaimer}
+              </p>
+            </div>
+          )}
+
+          <Divider />
+
+          {/* ── Detected issues (was: Top regions) ──────────────────── */}
+          <div style={{
+            padding: '24px 24px 0',
+            animation: 'slideUp 0.35s ease 0.2s both',
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14,
+            }}>
+              <Label>Detected issues</Label>
+              {highlighted.length > 0 && (
+                <span style={{
+                  fontSize: 11, fontWeight: 500, color: T.gold,
+                  background: 'rgba(217,184,76,0.1)',
+                  padding: '2px 8px', borderRadius: 10,
+                  fontFamily: T.font, marginBottom: 14,
+                }}>
+                  {highlighted.length}
+                </span>
               )}
             </div>
 
-            <div style={{
-              background: 'var(--color-surface)',
-              borderRadius: 20,
-              padding: 20,
-              marginBottom: 16,
-              border: '1px solid var(--color-border-light)',
-              animation: 'slideUp 0.4s ease 0.24s both',
-            }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 14 }}>Top regions to watch</h3>
-              {highlighted.length > 0 ? highlighted.map((problem, index) => (
+            {highlighted.length > 0 ? highlighted.map((problem) => {
+              const color = scoreColor(problem.score);
+              return (
                 <div key={problem.id} style={{
-                  padding: '12px 0',
-                  borderBottom: index < highlighted.length - 1 ? '1px solid var(--color-border-light)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '12px 14px',
+                  background: T.surface,
+                  borderRadius: 10,
+                  marginBottom: 8,
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>
+                  {/* Severity color bar */}
+                  <div style={{
+                    width: 3, height: 28, borderRadius: 2,
+                    background: color, flexShrink: 0,
+                  }} />
+
+                  {/* Text */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: 14, fontWeight: 500, color: T.text,
+                      fontFamily: T.font, marginBottom: 2,
+                    }}>
                       {problem.mapLabel ?? BODY_REGION_LABELS[problem.bodyRegion]}
                     </div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>
-                      {problem.displayPercent}% health
+                    <div style={{
+                      fontSize: 11, color: T.text3,
+                      fontFamily: T.font, letterSpacing: '0.01em',
+                    }}>
+                      {VIEW_LABELS[problem.dominantView]}
                     </div>
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--color-text-tert)', lineHeight: 1.5 }}>
-                    {problem.confidenceLabel} Dominant view: {VIEW_LABELS[problem.dominantView]}.
+
+                  {/* Percentage */}
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{
+                      fontSize: 17, fontWeight: 600, color,
+                      fontFamily: T.font, letterSpacing: '-0.02em',
+                    }}>
+                      {problem.displayPercent}%
+                    </div>
                   </div>
                 </div>
-              )) : (
-                <p style={{ fontSize: 13, color: 'var(--color-text-sec)', lineHeight: 1.5 }}>
-                  No major body-region issues were flagged in the latest scan.
-                </p>
-              )}
-            </div>
+              );
+            }) : (
+              <p style={{ fontSize: 14, color: T.text2, lineHeight: 1.6, fontFamily: T.font }}>
+                No major body-region issues were flagged in the latest scan.
+              </p>
+            )}
+          </div>
 
+          {/* ── CTAs ────────────────────────────────────────────────── */}
+          <div style={{
+            padding: '24px',
+            animation: 'slideUp 0.35s ease 0.25s both',
+          }}>
             <button
               type="button"
               onClick={() => navigate('/scan/results')}
               style={{
-                width: '100%',
-                padding: 14,
-                borderRadius: 18,
-                background: 'var(--color-primary)',
-                color: '#fff',
-                fontSize: 15,
-                fontWeight: 700,
-                border: 'none',
-                cursor: 'pointer',
-                boxShadow: 'var(--shadow-button)',
-                marginBottom: 10,
+                width: '100%', padding: 15, borderRadius: 10,
+                background: T.gold, color: '#0A0A0A',
+                fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer',
+                fontFamily: T.font, letterSpacing: '0.01em', marginBottom: 8, display: 'block',
               }}
             >
               Open full report
@@ -229,23 +351,19 @@ const Progress: React.FC = () => {
               type="button"
               onClick={() => navigate('/scan')}
               style={{
-                width: '100%',
-                padding: 14,
-                borderRadius: 18,
-                background: 'var(--color-surface)',
-                color: 'var(--color-text)',
-                fontSize: 14,
-                fontWeight: 600,
-                border: '1px solid var(--color-border)',
-                cursor: 'pointer',
+                width: '100%', padding: 14, borderRadius: 10,
+                background: 'none', color: T.text2,
+                border: `1px solid ${T.border2}`,
+                fontSize: 13, fontWeight: 400, cursor: 'pointer',
+                fontFamily: T.font, letterSpacing: '0.01em', display: 'block',
                 marginBottom: 24,
               }}
             >
               Take another scan
             </button>
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
     </Layout>
   );
 };

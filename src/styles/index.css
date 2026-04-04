@@ -9,16 +9,16 @@
 
 html {
   font-size: 16px;
-  background: #000;
+  background: #0A0A0A;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
-  font-family: var(--font-body);
-  color: var(--color-text);
-  background: var(--color-bg);
+  font-family: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  color: #EDEDED;
+  background: #0A0A0A;
   line-height: 1.5;
   overflow-x: hidden;
 }
