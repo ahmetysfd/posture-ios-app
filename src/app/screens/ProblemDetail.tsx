@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import YoutubeModal from '../components/YoutubeModal';
+import DifficultySelector from '../components/DifficultySelector';
+import { loadUserProfile, saveUserProfile, type ExerciseDifficulty } from '../services/UserProfile';
 import { postureProblems } from '../data/postureData';
 
 /* ── Exercise icon system ─────────────────────────────────────── */
@@ -193,12 +195,26 @@ const ProblemDetail: React.FC = () => {
   const navigate = useNavigate();
   const problem = postureProblems.find(p => p.id === id);
   const [youtube, setYoutube] = useState<{ url: string; title: string } | null>(null);
+  const [exerciseDifficulty, setExerciseDifficulty] = useState<ExerciseDifficulty>('beginner');
+
+  useEffect(() => {
+    const profile = loadUserProfile();
+    if (profile?.exerciseDifficulty) setExerciseDifficulty(profile.exerciseDifficulty);
+  }, []);
 
   if (!problem) {
     return <Layout><div style={{ padding: 40, textAlign: 'center' }}>Not found</div></Layout>;
   }
 
   const pl = problem.premiumLayout;
+
+  const handleDifficultyChange = (d: ExerciseDifficulty) => {
+    setExerciseDifficulty(d);
+    saveUserProfile({ exerciseDifficulty: d });
+  };
+
+  /** Same moves for all levels for now — swap per `exerciseDifficulty` when you add tiers. */
+  const exercisesForDifficulty = problem.exerciseList;
 
   return (
     <Layout hideNav>
@@ -239,13 +255,20 @@ const ProblemDetail: React.FC = () => {
 
         <div style={{ padding: '24px 20px', background: 'var(--color-bg)', minHeight: '100%' }}>
 
+          <div style={{ marginBottom: 20, animation: 'slideUp 0.4s ease 0.08s both' }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-tert)', marginBottom: 8 }}>
+              Exercise difficulty
+            </div>
+            <DifficultySelector selected={exerciseDifficulty} onChange={handleDifficultyChange} />
+          </div>
+
           {/* ── Exercise cards ── */}
           <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', marginBottom: 12, animation: 'slideUp 0.4s ease 0.1s both' }}>
             Exercises
-            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-tert)', marginLeft: 8 }}>{problem.exerciseList.length} movements</span>
+            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-tert)', marginLeft: 8 }}>{exercisesForDifficulty.length} movements</span>
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, animation: 'slideUp 0.4s ease 0.14s both' }}>
-            {problem.exerciseList.map((ex, i) => {
+            {exercisesForDifficulty.map((ex, i) => {
               const videoUrl = ex.youtubeUrl || (ex.videoId ? `https://www.youtube.com/watch?v=${ex.videoId}` : null);
               return (
                 <div

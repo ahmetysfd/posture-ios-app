@@ -37,7 +37,7 @@ const PersonalizedProgramScreen: React.FC = () => {
       <div style={{ padding: '52px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
           type="button"
-          onClick={() => navigate('/scan/results')}
+          onClick={() => navigate('/progress')}
           style={{
             width: 40, height: 40, borderRadius: 12,
             background: 'var(--color-surface)',

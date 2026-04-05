@@ -3,6 +3,18 @@
  * See INTEGRATION_GUIDE in repo root / posture-ai folder for threshold tuning.
  */
 
+import {
+  determinePostureLevel,
+  loadUserProfile,
+  saveUserProfile,
+  levelToDefaultDifficulty,
+  type PostureLevel,
+  type UserProfile,
+} from './UserProfile';
+
+export type { PostureLevel };
+export { determinePostureLevel, loadUserProfile, levelToDefaultDifficulty };
+
 export interface Landmark {
   x: number;
   y: number;
@@ -726,7 +738,7 @@ export type BodyMapPin = {
 /** Expands merged findings into one or more pins on the stacked front/side/back reference graphic. */
 export function getBodyMapPins(problems: PostureProblem[], maxPins = 10): BodyMapPin[] {
   const pins: BodyMapPin[] = [];
-  const sorted = problems.filter(p => p.score >= 15).sort((a, b) => b.score - a.score);
+  const sorted = problems.filter(p => p.score >= 20).sort((a, b) => b.score - a.score);
 
   for (const problem of sorted) {
     const panels = problem.mapPanels?.length
@@ -770,8 +782,8 @@ export interface StretchPrescription {
 }
 
 function minutesChunkForFinding(p: PostureProblem): number {
-  if (p.score < 15) return 0;
-  if (p.score < 40) return 2 + Math.round((p.score - 15) / 25 * 1);
+  if (p.score < 20) return 0;
+  if (p.score < 40) return 2 + Math.round((p.score - 20) / 20 * 1);
   if (p.score < 65) return 4 + Math.round((p.score - 40) / 25 * 2);
   return 7 + Math.min(3, Math.round((p.score - 65) / 35 * 3));
 }
@@ -783,7 +795,7 @@ function roundToFriendlyMinutes(n: number): number {
 }
 
 export function deriveStretchPrescription(report: PostureReport): StretchPrescription {
-  const detected = report.problems.filter(p => p.score >= 15);
+  const detected = report.problems.filter(p => p.score >= 20);
   const n = detected.length;
 
   let raw = 6;
@@ -953,7 +965,7 @@ export function generatePersonalizedProgram(report: PostureReport): Personalized
     ],
   };
 
-  const detected = report.problems.filter(p => p.score >= 15);
+  const detected = report.problems.filter(p => p.score >= 20);
   for (const problem of detected) {
     const list = exerciseDB[problem.id];
     if (list) {
@@ -984,3 +996,81 @@ export const SCAN_TO_APP_PROBLEM: Record<string, string> = {
   'chest-ribcage': 'rounded-shoulders',
   'winging-scapula': 'winging-scapula',
 };
+
+/**
+ * Stabilize a raw score by clamping small noise into dead-zones.
+ * Scores below 20 → 0; otherwise snap to coarse bands (25 / 45 / 65 / 80).
+ */
+export function stabilizeScore(rawScore: number): {
+  score: number;
+  band: 'none' | 'mild' | 'moderate' | 'severe';
+} {
+  if (rawScore < 20) return { score: 0, band: 'none' };
+  if (rawScore < 35) return { score: 25, band: 'mild' };
+  if (rawScore < 55) return { score: 45, band: 'moderate' };
+  if (rawScore < 75) return { score: 65, band: 'moderate' };
+  return { score: 80, band: 'severe' };
+}
+
+export function classifyOverallSeverityBand(
+  report: PostureReport,
+): 'mild' | 'moderate' | 'severe' {
+  const detected = report.problems.filter(p => p.score >= 20);
+  if (detected.length === 0) return 'mild';
+
+  const maxScore = Math.max(...detected.map(p => p.score));
+  if (maxScore >= 65) return 'severe';
+  if (maxScore >= 40 || detected.length >= 3) return 'moderate';
+  return 'mild';
+}
+
+export function stabilizeReport(report: PostureReport): PostureReport {
+  const stabilized = report.problems.map(p => {
+    const { score, band } = stabilizeScore(p.score);
+    return {
+      ...p,
+      score,
+      severity: band === 'none' ? 'none' as const : band,
+      healthScore: Math.max(0, 100 - score),
+      displayPercent: Math.max(0, 100 - score),
+    };
+  });
+
+  const detected = stabilized.filter(p => p.score >= 20);
+  const avg = stabilized.length
+    ? stabilized.reduce((s, p) => s + p.score, 0) / stabilized.length
+    : 0;
+
+  return {
+    ...report,
+    problems: stabilized.sort((a, b) => b.score - a.score),
+    overallScore: Math.max(0, Math.round(100 - avg)),
+    recommendations: generateRecommendations(detected),
+  };
+}
+
+export function finalizeAssessment(rawReport: PostureReport): {
+  report: PostureReport;
+  level: PostureLevel;
+  detectedProblems: string[];
+  profile: UserProfile;
+} {
+  const report = stabilizeReport(rawReport);
+  const detected = report.problems.filter(p => p.score >= 20);
+  const detectedIds = detected.map(p => p.id);
+  const severityBand = classifyOverallSeverityBand(report);
+
+  const existingProfile = loadUserProfile() ?? {} as Partial<UserProfile>;
+  const level = determinePostureLevel(detectedIds, severityBand, existingProfile);
+  const difficulty = levelToDefaultDifficulty(level);
+
+  const profile = saveUserProfile({
+    postureLevel: level,
+    detectedProblems: detectedIds,
+    problemCount: detectedIds.length,
+    scanTimestamp: Date.now(),
+    exerciseDifficulty: difficulty,
+  });
+
+  return { report, level, detectedProblems: detectedIds, profile };
+}

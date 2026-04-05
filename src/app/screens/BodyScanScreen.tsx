@@ -15,6 +15,7 @@ import {
   analyzePostureForView,
   getHighlightedProblems,
   mergePostureReports,
+  finalizeAssessment,
   type PostureReport,
   type Landmark,
   type IntendedView,
@@ -335,8 +336,9 @@ const BodyScanScreen: React.FC = () => {
         partial.push({ view, report: analyzePostureForView(result.landmarks, view) });
       }
       const merged = mergePostureReports(partial);
-      setReport(merged);
-      sessionStorage.setItem('postureReport', JSON.stringify(merged));
+      const { report: stableReport } = finalizeAssessment(merged);
+      setReport(stableReport);
+      sessionStorage.setItem('postureReport', JSON.stringify(stableReport));
       sessionStorage.setItem('scanCaptures', JSON.stringify({ front: photos.front, side: photos.side, back: photos.back }));
       sessionStorage.setItem('scanImageUrl', photos.side || photos.front || photos.back || '');
       setPreviewUrl(photos.side || photos.front || photos.back || null);
@@ -754,7 +756,7 @@ const BodyScanScreen: React.FC = () => {
                     }}>{report.overallScore}/100</span>
                   </div>
                   <p style={{ fontSize: 12, color: 'var(--color-text-tert)', lineHeight: 1.5 }}>
-                    Your full report turns the three guided captures into region-based body health markers.
+                    Scores are stabilized into bands so similar poses read the same across retakes. Open the full report for your level and exercises.
                   </p>
                 </div>
 
@@ -778,7 +780,9 @@ const BodyScanScreen: React.FC = () => {
                           </div>
                         </div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>
-                          {problem.displayPercent}% health
+                          {problem.score >= 20
+                            ? `${problem.severity.charAt(0).toUpperCase()}${problem.severity.slice(1)}`
+                            : '—'}
                         </div>
                       </div>
                     ))}
@@ -789,14 +793,14 @@ const BodyScanScreen: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => navigate('/scan/results')}
+              onClick={() => navigate('/progress')}
               style={{
                 width: '100%', padding: 16, borderRadius: 18,
                 background: 'var(--color-primary)', color: '#fff', fontSize: 16, fontWeight: 700,
                 border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-button)',
               }}
             >
-              Full report →
+              View progress →
             </button>
             <button type="button" onClick={resetAll} style={{
               padding: 12, borderRadius: 16,
