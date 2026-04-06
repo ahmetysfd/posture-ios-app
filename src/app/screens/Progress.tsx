@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import DetectedReasonsSection from '../components/DetectedReasonsSection';
 import ProgressBodyImageMap from '../components/ProgressBodyImageMap';
+import HabitGrid30 from '../components/HabitGrid30';
 import Layout from '../components/Layout';
 import {
   BODY_REGION_LABELS,
@@ -10,10 +12,12 @@ import {
   VIEW_LABELS,
 } from '../services/PostureAnalysisEngine';
 import {
-  loadUserProfile,
-  LEVEL_INFO,
-  type PostureLevel,
-} from '../services/UserProfile';
+  loadHabit90,
+  toggleHabitDay,
+  getActivePlanPhase,
+  type Habit90State,
+  type PlanPhase,
+} from '../services/HabitPlanStorage';
 
 const T = {
   bg: '#0A0A0A', surface: '#141414', surface2: '#1A1A1A',
@@ -33,17 +37,54 @@ const Divider = () => (
   <div style={{ height: '1px', background: T.border, margin: '28px 24px 0' }} />
 );
 
+interface HabitPlanSectionProps {
+  habits: Habit90State;
+  onToggle: (phase: PlanPhase, dayIndex: number) => void;
+}
+
+/** One active 30-day grid; next phase appears only after the current phase is 30/30 complete. */
+const HabitPlanSection: React.FC<HabitPlanSectionProps> = ({
+  habits,
+  onToggle,
+}) => {
+  const activePhase = getActivePlanPhase(habits);
+  const activeDays = habits[activePhase];
+  const globalOffset = activePhase === 'beginner' ? 0 : activePhase === 'medium' ? 30 : 60;
+
+  return (
+    <div style={{ marginTop: 4, marginBottom: 8 }}>
+      <HabitGrid30
+        phase={activePhase}
+        days={activeDays}
+        globalDayOffset={globalOffset}
+        onToggle={onToggle}
+        embed
+      />
+    </div>
+  );
+};
+
 const Progress: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [report, setReport] = useState<PostureReport | null>(null);
-  const [level, setLevel] = useState<PostureLevel>('beginner');
+  const [habits, setHabits] = useState(() => loadHabit90());
 
   useEffect(() => {
     const raw = sessionStorage.getItem('postureReport');
-    if (!raw) return;
-    try { setReport(JSON.parse(raw)); } catch { setReport(null); }
-    const profile = loadUserProfile();
-    if (profile) setLevel(profile.postureLevel);
+    if (!raw) {
+      setReport(null);
+      return;
+    }
+    try {
+      setReport(JSON.parse(raw) as PostureReport);
+    } catch {
+      setReport(null);
+    }
+  }, [location.pathname, location.key]);
+
+  const onHabitToggle = useCallback((phase: PlanPhase, dayIndex: number) => {
+    setHabits(toggleHabitDay(phase, dayIndex));
   }, []);
 
   const highlighted = report ? getHighlightedProblems(report.problems, 4) : [];
@@ -51,7 +92,6 @@ const Progress: React.FC = () => {
     ? new Date(report.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     : null;
   const stretchPlan = report ? deriveStretchPrescription(report) : null;
-  const levelInfo = LEVEL_INFO[level];
 
   return (
     <Layout>
@@ -64,29 +104,26 @@ const Progress: React.FC = () => {
       </div>
 
       {!report ? (
-        <div style={{ padding: '32px 24px', animation: 'slideUp 0.4s ease both' }}>
-          <p style={{ fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.text3, fontWeight: 500, marginBottom: 16, fontFamily: T.font }}>No scan yet</p>
-          <p style={{ fontSize: 14, color: T.text2, lineHeight: 1.6, marginBottom: 24, fontFamily: T.font }}>Take a front, side, and back posture scan to discover your posture level and get a personalized plan.</p>
-          <button type="button" onClick={() => navigate('/scan')} style={{ width: '100%', padding: 15, borderRadius: 10, background: T.gold, color: '#0A0A0A', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: T.font }}>Start body scan</button>
+        <div style={{ padding: '0 24px 24px', animation: 'slideUp 0.4s ease both' }}>
+          <div style={{ padding: '20px 0 0', animation: 'slideUp 0.35s ease 0.04s both' }}>
+            <HabitPlanSection
+              habits={habits}
+              onToggle={onHabitToggle}
+            />
+          </div>
+          <div style={{ padding: '28px 0 8px' }}>
+            <p style={{ fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.text3, fontWeight: 500, marginBottom: 16, fontFamily: T.font }}>No scan yet</p>
+            <p style={{ fontSize: 14, color: T.text2, lineHeight: 1.6, marginBottom: 24, fontFamily: T.font }}>Take a front, side, and back posture scan to discover your posture level and get a personalized plan.</p>
+            <button type="button" onClick={() => navigate('/scan')} style={{ width: '100%', padding: 15, borderRadius: 10, background: T.gold, color: '#0A0A0A', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: T.font }}>Start body scan</button>
+          </div>
         </div>
       ) : (
         <>
-          <div style={{ padding: '20px 24px', animation: 'slideUp 0.35s ease 0.05s both' }}>
-            <div style={{ background: T.surface, borderRadius: 14, padding: 18, border: `1px solid ${T.border2}` }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: levelInfo.color, padding: '4px 10px', borderRadius: 8, background: levelInfo.bgColor, display: 'inline-block', marginBottom: 10 }}>{levelInfo.label}</div>
-              <div style={{ fontSize: 18, fontWeight: 500, color: T.text, marginBottom: 4 }}>{levelInfo.tagline}</div>
-              <p style={{ fontSize: 12, color: T.text2, lineHeight: 1.55 }}>{levelInfo.description}</p>
-              <div style={{ display: 'flex', gap: 4, marginTop: 14 }}>
-                {(['beginner', 'intermediate', 'advanced'] as PostureLevel[]).map(l => (
-                  <div key={l} style={{ flex: 1, height: 5, borderRadius: 3, background: l === level ? (l === 'beginner' ? T.orange : l === 'intermediate' ? T.gold : T.green) : 'rgba(255,255,255,0.05)' }} />
-                ))}
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                <span style={{ fontSize: 9, color: T.text3 }}>Beginner</span>
-                <span style={{ fontSize: 9, color: T.text3 }}>Intermediate</span>
-                <span style={{ fontSize: 9, color: T.text3 }}>Advanced</span>
-              </div>
-            </div>
+          <div style={{ padding: '20px 24px 0', animation: 'slideUp 0.35s ease 0.05s both' }}>
+            <HabitPlanSection
+              habits={habits}
+              onToggle={onHabitToggle}
+            />
           </div>
 
           <div style={{ padding: '20px 24px 0', animation: 'slideUp 0.35s ease 0.1s both' }}>
@@ -123,6 +160,10 @@ const Progress: React.FC = () => {
           )}
 
           <Divider />
+
+          <div style={{ padding: '24px 24px 0', animation: 'slideUp 0.35s ease 0.18s both' }}>
+            <DetectedReasonsSection report={report} maxCards={4} />
+          </div>
 
           <div style={{ padding: '24px 24px 0', animation: 'slideUp 0.35s ease 0.2s both' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>

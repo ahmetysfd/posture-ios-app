@@ -249,8 +249,13 @@ const ProblemDetail: React.FC = () => {
               borderRadius: 16, overflow: 'hidden', marginBottom: 14,
               border: `1px solid ${problem.cardBorder}66`,
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.45)',
+              height: 376,
+              background: '#0A0A0A',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}>
-              <img src={problem.cardImage} alt="" style={{ width: '100%', height: 320, objectFit: 'cover', display: 'block' }} />
+              <img src={problem.cardImage} alt="" style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }} />
             </div>
             <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--color-text)', marginTop: 4, marginBottom: 0, letterSpacing: '-0.02em' }}>{problem.title}</h1>
           </div>
@@ -323,8 +328,8 @@ const ProblemDetail: React.FC = () => {
               {/* Card 1 — Why it happens */}
               <Card>
                 {problem.reasonImage && (
-                  <div style={{ background: 'var(--color-surface-elevated)', borderBottom: '1px solid var(--color-border)' }}>
-                    <img src={problem.reasonImage} alt="" style={{ width: '100%', maxHeight: 240, objectFit: 'contain', display: 'block' }} />
+                  <div style={{ background: '#0A0A0A', borderBottom: '1px solid var(--color-border)' }}>
+                    <img src={problem.reasonImage} alt="" style={{ width: '100%', maxHeight: 282, objectFit: 'contain', display: 'block' }} />
                   </div>
                 )}
                 <CardHeader dot="#EF4444" label="Why it happens" bg="rgba(239,68,68,0.12)" />
@@ -365,7 +370,7 @@ const ProblemDetail: React.FC = () => {
                   <>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                       <p style={{ flex: '1 1 160px', minWidth: 0, margin: 0, fontSize: 13.5, lineHeight: 1.65, color: 'var(--color-text-sec)', whiteSpace: 'pre-line' }}>{problem.reasonLead}</p>
-                      <img src={problem.reasonImage} alt="" draggable={false} style={{ width: 295, maxWidth: '100%', flexShrink: 0, borderRadius: 12, objectFit: 'contain', alignSelf: 'flex-start', background: 'var(--color-surface-elevated)' }} />
+                      <img src={problem.reasonImage} alt="" draggable={false} style={{ width: 347, maxWidth: '100%', flexShrink: 0, borderRadius: 12, objectFit: 'contain', alignSelf: 'flex-start', background: '#0A0A0A' }} />
                     </div>
                     <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--color-text-sec)', whiteSpace: 'pre-line', margin: '14px 0 0' }}>{problem.reasonRest}</p>
                   </>
