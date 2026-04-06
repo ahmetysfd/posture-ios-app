@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import YoutubeModal from '../components/YoutubeModal';
 import DifficultySelector from '../components/DifficultySelector';
+import BandBadge, { displayName, requiresBand } from '../components/BandBadge';
 import { loadUserProfile, saveUserProfile, type ExerciseDifficulty } from '../services/UserProfile';
-import { postureProblems } from '../data/postureData';
+import { postureProblems, type Exercise } from '../data/postureData';
 
 /* ── Exercise icon system ─────────────────────────────────────── */
 const ExerciseIcon: React.FC<{ type?: string; size?: number; color?: string }> = ({ type, size = 20, color = 'var(--color-primary)' }) => {
@@ -196,6 +197,7 @@ const ProblemDetail: React.FC = () => {
   const problem = postureProblems.find(p => p.id === id);
   const [youtube, setYoutube] = useState<{ url: string; title: string } | null>(null);
   const [exerciseDifficulty, setExerciseDifficulty] = useState<ExerciseDifficulty>('beginner');
+  const [bandTooltip, setBandTooltip] = useState<string | null>(null);
 
   useEffect(() => {
     const profile = loadUserProfile();
@@ -213,8 +215,9 @@ const ProblemDetail: React.FC = () => {
     saveUserProfile({ exerciseDifficulty: d });
   };
 
-  /** Same moves for all levels for now — swap per `exerciseDifficulty` when you add tiers. */
-  const exercisesForDifficulty = problem.exerciseList;
+  const exercisesForDifficulty = problem.exerciseList.filter(
+    e => !e.difficulty || e.difficulty === exerciseDifficulty,
+  );
 
   return (
     <Layout hideNav>
@@ -289,7 +292,14 @@ const ProblemDetail: React.FC = () => {
                     <ExerciseIcon type={ex.iconType} size={22} color="var(--color-primary)" />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--color-text)', marginBottom: 3, lineHeight: 1.3 }}>{ex.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                      <span style={{ fontSize: 14, fontWeight: 650, color: 'var(--color-text)', lineHeight: 1.3 }}>
+                        {displayName(ex.name)}
+                      </span>
+                      {requiresBand(ex.name) && (
+                        <BandBadge exId={ex.id} activeId={bandTooltip} onToggle={setBandTooltip} />
+                      )}
+                    </div>
                     <div style={{ fontSize: 12, color: 'var(--color-text-tert)', fontWeight: 500 }}>{ex.duration}s</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import YoutubeModal from '../components/YoutubeModal';
+import BandBadge, { displayName, requiresBand } from '../components/BandBadge';
 import { postureProblems } from '../data/postureData';
+import { loadUserProfile } from '../services/UserProfile';
 
 /* ── Outline icon matching iconType ──────────────────────────── */
 const ExerciseIcon: React.FC<{ type?: string; size?: number; color?: string }> = ({ type, size = 28, color = 'var(--color-primary)' }) => {
@@ -60,11 +62,17 @@ const ExerciseFlow: React.FC = () => {
   const [exIdx, setExIdx] = useState(0);
   const [ytModal, setYtModal] = useState<{ url: string; title: string } | null>(null);
   const [phase, setPhase] = useState<'intro' | 'active' | 'rest'>('intro');
+  const [bandTooltip, setBandTooltip] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const ex = problem?.exerciseList[exIdx];
-  const total = problem?.exerciseList.length || 0;
+  const userDifficulty = loadUserProfile()?.exerciseDifficulty ?? 'beginner';
+  const exerciseList = problem?.exerciseList.filter(
+    e => !e.difficulty || e.difficulty === userDifficulty,
+  ) ?? [];
+
+  const ex = exerciseList[exIdx];
+  const total = exerciseList.length;
   const progress = total > 0 ? (exIdx / total) * 100 : 0;
   const circ = 2 * Math.PI * 45;
 
@@ -139,7 +147,7 @@ const ExerciseFlow: React.FC = () => {
               </svg>
             </div>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text)', marginBottom: 6 }}>Rest</h2>
-            <p style={{ fontSize: 14, color: 'var(--color-text-sec)', marginBottom: 28 }}>Next: <strong>{problem.exerciseList[exIdx + 1]?.name}</strong></p>
+            <p style={{ fontSize: 14, color: 'var(--color-text-sec)', marginBottom: 28 }}>Next: <strong>{exerciseList[exIdx + 1]?.name}</strong></p>
             <div style={{ position: 'relative', width: 110, height: 110 }}>
               <svg width="110" height="110" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
                 <circle cx="50" cy="50" r="45" fill="none" stroke="var(--color-surface-elevated)" strokeWidth="5" />
@@ -160,7 +168,14 @@ const ExerciseFlow: React.FC = () => {
                 <ExerciseIcon type={ex.iconType} size={26} color="var(--color-primary)" />
               </div>
               <div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text)', margin: 0, lineHeight: 1.25 }}>{ex.name}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'nowrap' }}>
+                  <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text)', margin: 0, lineHeight: 1.25 }}>
+                    {displayName(ex.name)}
+                  </h2>
+                  {requiresBand(ex.name) && (
+                    <BandBadge exId={ex.id} activeId={bandTooltip} onToggle={setBandTooltip} />
+                  )}
+                </div>
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-primary)', marginTop: 4, display: 'inline-block' }}>{ex.duration}s</span>
               </div>
             </div>
@@ -199,7 +214,14 @@ const ExerciseFlow: React.FC = () => {
             <div style={{ width: 72, height: 72, borderRadius: 22, background: 'rgba(229,53,53,0.12)', border: '1.5px solid rgba(229,53,53,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, animation: 'breathe 3s ease infinite' }}>
               <ExerciseIcon type={ex.iconType} size={32} color="var(--color-primary)" />
             </div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text)', marginBottom: 20 }}>{ex.name}</h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 20 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
+                {displayName(ex.name)}
+              </h2>
+              {requiresBand(ex.name) && (
+                <BandBadge exId={`active-${ex.id}`} activeId={bandTooltip} onToggle={setBandTooltip} />
+              )}
+            </div>
 
             <div style={{ position: 'relative', width: 170, height: 170, marginBottom: 28 }}>
               <svg width="170" height="170" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>

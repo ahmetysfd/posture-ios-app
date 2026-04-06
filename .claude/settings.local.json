@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.youtube.com)",
+      "WebFetch(domain:www.rehabhero.ca)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

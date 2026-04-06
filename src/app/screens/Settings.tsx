@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 
 const Settings: React.FC = () => {
+  const navigate = useNavigate();
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  const handleReset = () => {
+    if (!confirmReset) { setConfirmReset(true); return; }
+    localStorage.clear();
+    navigate('/onboarding');
+  };
+
   const [toggles, setToggles] = useState([
     { id: 'remind', label: 'Posture Reminders', desc: 'Get notified to check posture', on: true, icon: '🔔' },
     { id: 'goal', label: 'Daily Goal', desc: 'Remind me to complete exercises', on: true, icon: '🎯' },
@@ -47,7 +57,17 @@ const Settings: React.FC = () => {
           ))}
         </div>
 
-        <div style={{ textAlign: 'center', padding: '12px 0 24px', animation: 'slideUp 0.4s ease 0.2s both' }}>
+        <div style={{ animation: 'slideUp 0.4s ease 0.2s both', marginBottom: 16 }}>
+          <button
+            onClick={handleReset}
+            onBlur={() => setConfirmReset(false)}
+            style={{ width: '100%', padding: '14px', borderRadius: 14, background: confirmReset ? 'rgba(239,68,68,0.12)' : 'var(--color-surface)', border: `1px solid ${confirmReset ? 'rgba(239,68,68,0.4)' : 'var(--color-border-light)'}`, color: confirmReset ? '#ef4444' : 'var(--color-text-sec)', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+          >
+            {confirmReset ? 'Tap again to confirm reset' : 'Reset App & Redo Onboarding'}
+          </button>
+        </div>
+
+        <div style={{ textAlign: 'center', padding: '4px 0 24px' }}>
           <div style={{ fontSize: 12, color: 'var(--color-text-tert)' }}>PostureFix v2.0.0</div>
         </div>
       </div>
