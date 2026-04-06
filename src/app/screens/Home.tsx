@@ -105,10 +105,28 @@ const Home: React.FC = () => {
                   display: 'block', lineHeight: 0,
                 }}
               >
-                <img
-                  src={problem.cardImage} alt="" draggable={false}
-                  style={{ width: '100%', height: 150, objectFit: 'cover', objectPosition: problem.cardImageObjectPosition ?? 'center', display: 'block' }}
-                />
+                <div
+                  style={{
+                    height: 176,
+                    background: '#0A0A0A',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <img
+                    src={problem.cardImage} alt="" draggable={false}
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                      width: 'auto',
+                      height: 'auto',
+                      objectFit: 'contain',
+                      objectPosition: problem.cardImageObjectPosition ?? 'center',
+                      display: 'block',
+                    }}
+                  />
+                </div>
               </button>
               <div style={{ textAlign: 'center', fontSize: 13, fontWeight: 500, color: T.text, lineHeight: 1.25, padding: '0 2px' }}>
                 {problem.title}

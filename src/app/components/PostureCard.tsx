@@ -25,18 +25,30 @@ const PostureCard: React.FC<PostureCardProps> = ({ problem, index }) => {
         animation: `slideUp 0.4s ease ${0.14 + index * 0.05}s both`,
       }}
     >
-      <img
-        src={problem.cardImage}
-        alt=""
-        draggable={false}
+      <div
         style={{
-          width: '100%',
-          height: 132,
-          objectFit: 'cover',
-          objectPosition: problem.cardImageObjectPosition ?? 'center',
-          display: 'block',
+          height: 155,
+          background: '#0A0A0A',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
-      />
+      >
+        <img
+          src={problem.cardImage}
+          alt=""
+          draggable={false}
+          style={{
+            maxWidth: '100%',
+            maxHeight: '100%',
+            width: 'auto',
+            height: 'auto',
+            objectFit: 'contain',
+            objectPosition: problem.cardImageObjectPosition ?? 'center',
+            display: 'block',
+          }}
+        />
+      </div>
     </button>
   );
 };

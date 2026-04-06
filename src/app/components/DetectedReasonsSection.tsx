@@ -18,8 +18,8 @@ const T = {
   font: "system-ui, -apple-system, 'Helvetica Neue', sans-serif",
 };
 
-/** Compact thumbnail width for reason illustration (was 72px; +50%). */
-const REASON_IMG_MAX_PX = 108;
+/** Thumbnail width for reason illustration; ~17.5% larger frame to show full figures. */
+const REASON_IMG_MAX_PX = 127;
 
 interface DetectedReasonsSectionProps {
   report: PostureReport;
@@ -170,10 +170,14 @@ const DetectedReasonsSection: React.FC<DetectedReasonsSectionProps> = ({
                     style={{
                       flexShrink: 0,
                       width: REASON_IMG_MAX_PX,
+                      height: REASON_IMG_MAX_PX,
                       borderRadius: 10,
                       overflow: 'hidden',
-                      background: '#fff',
+                      background: '#0A0A0A',
                       alignSelf: 'flex-start',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
                     <img
@@ -181,10 +185,11 @@ const DetectedReasonsSection: React.FC<DetectedReasonsSectionProps> = ({
                       alt=""
                       draggable={false}
                       style={{
-                        width: '100%',
+                        maxWidth: '100%',
+                        maxHeight: '100%',
+                        width: 'auto',
                         height: 'auto',
                         display: 'block',
-                        verticalAlign: 'top',
                         objectFit: 'contain',
                       }}
                     />
