@@ -4,7 +4,8 @@
       "WebSearch",
       "WebFetch(domain:www.youtube.com)",
       "WebFetch(domain:www.rehabhero.ca)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(ls public/problems/*.png)"
     ]
   }
 }
