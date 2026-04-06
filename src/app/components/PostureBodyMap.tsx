@@ -35,10 +35,16 @@ const sideAnchors: Record<BodyRegion, AnchorPoint> = {
   knees: { x: 120, y: 148, textX: 148, align: 'start' },
 };
 
-function getHealthColor(healthScore: number): string {
-  if (healthScore >= 85) return '#34D399';
-  if (healthScore >= 70) return '#FBBF24';
-  return '#FB7185';
+function getRiskColor(score: number): string {
+  if (score >= 65) return '#E68C33';
+  if (score >= 20) return '#D9B84C';
+  return '#3DA878';
+}
+
+function getRiskLabel(score: number): string {
+  if (score >= 65) return 'High risk';
+  if (score >= 20) return 'Moderate';
+  return 'Low risk';
 }
 
 const PostureBodyMap: React.FC<PostureBodyMapProps> = ({
@@ -110,7 +116,7 @@ const PostureBodyMap: React.FC<PostureBodyMapProps> = ({
         {visibleFindings.map(finding => {
           const panel = finding.mapPanels?.[0] ?? finding.dominantView;
           const anchor = panel === 'side' ? sideAnchors[finding.bodyRegion] : frontAnchors[finding.bodyRegion];
-          const color = getHealthColor(finding.displayPercent);
+          const color = getRiskColor(finding.score);
           const lineEndX = anchor.align === 'end' ? anchor.textX + 4 : anchor.textX - 4;
 
           return (
@@ -136,7 +142,7 @@ const PostureBodyMap: React.FC<PostureBodyMapProps> = ({
                 fontFamily="system-ui, sans-serif"
                 textAnchor={anchor.align}
               >
-                {finding.displayPercent}% health
+                {getRiskLabel(finding.score)}
               </text>
             </g>
           );
@@ -162,7 +168,8 @@ const PostureBodyMap: React.FC<PostureBodyMapProps> = ({
               border: '1px solid rgba(255,255,255,0.08)',
             }}
           >
-            {BODY_REGION_LABELS[finding.bodyRegion]} {finding.displayPercent}%
+            {finding.mapLabel ?? BODY_REGION_LABELS[finding.bodyRegion]}{' '}
+            <span style={{ color: getRiskColor(finding.score) }}>{getRiskLabel(finding.score)}</span>
           </span>
         )) : (
           <span style={{ fontSize: 12, color: 'var(--color-text-tert)' }}>

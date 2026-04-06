@@ -139,21 +139,21 @@ export const LEVEL_INFO: Record<PostureLevel, {
 }> = {
   beginner: {
     label: 'Beginner',
-    tagline: 'Foundation building',
+    tagline: '90-day plan · Days 1–30',
     description: 'Your scan shows several areas that need attention. Start with gentle corrective exercises and build consistency before progressing.',
     color: '#E68C33',
     bgColor: 'rgba(230,140,51,0.1)',
   },
   intermediate: {
     label: 'Intermediate',
-    tagline: 'Refining alignment',
+    tagline: '90-day plan · Days 31–60',
     description: 'You have a decent baseline with a few areas to improve. Moderate exercises will help you strengthen and correct remaining imbalances.',
     color: '#D9B84C',
     bgColor: 'rgba(217,184,76,0.1)',
   },
   advanced: {
     label: 'Advanced',
-    tagline: 'Maintenance mode',
+    tagline: '90-day plan · Days 61–90',
     description: 'Your posture looks strong overall. Focus on maintaining mobility and preventing regression with challenging movement patterns.',
     color: '#3DA878',
     bgColor: 'rgba(61,168,120,0.1)',
