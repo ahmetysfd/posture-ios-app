@@ -59,6 +59,8 @@ export interface PostureProblem {
   mapPanels?: IntendedView[];
   /** Optional shorter label on the triptych map */
   mapLabel?: string;
+  /** Set by MoveNet v2 pipeline (low / medium / high) */
+  riskCategory?: 'low' | 'medium' | 'high';
 }
 
 export interface PostureReport {
@@ -113,7 +115,7 @@ function getSingleViewConfidenceLabel(view: IntendedView): string {
   return `Primary signal from the ${VIEW_LABELS[view].toLowerCase()} scan.`;
 }
 
-function summarizeConfidence(views: IntendedView[], dominantView: IntendedView): {
+export function summarizeConfidence(views: IntendedView[], dominantView: IntendedView): {
   confidenceLevel: FindingConfidence;
   confidenceLabel: string;
 } {
@@ -864,7 +866,7 @@ export function deriveStretchPrescription(report: PostureReport): StretchPrescri
   };
 }
 
-function generateRecommendations(problems: PostureProblem[]): string[] {
+export function generateRecommendations(problems: PostureProblem[]): string[] {
   const recs: string[] = [];
   const has = (id: string) => problems.some(p => p.id === id);
   if (has('forward-head')) {
@@ -875,7 +877,7 @@ function generateRecommendations(problems: PostureProblem[]): string[] {
     recs.push('Doorway chest stretch: 30s × 2, daily.');
     recs.push('Band pull-aparts: 3×15.');
   }
-  if (has('anterior-pelvic')) {
+  if (has('anterior-pelvic') || has('pelvic-tilt')) {
     recs.push('Hip flexor stretch + glute bridges most days.');
     recs.push('Stand and move every 30–45 minutes.');
   }
@@ -941,6 +943,12 @@ export function generatePersonalizedProgram(report: PostureReport): Personalized
       { name: 'Glute bridge', emoji: '🌉', duration: 45, targetProblem: 'Pelvic tilt', priority: 'high',
         instructions: ['Ribs down', 'Squeeze glutes', '12–15 reps'] },
     ],
+    'pelvic-tilt': [
+      { name: 'Hip flexor stretch', emoji: '🦵', duration: 60, targetProblem: 'Pelvic tilt', priority: 'high',
+        instructions: ['Half-kneel', 'Slight tuck', '30s each'] },
+      { name: 'Glute bridge', emoji: '🌉', duration: 45, targetProblem: 'Pelvic tilt', priority: 'high',
+        instructions: ['Ribs down', 'Squeeze glutes', '12–15 reps'] },
+    ],
     'slouching': [
       { name: 'Thoracic extension', emoji: '🤸', duration: 45, targetProblem: 'Upper back', priority: 'high',
         instructions: ['Hands behind head', 'Extend over chair', '8–10 reps'] },
@@ -990,6 +998,7 @@ export const SCAN_TO_APP_PROBLEM: Record<string, string> = {
   'forward-head': 'forward-head',
   'rounded-shoulders': 'rounded-shoulders',
   'anterior-pelvic': 'anterior-pelvic',
+  'pelvic-tilt': 'anterior-pelvic',
   'slouching': 'kyphosis',
   'shoulder-asymmetry': 'uneven-shoulders',
   'hip-alignment': 'anterior-pelvic',

@@ -47,6 +47,20 @@ function getRiskLabel(score: number): string {
   return 'Low risk';
 }
 
+function riskColorForFinding(f: PostureProblem): string {
+  if (f.riskCategory === 'high') return '#E68C33';
+  if (f.riskCategory === 'medium') return '#D9B84C';
+  if (f.riskCategory === 'low') return '#3DA878';
+  return getRiskColor(f.score);
+}
+
+function riskLabelForFinding(f: PostureProblem): string {
+  if (f.riskCategory === 'high') return 'High risk';
+  if (f.riskCategory === 'medium') return 'Medium risk';
+  if (f.riskCategory === 'low') return 'Low risk';
+  return getRiskLabel(f.score);
+}
+
 const PostureBodyMap: React.FC<PostureBodyMapProps> = ({
   findings,
   maxFindings = 4,
@@ -116,7 +130,7 @@ const PostureBodyMap: React.FC<PostureBodyMapProps> = ({
         {visibleFindings.map(finding => {
           const panel = finding.mapPanels?.[0] ?? finding.dominantView;
           const anchor = panel === 'side' ? sideAnchors[finding.bodyRegion] : frontAnchors[finding.bodyRegion];
-          const color = getRiskColor(finding.score);
+          const color = riskColorForFinding(finding);
           const lineEndX = anchor.align === 'end' ? anchor.textX + 4 : anchor.textX - 4;
 
           return (
@@ -142,7 +156,7 @@ const PostureBodyMap: React.FC<PostureBodyMapProps> = ({
                 fontFamily="system-ui, sans-serif"
                 textAnchor={anchor.align}
               >
-                {getRiskLabel(finding.score)}
+                {riskLabelForFinding(finding)}
               </text>
             </g>
           );
@@ -169,7 +183,7 @@ const PostureBodyMap: React.FC<PostureBodyMapProps> = ({
             }}
           >
             {finding.mapLabel ?? BODY_REGION_LABELS[finding.bodyRegion]}{' '}
-            <span style={{ color: getRiskColor(finding.score) }}>{getRiskLabel(finding.score)}</span>
+            <span style={{ color: riskColorForFinding(finding) }}>{riskLabelForFinding(finding)}</span>
           </span>
         )) : (
           <span style={{ fontSize: 12, color: 'var(--color-text-tert)' }}>

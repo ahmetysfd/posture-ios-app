@@ -11,6 +11,7 @@ import {
   type PostureReport,
   VIEW_LABELS,
 } from '../services/PostureAnalysisEngine';
+import { RISK_INFO } from '../services/PostureAnalysisEngineV2';
 import {
   loadHabit90,
   toggleHabitDay,
@@ -179,7 +180,12 @@ const Progress: React.FC = () => {
                   <div style={{ width: 3, height: 28, borderRadius: 2, background: color, flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 500, color: T.text, fontFamily: T.font, marginBottom: 2 }}>{problem.mapLabel ?? BODY_REGION_LABELS[problem.bodyRegion]}</div>
-                    <div style={{ fontSize: 11, color: T.text3, fontFamily: T.font }}>{problem.severity.charAt(0).toUpperCase() + problem.severity.slice(1)} · {VIEW_LABELS[problem.dominantView]}</div>
+                    <div style={{ fontSize: 11, color: T.text3, fontFamily: T.font }}>
+                      {problem.riskCategory
+                        ? RISK_INFO[problem.riskCategory].label
+                        : `${problem.severity.charAt(0).toUpperCase()}${problem.severity.slice(1)}`}
+                      {' · '}{VIEW_LABELS[problem.dominantView]}
+                    </div>
                   </div>
                 </div>
               );

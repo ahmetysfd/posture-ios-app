@@ -2,24 +2,28 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PostureBodyMap from '../components/PostureBodyMap';
 import {
-  loadMediaPipeScripts,
-  createPoseDetector,
-  detectPoseFromImage,
+  initPoseDetector,
+  detectPose,
+  validatePoseForView,
   drawSkeleton,
   type PoseModelStatus,
-  type MediaPipePose,
-} from '../services/PoseDetectionService';
+  type Keypoint,
+} from '../services/MoveNetPoseService';
 import {
   BODY_REGION_LABELS,
   VIEW_LABELS,
-  analyzePostureForView,
   getHighlightedProblems,
-  mergePostureReports,
-  finalizeAssessment,
   type PostureReport,
-  type Landmark,
   type IntendedView,
 } from '../services/PostureAnalysisEngine';
+import { analyzeThreePhotos, determineLevel, RISK_INFO } from '../services/PostureAnalysisEngineV2';
+import { scanReportToPostureReport } from '../services/scanReportAdapter';
+import {
+  appendLocalScanLog,
+  buildLocalScanEntry,
+  tryCloudPersistScan,
+} from '../services/scanPersistence';
+import { loadUserProfile, saveUserProfile, levelToDefaultDifficulty } from '../services/UserProfile';
 
 const STEPS: { key: IntendedView; title: string; subtitle: string }[] = [
   { key: 'front', title: 'Front', subtitle: 'Face the camera with head to knees visible, arms relaxed slightly away from the body.' },
@@ -67,7 +71,6 @@ const BodyScanScreen: React.FC = () => {
   const captureTimeoutRef = useRef<number | null>(null);
 
   const [modelStatus, setModelStatus] = useState<PoseModelStatus>('idle');
-  const [poseDetector, setPoseDetector] = useState<MediaPipePose | null>(null);
   const [photos, setPhotos] = useState<Record<IntendedView, string | null>>(emptyPhotos);
   const [stepIndex, setStepIndex] = useState(0);
   const [flow, setFlow] = useState<'intro' | 'pick' | 'camera' | 'preview' | 'review3' | 'done'>('intro');
@@ -89,16 +92,12 @@ const BodyScanScreen: React.FC = () => {
     (async () => {
       try {
         setModelStatus('loading');
-        await loadMediaPipeScripts();
-        const detector = await createPoseDetector();
-        if (!cancelled) {
-          setPoseDetector(detector);
-          setModelStatus('ready');
-        }
+        await initPoseDetector();
+        if (!cancelled) setModelStatus('ready');
       } catch (e) {
         if (!cancelled) {
           setModelStatus('error');
-          setError('Could not load pose model. Check connection and try again.');
+          setError('Could not load MoveNet (TensorFlow.js). Check connection and try again.');
           console.error(e);
         }
       }
@@ -294,20 +293,7 @@ const BodyScanScreen: React.FC = () => {
     setFlow('pick');
   }, []);
 
-  const redrawSkeleton = useCallback((landmarks: Landmark[]) => {
-    requestAnimationFrame(() => {
-      const img = imageRef.current;
-      const canvas = canvasRef.current;
-      if (!img || !canvas || !landmarks.length) return;
-      const w = img.clientWidth;
-      const h = img.clientHeight;
-      if (w < 2 || h < 2) return;
-      drawSkeleton(canvas, landmarks, w, h);
-    });
-  }, []);
-
   const runAnalysisAll = useCallback(async () => {
-    if (!poseDetector) return;
     const keys: IntendedView[] = ['front', 'side', 'back'];
     if (keys.some(k => !photos[k])) {
       setError('Need all three photos first.');
@@ -317,7 +303,9 @@ const BodyScanScreen: React.FC = () => {
     setError(null);
     setReport(null);
     try {
-      const partial: { view: IntendedView; report: PostureReport }[] = [];
+      await initPoseDetector();
+      const allKeypoints: Record<IntendedView, Keypoint[]> = {} as Record<IntendedView, Keypoint[]>;
+
       for (const view of keys) {
         const url = photos[view]!;
         const img = new Image();
@@ -327,20 +315,54 @@ const BodyScanScreen: React.FC = () => {
           img.onload = () => res();
           img.onerror = () => rej(new Error('img'));
         });
-        const result = await detectPoseFromImage(poseDetector, img);
+        const result = await detectPose(img);
         if (!result) {
           setError(`No pose detected in ${view} photo. Stand farther back, improve light, match the silhouette guide, and retake.`);
           setAnalyzing(false);
           return;
         }
-        partial.push({ view, report: analyzePostureForView(result.landmarks, view) });
+        const validation = validatePoseForView(result, view);
+        if (!validation.valid) {
+          setError(validation.reason ?? `Pose validation failed for ${view} photo.`);
+          setAnalyzing(false);
+          return;
+        }
+        allKeypoints[view] = result.keypoints;
       }
-      const merged = mergePostureReports(partial);
-      const { report: stableReport } = finalizeAssessment(merged);
+
+      const scan = analyzeThreePhotos({
+        front: allKeypoints.front,
+        side: allKeypoints.side,
+        back: allKeypoints.back,
+      });
+
+      const profile = loadUserProfile();
+      determineLevel(scan, {
+        activityLevel: profile?.activityLevel ?? 'sedentary',
+        hasExistingPain: profile?.hasExistingPain ?? false,
+        dailyScreenHours: profile?.dailyScreenHours ?? 6,
+      });
+
+      const stableReport = scanReportToPostureReport(scan);
       setReport(stableReport);
+
       sessionStorage.setItem('postureReport', JSON.stringify(stableReport));
+      sessionStorage.setItem('postureScanV2', JSON.stringify(scan));
+      sessionStorage.setItem('postureSideKeypoints', JSON.stringify(allKeypoints.side));
       sessionStorage.setItem('scanCaptures', JSON.stringify({ front: photos.front, side: photos.side, back: photos.back }));
       sessionStorage.setItem('scanImageUrl', photos.side || photos.front || photos.back || '');
+
+      saveUserProfile({
+        postureLevel: scan.postureLevel,
+        detectedProblems: scan.problems.map(p => p.id),
+        problemCount: scan.problems.length,
+        scanTimestamp: Date.now(),
+        exerciseDifficulty: levelToDefaultDifficulty(scan.postureLevel),
+      });
+
+      appendLocalScanLog(buildLocalScanEntry(scan));
+      void tryCloudPersistScan(scan);
+
       setPreviewUrl(photos.side || photos.front || photos.back || null);
       setFlow('done');
     } catch (e) {
@@ -348,7 +370,33 @@ const BodyScanScreen: React.FC = () => {
       setError('Analysis failed. Try again.');
     }
     setAnalyzing(false);
-  }, [poseDetector, photos]);
+  }, [photos]);
+
+  useEffect(() => {
+    if (flow !== 'done') return;
+    const raw = sessionStorage.getItem('postureSideKeypoints');
+    if (!raw) return;
+    let keypoints: Keypoint[];
+    try {
+      keypoints = JSON.parse(raw) as Keypoint[];
+    } catch {
+      return;
+    }
+    const img = imageRef.current;
+    const canvas = canvasRef.current;
+    if (!img || !canvas || !keypoints?.length) return;
+
+    const paint = () => {
+      const w = img.clientWidth;
+      const h = img.clientHeight;
+      if (w < 2 || h < 2) return;
+      drawSkeleton(canvas, keypoints, w, h);
+    };
+
+    img.addEventListener('load', paint);
+    if (img.complete) requestAnimationFrame(paint);
+    return () => img.removeEventListener('load', paint);
+  }, [flow, previewUrl, report]);
 
   const resetAll = useCallback(() => {
     if (captureTimeoutRef.current) {
@@ -780,9 +828,11 @@ const BodyScanScreen: React.FC = () => {
                           </div>
                         </div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>
-                          {problem.score >= 20
-                            ? `${problem.severity.charAt(0).toUpperCase()}${problem.severity.slice(1)}`
-                            : '—'}
+                          {problem.riskCategory
+                            ? RISK_INFO[problem.riskCategory].label
+                            : problem.score >= 20
+                              ? `${problem.severity.charAt(0).toUpperCase()}${problem.severity.slice(1)}`
+                              : '—'}
                         </div>
                       </div>
                     ))}
