@@ -20,11 +20,15 @@ export interface UserProfile {
   /** Posture assessment result */
   postureLevel: PostureLevel;
   detectedProblems: string[];            // problem IDs like 'forward-head'
+  detectedProblemSeverities?: Record<string, 'mild' | 'moderate' | 'severe'>; // per-problem severity
   problemCount: number;
   scanTimestamp: number;
 
   /** Preferred exercise difficulty (user can override) */
   exerciseDifficulty: ExerciseDifficulty;
+
+  /** Whether the user has equipment (foam roller, resistance band, etc.) */
+  hasEquipment?: boolean;
 
   /** Onboarding completed flag */
   onboardingComplete: boolean;
@@ -103,19 +107,21 @@ export function determinePostureLevel(
   if (hasPain) riskBoost += 1;
   if (highScreenTime) riskBoost += 1;
 
-  // Severe problems or many issues → beginner
+  // Severity is the primary driver; count + risk are secondary modifiers.
+
+  // Severe → always beginner
   if (severityBand === 'severe') return 'beginner';
-  if (count >= 3) return 'beginner';
-  if (count >= 2 && riskBoost >= 2) return 'beginner';
 
-  // Moderate zone
-  if (count >= 2) return 'intermediate';
-  if (count === 1 && severityBand === 'moderate') return 'intermediate';
-  if (count === 1 && riskBoost >= 2) return 'intermediate';
+  // Moderate → intermediate (medium exercises), downgrade only under very high risk
+  if (severityBand === 'moderate') {
+    if (riskBoost >= 2) return 'beginner';
+    return 'intermediate';
+  }
 
-  // Clean scan or just mild + active lifestyle
+  // Mild zone
   if (count === 0) return 'advanced';
-  if (count === 1 && severityBand === 'mild' && riskBoost === 0) return 'advanced';
+  if (riskBoost >= 2 || count >= 3) return 'intermediate';
+  if (count === 1 && riskBoost === 0) return 'advanced';
 
   return 'intermediate';
 }

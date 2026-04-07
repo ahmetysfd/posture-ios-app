@@ -349,6 +349,7 @@ const BodyScanScreen: React.FC = () => {
       sessionStorage.setItem('postureReport', JSON.stringify(stableReport));
       sessionStorage.setItem('postureScanV2', JSON.stringify(scan));
       sessionStorage.setItem('postureSideKeypoints', JSON.stringify(allKeypoints.side));
+      localStorage.setItem('posturefix_scan_report', JSON.stringify(stableReport));
       sessionStorage.setItem('scanCaptures', JSON.stringify({ front: photos.front, side: photos.side, back: photos.back }));
       sessionStorage.setItem('scanImageUrl', photos.side || photos.front || photos.back || '');
 
@@ -843,14 +844,25 @@ const BodyScanScreen: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => navigate('/progress')}
+              onClick={() => navigate('/scan/program')}
               style={{
                 width: '100%', padding: 16, borderRadius: 18,
                 background: 'var(--color-primary)', color: '#fff', fontSize: 16, fontWeight: 700,
                 border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-button)',
               }}
             >
-              View progress →
+              See your daily plan →
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/progress')}
+              style={{
+                width: '100%', padding: 12, borderRadius: 16,
+                background: 'var(--color-surface)', color: 'var(--color-text)',
+                fontSize: 14, border: '1px solid var(--color-border)', cursor: 'pointer',
+              }}
+            >
+              View progress
             </button>
             <button type="button" onClick={resetAll} style={{
               padding: 12, borderRadius: 16,

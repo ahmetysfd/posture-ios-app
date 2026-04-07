@@ -1,12 +1,16 @@
 import React from 'react';
 
-/** Strip "(Exercise band)" from the displayed exercise name. */
+/** Strip "(Exercise band)" from the displayed exercise name (legacy, kept for compat). */
 export const displayName = (name: string) =>
   name.replace(' (Exercise band)', '');
 
-/** True if this exercise requires a resistance band. */
+/** True if this exercise requires a resistance band (legacy name-based check). */
 export const requiresBand = (name: string) =>
   name.includes('(Exercise band)');
+
+/** Canonical check — uses requiresEquipment field, falls back to name pattern. */
+export const hasBandBadge = (ex: { requiresEquipment?: boolean; name: string }): boolean =>
+  ex.requiresEquipment === true || requiresBand(ex.name);
 
 /* ── Resistance band loop icon (outline) ─────────────────── */
 const BandIcon = () => (

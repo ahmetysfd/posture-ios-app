@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import YoutubeModal from '../components/YoutubeModal';
 import DifficultySelector from '../components/DifficultySelector';
-import BandBadge, { displayName, requiresBand } from '../components/BandBadge';
+import BandBadge, { displayName, hasBandBadge } from '../components/BandBadge';
 import { loadUserProfile, saveUserProfile, type ExerciseDifficulty } from '../services/UserProfile';
 import { postureProblems, type Exercise } from '../data/postureData';
 
@@ -99,8 +99,8 @@ const VideoModal: React.FC<{ ex: Exercise; onClose: () => void }> = ({ ex, onClo
       {/* Info row */}
       <div style={{ padding: '16px 18px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(229,53,53,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <ExerciseIcon type={ex.iconType} size={18} color="var(--color-primary)" />
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(217,184,76,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <ExerciseIcon type={ex.iconType} size={18} color="#D9B84C" />
           </div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)' }}>{ex.name}</div>
@@ -112,7 +112,7 @@ const VideoModal: React.FC<{ ex: Exercise; onClose: () => void }> = ({ ex, onClo
           onClick={onClose}
           style={{
             width: '100%', padding: '12px 0', borderRadius: 14,
-            background: 'var(--color-primary)', color: 'white',
+            background: '#D9B84C', color: '#0A0A0A',
             fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer',
           }}
         >
@@ -191,6 +191,10 @@ const FixGroup: React.FC<{ icon: React.ReactNode; label: string; items: string[]
 );
 
 /* ── Main component ───────────────────────────────────────────── */
+const GOLD = '#D9B84C';
+const GOLD_BG = 'rgba(217,184,76,0.1)';
+const GOLD_BORDER = 'rgba(217,184,76,0.25)';
+
 const ProblemDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -198,6 +202,7 @@ const ProblemDetail: React.FC = () => {
   const [youtube, setYoutube] = useState<{ url: string; title: string } | null>(null);
   const [exerciseDifficulty, setExerciseDifficulty] = useState<ExerciseDifficulty>('beginner');
   const [bandTooltip, setBandTooltip] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const profile = loadUserProfile();
@@ -261,7 +266,7 @@ const ProblemDetail: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ padding: '24px 20px', background: 'var(--color-bg)', minHeight: '100%' }}>
+        <div style={{ padding: '24px 20px 100px', background: 'var(--color-bg)', minHeight: '100%' }}>
 
           <div style={{ marginBottom: 20, animation: 'slideUp 0.4s ease 0.08s both' }}>
             <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-tert)', marginBottom: 8 }}>
@@ -293,15 +298,15 @@ const ProblemDetail: React.FC = () => {
                   onMouseDown={e => { if (videoUrl) (e.currentTarget as HTMLDivElement).style.transform = 'scale(0.985)'; }}
                   onMouseUp={e => { (e.currentTarget as HTMLDivElement).style.transform = 'scale(1)'; }}
                 >
-                  <div style={{ width: 46, height: 46, borderRadius: 14, background: 'rgba(229,53,53,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <ExerciseIcon type={ex.iconType} size={22} color="var(--color-primary)" />
+                  <div style={{ width: 46, height: 46, borderRadius: 14, background: GOLD_BG, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <ExerciseIcon type={ex.iconType} size={22} color={GOLD} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
                       <span style={{ fontSize: 14, fontWeight: 650, color: 'var(--color-text)', lineHeight: 1.3 }}>
                         {displayName(ex.name)}
                       </span>
-                      {requiresBand(ex.name) && (
+                      {hasBandBadge(ex) && (
                         <BandBadge exId={ex.id} activeId={bandTooltip} onToggle={setBandTooltip} />
                       )}
                     </div>
@@ -309,7 +314,7 @@ const ProblemDetail: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                     {videoUrl && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: 'var(--color-primary)', background: 'rgba(229,53,53,0.12)', padding: '4px 9px', borderRadius: 8, border: '1px solid rgba(229,53,53,0.35)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: GOLD, background: GOLD_BG, padding: '4px 9px', borderRadius: 8, border: `1px solid ${GOLD_BORDER}` }}>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg>
                         Video
                       </div>
@@ -327,37 +332,73 @@ const ProblemDetail: React.FC = () => {
 
               {/* Card 1 — Why it happens */}
               <Card>
-                {problem.reasonImage && (
+                {problem.reasonImage && !expanded['why'] && (
                   <div style={{ background: '#0A0A0A', borderBottom: '1px solid var(--color-border)' }}>
-                    <img src={problem.reasonImage} alt="" style={{ width: '100%', maxHeight: 282, objectFit: 'contain', display: 'block' }} />
+                    <img src={problem.reasonImage} alt="" style={{ width: '100%', maxHeight: 200, objectFit: 'contain', display: 'block' }} />
                   </div>
                 )}
-                <CardHeader dot="#EF4444" label="Why it happens" bg="rgba(239,68,68,0.12)" />
-                <div style={{ padding: '16px 18px' }}>
-                  {pl.whyItHappens.map((item, i) => (
-                    <BoldRow key={i} bold={item.bold} text={item.text} color="#EF4444" last={i === pl.whyItHappens.length - 1} />
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setExpanded(e => ({ ...e, why: !e['why'] }))}
+                  style={{ width: '100%', background: 'rgba(239,68,68,0.12)', padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: 'none', cursor: 'pointer' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>Why it happens</span>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth={2.5} strokeLinecap="round" style={{ transform: expanded['why'] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {expanded['why'] && (
+                  <div style={{ padding: '16px 18px' }}>
+                    {pl.whyItHappens.map((item, i) => (
+                      <BoldRow key={i} bold={item.bold} text={item.text} color="#EF4444" last={i === pl.whyItHappens.length - 1} />
+                    ))}
+                  </div>
+                )}
               </Card>
 
               {/* Card 2 — What changes over time */}
               <Card>
-                <CardHeader dot="#F97316" label="What changes over time" bg="rgba(249,115,22,0.12)" />
-                <div style={{ padding: '16px 18px' }}>
-                  {pl.whatChanges.map((item, i) => (
-                    <BoldRow key={i} bold={item.bold} text={item.text} color="#F97316" last={i === pl.whatChanges.length - 1} />
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setExpanded(e => ({ ...e, what: !e['what'] }))}
+                  style={{ width: '100%', background: 'rgba(249,115,22,0.12)', padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: 'none', cursor: 'pointer' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#F97316', flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>What changes over time</span>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth={2.5} strokeLinecap="round" style={{ transform: expanded['what'] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {expanded['what'] && (
+                  <div style={{ padding: '16px 18px' }}>
+                    {pl.whatChanges.map((item, i) => (
+                      <BoldRow key={i} bold={item.bold} text={item.text} color="#F97316" last={i === pl.whatChanges.length - 1} />
+                    ))}
+                  </div>
+                )}
               </Card>
 
               {/* Card 3 — How to fix it */}
               <Card>
-                <CardHeader dot="#34D399" label="How to fix it" bg="rgba(52,211,153,0.1)" />
-                <div style={{ padding: '18px 18px 16px' }}>
-                  <FixGroup icon={<IconStretch />} label="Stretch" items={pl.howToFix.stretch} />
-                  <FixGroup icon={<IconStrength />} label="Strength" items={pl.howToFix.strength} />
-                  <FixGroup icon={<IconHabits />} label="Habits" items={pl.howToFix.habits} last />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setExpanded(e => ({ ...e, fix: !e['fix'] }))}
+                  style={{ width: '100%', background: 'rgba(52,211,153,0.1)', padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: 'none', cursor: 'pointer' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#34D399', flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>How to fix it</span>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth={2.5} strokeLinecap="round" style={{ transform: expanded['fix'] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {expanded['fix'] && (
+                  <div style={{ padding: '18px 18px 16px' }}>
+                    <FixGroup icon={<IconStretch />} label="Stretch" items={pl.howToFix.stretch} />
+                    <FixGroup icon={<IconStrength />} label="Strength" items={pl.howToFix.strength} />
+                    <FixGroup icon={<IconHabits />} label="Habits" items={pl.howToFix.habits} last />
+                  </div>
+                )}
               </Card>
 
             </div>
@@ -390,18 +431,28 @@ const ProblemDetail: React.FC = () => {
             </>
           )}
 
-          {/* CTA */}
-          <button onClick={() => navigate(`/exercise/${problem.id}`)} style={{
-            width: '100%', padding: 16, borderRadius: 18,
-            background: 'var(--color-primary)', color: 'white', fontSize: 16, fontWeight: 700,
-            fontFamily: 'var(--font-display)', marginTop: 24, marginBottom: 24,
-            boxShadow: 'var(--shadow-button)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            cursor: 'pointer', border: 'none',
+          {/* Sticky CTA */}
+          <div style={{
+            position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+            width: '100%', maxWidth: 430,
+            padding: '16px 20px 32px',
+            background: 'linear-gradient(to top, var(--color-bg) 70%, transparent)',
           }}>
-            Start Exercises
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21" /></svg>
-          </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/exercise/${problem.id}`)}
+              style={{
+                width: '100%', padding: 16, borderRadius: 14,
+                background: GOLD, color: '#0A0A0A', fontSize: 15, fontWeight: 700,
+                boxShadow: '0 8px 24px rgba(217,184,76,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                cursor: 'pointer', border: 'none', fontFamily: 'var(--font-body)',
+              }}
+            >
+              Start Exercises
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#0A0A0A"><polygon points="5 3 19 12 5 21" /></svg>
+            </button>
+          </div>
         </div>
       </div>
       <YoutubeModal

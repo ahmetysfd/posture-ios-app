@@ -11,6 +11,7 @@ import {
   type PostureLevel,
   type UserProfile,
 } from './UserProfile';
+import { generateAndStoreDailyProgram } from './DailyProgram';
 
 export type { PostureLevel };
 export { determinePostureLevel, loadUserProfile, levelToDefaultDifficulty };
@@ -911,6 +912,12 @@ export interface PersonalizedExercise {
   targetProblem: string;
   instructions: string[];
   priority: 'high' | 'medium' | 'low';
+  /** Number of sets to perform (added by DailyProgram generator) */
+  sets?: number;
+  /** Display string for reps/time, e.g. "10–12 reps" or "40s" */
+  displayReps?: string;
+  /** True when a resistance band or weight is required */
+  requiresEquipment?: boolean;
 }
 
 export interface PersonalizedProgram {
@@ -1073,13 +1080,24 @@ export function finalizeAssessment(rawReport: PostureReport): {
   const level = determinePostureLevel(detectedIds, severityBand, existingProfile);
   const difficulty = levelToDefaultDifficulty(level);
 
+  // Build per-problem severity map (keyed by scan problem ID)
+  const detectedProblemSeverities: Record<string, 'mild' | 'moderate' | 'severe'> = {};
+  for (const p of detected) {
+    if (p.severity !== 'none') {
+      detectedProblemSeverities[p.id] = p.severity;
+    }
+  }
+
   const profile = saveUserProfile({
     postureLevel: level,
     detectedProblems: detectedIds,
+    detectedProblemSeverities,
     problemCount: detectedIds.length,
     scanTimestamp: Date.now(),
     exerciseDifficulty: difficulty,
   });
+
+  generateAndStoreDailyProgram(profile);
 
   return { report, level, detectedProblems: detectedIds, profile };
 }

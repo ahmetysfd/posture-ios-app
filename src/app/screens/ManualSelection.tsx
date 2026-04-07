@@ -6,6 +6,7 @@ import {
   determinePostureLevel,
   levelToDefaultDifficulty,
 } from '../services/UserProfile';
+import { generateAndStoreDailyProgram } from '../services/DailyProgram';
 
 const T = {
   bg: '#0A0A0A',
@@ -31,7 +32,7 @@ const ManualSelection: React.FC = () => {
   const confirm = () => {
     const level = determinePostureLevel(selected, selected.length >= 3 ? 'moderate' : 'mild', {});
     const difficulty = levelToDefaultDifficulty(level);
-    saveUserProfile({
+    const profile = saveUserProfile({
       detectedProblems: selected,
       problemCount: selected.length,
       postureLevel: level,
@@ -39,6 +40,7 @@ const ManualSelection: React.FC = () => {
       scanTimestamp: Date.now(),
       onboardingComplete: true,
     });
+    generateAndStoreDailyProgram(profile);
     navigate('/');
   };
 
@@ -83,8 +85,8 @@ const ManualSelection: React.FC = () => {
               onClick={() => toggle(problem.id)}
               style={{
                 textAlign: 'left', padding: 0, borderRadius: 18, overflow: 'hidden',
-                background: isSelected ? `${problem.cardBg}` : T.surface,
-                border: `1.5px solid ${isSelected ? problem.cardBorder : T.border}`,
+                background: isSelected ? 'rgba(217,184,76,0.07)' : T.surface,
+                border: `1.5px solid ${isSelected ? T.gold : T.border}`,
                 cursor: 'pointer', display: 'flex', flexDirection: 'column',
                 transition: 'border-color 0.15s ease, background 0.15s ease',
                 position: 'relative',
@@ -95,10 +97,10 @@ const ManualSelection: React.FC = () => {
                 <div style={{
                   position: 'absolute', top: 8, right: 8, zIndex: 2,
                   width: 20, height: 20, borderRadius: '50%',
-                  background: problem.cardBorder,
+                  background: T.gold,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
                 </div>

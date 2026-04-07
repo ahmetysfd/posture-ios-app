@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import YoutubeModal from '../components/YoutubeModal';
-import BandBadge, { displayName, requiresBand } from '../components/BandBadge';
+import BandBadge, { displayName, hasBandBadge } from '../components/BandBadge';
 import { postureProblems } from '../data/postureData';
 import { loadUserProfile } from '../services/UserProfile';
 
 /* ── Outline icon matching iconType ──────────────────────────── */
-const ExerciseIcon: React.FC<{ type?: string; size?: number; color?: string }> = ({ type, size = 28, color = 'var(--color-primary)' }) => {
+const GOLD = '#D9B84C';
+const GOLD_BG = 'rgba(217,184,76,0.1)';
+const GOLD_BORDER = 'rgba(217,184,76,0.25)';
+
+const ExerciseIcon: React.FC<{ type?: string; size?: number; color?: string }> = ({ type, size = 28, color = GOLD }) => {
   const s = { width: size, height: size };
   const p = { fill: 'none', stroke: color, strokeWidth: 1.7, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   switch (type) {
@@ -132,7 +136,7 @@ const ExerciseFlow: React.FC = () => {
       {/* Progress bar */}
       <div style={{ padding: '0 20px', marginBottom: 20 }}>
         <div style={{ height: 5, borderRadius: 3, background: 'var(--color-surface-elevated)', overflow: 'hidden' }}>
-          <div style={{ height: '100%', borderRadius: 3, background: 'var(--color-primary)', width: `${progress}%`, transition: 'width 0.4s' }} />
+          <div style={{ height: '100%', borderRadius: 3, background: GOLD, width: `${progress}%`, transition: 'width 0.4s' }} />
         </div>
       </div>
 
@@ -164,19 +168,19 @@ const ExerciseFlow: React.FC = () => {
 
             {/* Exercise header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left', marginBottom: 16 }}>
-              <div style={{ width: 56, height: 56, borderRadius: 18, background: 'rgba(229,53,53,0.12)', border: '1.5px solid rgba(229,53,53,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <ExerciseIcon type={ex.iconType} size={26} color="var(--color-primary)" />
+              <div style={{ width: 56, height: 56, borderRadius: 18, background: GOLD_BG, border: `1.5px solid ${GOLD_BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <ExerciseIcon type={ex.iconType} size={26} color={GOLD} />
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'nowrap' }}>
                   <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text)', margin: 0, lineHeight: 1.25 }}>
                     {displayName(ex.name)}
                   </h2>
-                  {requiresBand(ex.name) && (
+                  {hasBandBadge(ex) && (
                     <BandBadge exId={ex.id} activeId={bandTooltip} onToggle={setBandTooltip} />
                   )}
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-primary)', marginTop: 4, display: 'inline-block' }}>{ex.duration}s</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: GOLD, marginTop: 4, display: 'inline-block' }}>{ex.duration}s</span>
               </div>
             </div>
 
@@ -187,7 +191,7 @@ const ExerciseFlow: React.FC = () => {
               <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)', marginBottom: 10 }}>Steps</h4>
               {ex.instructions.map((s, i) => (
                 <div key={i} style={{ display: 'flex', gap: 10, marginBottom: i < ex.instructions.length - 1 ? 10 : 0 }}>
-                  <div style={{ width: 22, height: 22, borderRadius: 7, background: 'rgba(229,53,53,0.12)', border: '1px solid rgba(229,53,53,0.35)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
+                  <div style={{ width: 22, height: 22, borderRadius: 7, background: GOLD_BG, border: `1px solid ${GOLD_BORDER}`, color: GOLD, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
                   <span style={{ fontSize: 13, color: 'var(--color-text-sec)', lineHeight: 1.55 }}>{s}</span>
                 </div>
               ))}
@@ -196,13 +200,13 @@ const ExerciseFlow: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setYtModal({ url: ex.youtubeUrl || `https://www.youtube.com/watch?v=${ex.videoId}`, title: ex.name })}
-                style={{ width: '100%', padding: 14, borderRadius: 18, background: 'var(--color-surface)', color: 'var(--color-primary)', fontSize: 15, fontWeight: 700, marginTop: 14, border: '2px solid var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontFamily: 'var(--font-display)' }}
+                style={{ width: '100%', padding: 14, borderRadius: 18, background: 'var(--color-surface)', color: GOLD, fontSize: 15, fontWeight: 700, marginTop: 14, border: `1px solid ${GOLD_BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontFamily: 'var(--font-display)' }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21" /></svg>
                 Watch demo
               </button>
             )}
-            <button onClick={beginEx} style={{ width: '100%', padding: 15, borderRadius: 18, background: 'var(--color-primary)', color: 'white', fontSize: 15, fontWeight: 700, marginTop: 14, marginBottom: 22, boxShadow: 'var(--shadow-button)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', border: 'none' }}>
+            <button onClick={beginEx} style={{ width: '100%', padding: 15, borderRadius: 18, background: GOLD, color: '#0A0A0A', fontSize: 15, fontWeight: 700, marginTop: 14, marginBottom: 22, boxShadow: '0 8px 24px rgba(217,184,76,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', border: 'none' }}>
               Start Exercise
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21" /></svg>
             </button>
@@ -211,14 +215,14 @@ const ExerciseFlow: React.FC = () => {
         ) : (
           /* ── ACTIVE phase ── */
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', animation: 'scaleIn 0.35s ease' }}>
-            <div style={{ width: 72, height: 72, borderRadius: 22, background: 'rgba(229,53,53,0.12)', border: '1.5px solid rgba(229,53,53,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, animation: 'breathe 3s ease infinite' }}>
-              <ExerciseIcon type={ex.iconType} size={32} color="var(--color-primary)" />
+            <div style={{ width: 72, height: 72, borderRadius: 22, background: GOLD_BG, border: `1.5px solid ${GOLD_BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, animation: 'breathe 3s ease infinite' }}>
+              <ExerciseIcon type={ex.iconType} size={32} color={GOLD} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 20 }}>
               <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
                 {displayName(ex.name)}
               </h2>
-              {requiresBand(ex.name) && (
+              {hasBandBadge(ex) && (
                 <BandBadge exId={`active-${ex.id}`} activeId={bandTooltip} onToggle={setBandTooltip} />
               )}
             </div>
@@ -226,7 +230,7 @@ const ExerciseFlow: React.FC = () => {
             <div style={{ position: 'relative', width: 170, height: 170, marginBottom: 28 }}>
               <svg width="170" height="170" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
                 <circle cx="50" cy="50" r="45" fill="none" stroke="var(--color-surface-elevated)" strokeWidth="4.5" />
-                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--color-primary)" strokeWidth="4.5" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} style={{ transition: 'stroke-dashoffset 1s linear' }} />
+                <circle cx="50" cy="50" r="45" fill="none" stroke={GOLD} strokeWidth="4.5" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} style={{ transition: 'stroke-dashoffset 1s linear' }} />
               </svg>
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--color-text)' }}>{fmt(timeLeft)}</div>
@@ -235,16 +239,16 @@ const ExerciseFlow: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', gap: 16 }}>
-              <button onClick={() => setPaused(!paused)} style={{ width: 60, height: 60, borderRadius: '50%', cursor: 'pointer', border: paused ? 'none' : '2px solid var(--color-primary)', background: paused ? 'var(--color-primary)' : 'var(--color-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }}>
+              <button onClick={() => setPaused(!paused)} style={{ width: 60, height: 60, borderRadius: '50%', cursor: 'pointer', border: paused ? 'none' : `2px solid ${GOLD}`, background: paused ? GOLD : 'var(--color-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }}>
                 {paused
-                  ? <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21" /></svg>
-                  : <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--color-primary)"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>}
+                  ? <svg width="22" height="22" viewBox="0 0 24 24" fill="#0A0A0A"><polygon points="5 3 19 12 5 21" /></svg>
+                  : <svg width="22" height="22" viewBox="0 0 24 24" fill={GOLD}><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>}
               </button>
               <button onClick={() => { if (exIdx < total - 1) { setExIdx(i => i + 1); setPhase('intro'); } else navigate(`/completion/${problemId}`); }} style={{ width: 60, height: 60, borderRadius: '50%', background: 'var(--color-surface)', border: '2px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--color-text-sec)"><polygon points="5 4 15 12 5 20" /><line x1="19" y1="5" x2="19" y2="19" stroke="var(--color-text-sec)" strokeWidth="2" /></svg>
               </button>
             </div>
-            {paused && <div style={{ marginTop: 14, fontSize: 13, fontWeight: 600, color: 'var(--color-primary)', animation: 'pulse 1.5s ease infinite' }}>Paused</div>}
+            {paused && <div style={{ marginTop: 14, fontSize: 13, fontWeight: 600, color: GOLD, animation: 'pulse 1.5s ease infinite' }}>Paused</div>}
           </div>
         )}
       </div>
