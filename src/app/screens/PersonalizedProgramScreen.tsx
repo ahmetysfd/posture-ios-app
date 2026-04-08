@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loadDailyProgram } from '../services/DailyProgram';
+import { getOrRefreshDailyProgram, loadDailyProgram } from '../services/DailyProgram';
+import { loadUserProfile } from '../services/UserProfile';
 
 const T = {
   bg: '#0A0A0A', surface: '#141414', border: 'rgba(255,255,255,0.06)',
@@ -19,7 +20,8 @@ function phaseLabel(name: string): { label: string; color: string } {
 
 const PersonalizedProgramScreen: React.FC = () => {
   const navigate = useNavigate();
-  const program = loadDailyProgram();
+  const profile = loadUserProfile();
+  const program = profile?.scanTimestamp ? getOrRefreshDailyProgram(profile) : loadDailyProgram();
 
   if (!program || program.exercises.length === 0) {
     navigate('/');

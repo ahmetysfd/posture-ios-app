@@ -62,6 +62,9 @@ export interface PostureProblem {
   mapLabel?: string;
   /** Set by MoveNet v2 pipeline (low / medium / high) */
   riskCategory?: 'low' | 'medium' | 'high';
+  confidenceScore?: number;
+  supportingMeasurements?: string[];
+  rawMetrics?: Record<string, number>;
 }
 
 export interface PostureReport {
@@ -565,12 +568,14 @@ function checkHipAlignment(landmarks: Landmark[]): PostureProblem {
  * (Several findings intentionally appear on more than one panel.)
  */
 export const BODY_MAP_PANELS_BY_ID: Record<string, IntendedView[]> = {
-  'forward-head': ['front'],
+  'forward-head': ['side', 'front'],
   'rounded-shoulders': ['front', 'side'],
   'chest-ribcage': ['front'],
-  'anterior-pelvic': ['side'],
-  'slouching': ['front', 'back'],
-  'shoulder-asymmetry': ['back'],
+  'anterior-pelvic': ['side', 'front'],
+  kyphosis: ['side', 'back'],
+  'slouching': ['side', 'back'],
+  'shoulder-asymmetry': ['front', 'back'],
+  'uneven-shoulders': ['front', 'back'],
   'winging-scapula': ['back'],
   'hip-alignment': ['front'],
 };
@@ -581,8 +586,10 @@ const BEST_SOURCE_VIEW_BY_ID: Partial<Record<string, IntendedView>> = {
   'rounded-shoulders': 'side',
   'chest-ribcage': 'front',
   'anterior-pelvic': 'side',
+  kyphosis: 'side',
   'slouching': 'side',
-  'shoulder-asymmetry': 'back',
+  'shoulder-asymmetry': 'front',
+  'uneven-shoulders': 'front',
   'winging-scapula': 'back',
   'hip-alignment': 'front',
 };
@@ -882,11 +889,11 @@ export function generateRecommendations(problems: PostureProblem[]): string[] {
     recs.push('Hip flexor stretch + glute bridges most days.');
     recs.push('Stand and move every 30–45 minutes.');
   }
-  if (has('slouching')) {
+  if (has('slouching') || has('kyphosis')) {
     recs.push('Short thoracic extension breaks over a chair edge or foam roller.');
     recs.push('Wall posture cue: head, upper back, hips stacked.');
   }
-  if (has('shoulder-asymmetry')) {
+  if (has('shoulder-asymmetry') || has('uneven-shoulders')) {
     recs.push('Check one-sided carry habits and add balanced pulling strength work.');
   }
   if (has('hip-alignment')) {
@@ -962,9 +969,21 @@ export function generatePersonalizedProgram(report: PostureReport): Personalized
       { name: 'Wall stand', emoji: '🧱', duration: 30, targetProblem: 'Upper back', priority: 'medium',
         instructions: ['Head, shoulders, hips on wall', 'Breathe easy', '30s'] },
     ],
+    kyphosis: [
+      { name: 'Thoracic extension', emoji: '🤸', duration: 45, targetProblem: 'Kyphosis', priority: 'high',
+        instructions: ['Hands behind head', 'Extend over chair', '8–10 reps'] },
+      { name: 'Wall stand', emoji: '🧱', duration: 30, targetProblem: 'Kyphosis', priority: 'medium',
+        instructions: ['Head, shoulders, hips on wall', 'Breathe easy', '30s'] },
+    ],
     'shoulder-asymmetry': [
       { name: 'Side plank (weaker side)', emoji: '🏋️', duration: 30, targetProblem: 'Shoulder balance', priority: 'medium',
         instructions: ['Short holds', '20s × 3', 'Stay tall'] },
+    ],
+    'uneven-shoulders': [
+      { name: 'Side plank (weaker side)', emoji: '🏋️', duration: 30, targetProblem: 'Uneven shoulders', priority: 'medium',
+        instructions: ['Short holds', '20s × 3', 'Stay tall'] },
+      { name: 'Band single-arm row', emoji: '💪', duration: 45, targetProblem: 'Uneven shoulders', priority: 'high',
+        instructions: ['Even reps both sides', '3×10', 'Pause at top'] },
     ],
     'hip-alignment': [
       { name: 'Single-leg bridge', emoji: '🌉', duration: 45, targetProblem: 'Hip balance', priority: 'medium',
@@ -1006,7 +1025,9 @@ export const SCAN_TO_APP_PROBLEM: Record<string, string> = {
   'rounded-shoulders': 'rounded-shoulders',
   'anterior-pelvic': 'anterior-pelvic',
   'pelvic-tilt': 'anterior-pelvic',
+  kyphosis: 'kyphosis',
   'slouching': 'kyphosis',
+  'uneven-shoulders': 'uneven-shoulders',
   'shoulder-asymmetry': 'uneven-shoulders',
   'hip-alignment': 'anterior-pelvic',
   'chest-ribcage': 'rounded-shoulders',

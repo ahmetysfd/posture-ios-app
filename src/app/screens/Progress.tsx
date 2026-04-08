@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DetectedReasonsSection from '../components/DetectedReasonsSection';
-import ProgressBodyImageMap from '../components/ProgressBodyImageMap';
 import Layout from '../components/Layout';
+import ScanAnalysisView from '../components/ScanAnalysisView';
+import { postureProblems, type PostureProblem as AppPostureProblem } from '../data/postureData';
 import {
   BODY_REGION_LABELS,
-  deriveStretchPrescription,
   getHighlightedProblems,
   type PostureReport,
   VIEW_LABELS,
 } from '../services/PostureAnalysisEngine';
-import { RISK_INFO } from '../services/PostureAnalysisEngineV2';
+import { RISK_INFO, type ScanReport } from '../services/PostureAnalysisEngineV2';
 import {
   getDailyStats,
   loadDailyProgram,
@@ -113,6 +113,8 @@ const Progress: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [report, setReport] = useState<PostureReport | null>(null);
+  const [latestScan, setLatestScan] = useState<ScanReport | null>(null);
+  const [scanCaptures, setScanCaptures] = useState<{ front: string; side: string; back: string } | null>(null);
   const [programExpanded, setProgramExpanded] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [swapTarget, setSwapTarget] = useState<string | null>(null);
@@ -149,14 +151,24 @@ const Progress: React.FC = () => {
 
   useEffect(() => {
     const raw = sessionStorage.getItem('postureReport') ?? localStorage.getItem('posturefix_scan_report');
-    if (!raw) {
-      setReport(null);
-      return;
-    }
     try {
-      setReport(JSON.parse(raw) as PostureReport);
+      setReport(raw ? JSON.parse(raw) as PostureReport : null);
     } catch {
       setReport(null);
+    }
+
+    const rawScan = sessionStorage.getItem('postureScanV2') ?? localStorage.getItem('posturefix_scan_v2');
+    try {
+      setLatestScan(rawScan ? JSON.parse(rawScan) as ScanReport : null);
+    } catch {
+      setLatestScan(null);
+    }
+
+    const rawCaptures = sessionStorage.getItem('scanCaptures') ?? localStorage.getItem('posturefix_scan_captures');
+    try {
+      setScanCaptures(rawCaptures ? JSON.parse(rawCaptures) as { front: string; side: string; back: string } : null);
+    } catch {
+      setScanCaptures(null);
     }
   }, [location.pathname, location.key]);
 
@@ -173,10 +185,15 @@ const Progress: React.FC = () => {
   }, [programExpanded, localProgram]);
 
   const highlighted = report ? getHighlightedProblems(report.problems, 4) : [];
+  const detectedProblemCards: AppPostureProblem[] = report
+    ? report.problems
+        .map(problem => postureProblems.find(item => item.id === problem.id))
+        .filter((item): item is AppPostureProblem => Boolean(item))
+        .filter((item, index, arr) => arr.findIndex(other => other.id === item.id) === index)
+    : [];
   const lastScanLabel = report
     ? new Date(report.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     : null;
-  const stretchPlan = report ? deriveStretchPrescription(report) : null;
 
   return (
     <Layout>
@@ -187,6 +204,23 @@ const Progress: React.FC = () => {
           {lastScanLabel && <span style={{ fontSize: 12, color: T.text3, fontFamily: T.font }}>{lastScanLabel}</span>}
         </div>
       </div>
+
+      {latestScan && scanCaptures && (
+        <div style={{ padding: '20px 24px 0', animation: 'slideUp 0.35s ease 0.01s both' }}>
+          <div style={{ marginBottom: 14, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.text3, fontWeight: 500, fontFamily: T.font }}>
+            Latest analysis
+          </div>
+          <ScanAnalysisView
+            report={latestScan}
+            photos={scanCaptures}
+            keypoints={latestScan.allKeypoints}
+            onViewDailyPlan={() => navigate('/scan/program')}
+            onViewFullReport={() => {}}
+            onNewScan={() => navigate('/scan')}
+            showFullReportButton={false}
+          />
+        </div>
+      )}
 
       <div style={{ padding: '20px 24px 0', animation: 'slideUp 0.35s ease 0.02s both' }}>
         <div style={{ background: T.surface, borderRadius: 14, padding: 16, border: `1px solid ${T.border2}`, marginBottom: 16 }}>
@@ -571,36 +605,79 @@ const Progress: React.FC = () => {
         <>
           <div style={{ padding: '20px 24px 0', animation: 'slideUp 0.35s ease 0.1s both' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <Label>Body map</Label>
-              <span style={{ fontSize: 12, color: T.text3, marginBottom: 14, fontFamily: T.font }}>Front · Side · Back</span>
+              <Label>Detected problem images</Label>
+              <span style={{ fontSize: 12, color: T.text3, marginBottom: 14, fontFamily: T.font }}>
+                {detectedProblemCards.length} shown
+              </span>
             </div>
-            <ProgressBodyImageMap findings={report.problems} maxFindings={4} />
-          </div>
-
-          <Divider />
-
-          {stretchPlan && (
-            <div style={{ padding: '24px 24px 0', animation: 'slideUp 0.35s ease 0.15s both' }}>
-              <Label>Daily stretch target</Label>
-              <p style={{ fontSize: 13, color: T.text2, lineHeight: 1.6, marginBottom: 16, fontFamily: T.font }}>
-                {stretchPlan.summary}{' '}
-                {stretchPlan.sessionsPerDay === 2
-                  ? `Try ~${stretchPlan.minutesPerSession[0]} min + ~${stretchPlan.minutesPerSession[1]} min on most days.`
-                  : `One ~${stretchPlan.minutesPerSession[0]} min session most days is enough.`}
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: T.border, borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
-                <div style={{ background: T.surface, padding: 16 }}>
-                  <div style={{ fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: T.text3, fontWeight: 500, marginBottom: 6, fontFamily: T.font }}>Daily total</div>
-                  <div style={{ fontSize: 22, fontWeight: 600, color: T.blue, letterSpacing: '-0.02em', fontFamily: T.font }}>{stretchPlan.dailyMinutesTotal} min</div>
-                </div>
-                <div style={{ background: T.surface, padding: 16 }}>
-                  <div style={{ fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase', color: T.text3, fontWeight: 500, marginBottom: 6, fontFamily: T.font }}>Timeline</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: T.text, lineHeight: 1.4, marginTop: 2, fontFamily: T.font }}>~{stretchPlan.habitsTimelineWeeks.min}–{stretchPlan.habitsTimelineWeeks.max} weeks</div>
-                </div>
+            {detectedProblemCards.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {detectedProblemCards.map((problem, index) => (
+                  <button
+                    key={problem.id}
+                    type="button"
+                    onClick={() => navigate(`/problem/${problem.id}`)}
+                    style={{
+                      background: T.surface,
+                      border: `1px solid ${T.border}`,
+                      borderRadius: 14,
+                      padding: 0,
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      display: 'block',
+                      animation: `slideUp 0.35s ease ${0.12 + index * 0.04}s both`,
+                    }}
+                  >
+                    <div style={{
+                      height: 172,
+                      background: '#0A0A0A',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <img
+                        src={problem.cardImage}
+                        alt={problem.title}
+                        draggable={false}
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '100%',
+                          width: 'auto',
+                          height: 'auto',
+                          objectFit: 'contain',
+                          objectPosition: problem.cardImageObjectPosition ?? 'center',
+                          display: 'block',
+                        }}
+                      />
+                    </div>
+                    <div style={{
+                      padding: '10px 10px 12px',
+                      textAlign: 'left',
+                      lineHeight: 1.35,
+                    }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: T.text, fontFamily: T.font }}>
+                        {problem.title}
+                      </div>
+                      <div style={{ fontSize: 11, color: T.text3, marginTop: 3, fontFamily: T.font }}>
+                        Open exercises and details
+                      </div>
+                    </div>
+                  </button>
+                ))}
               </div>
-              <p style={{ fontSize: 11, color: T.text3, lineHeight: 1.55, paddingTop: 12, borderTop: `1px solid ${T.border}`, fontFamily: T.font }}>{stretchPlan.disclaimer}</p>
-            </div>
-          )}
+            ) : (
+              <div style={{
+                background: T.surface,
+                border: `1px solid ${T.border}`,
+                borderRadius: 12,
+                padding: 16,
+              }}>
+                <p style={{ fontSize: 13, color: T.text2, lineHeight: 1.55, fontFamily: T.font }}>
+                  No known posture problem images matched the latest scan yet.
+                </p>
+              </div>
+            )}
+          </div>
 
           <Divider />
 

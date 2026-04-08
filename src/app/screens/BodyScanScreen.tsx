@@ -1,34 +1,35 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PostureBodyMap from '../components/PostureBodyMap';
+import ScanAnalysisView from '../components/ScanAnalysisView';
 import {
   initPoseDetector,
   detectPose,
   validatePoseForView,
-  drawSkeleton,
   type PoseModelStatus,
   type Keypoint,
 } from '../services/MoveNetPoseService';
 import {
-  BODY_REGION_LABELS,
-  VIEW_LABELS,
-  getHighlightedProblems,
   type PostureReport,
   type IntendedView,
 } from '../services/PostureAnalysisEngine';
-import { analyzeThreePhotos, determineLevel, RISK_INFO } from '../services/PostureAnalysisEngineV2';
+import {
+  analyzeThreePhotos,
+  determineLevel,
+  type ScanReport,
+} from '../services/PostureAnalysisEngineV2';
 import { scanReportToPostureReport } from '../services/scanReportAdapter';
 import {
   appendLocalScanLog,
   buildLocalScanEntry,
   tryCloudPersistScan,
 } from '../services/scanPersistence';
+import { generateAndStoreDailyProgram } from '../services/DailyProgram';
 import { loadUserProfile, saveUserProfile, levelToDefaultDifficulty } from '../services/UserProfile';
 
 const STEPS: { key: IntendedView; title: string; subtitle: string }[] = [
-  { key: 'front', title: 'Front', subtitle: 'Face the camera with head to knees visible, arms relaxed slightly away from the body.' },
-  { key: 'side', title: 'Side', subtitle: 'Turn 90 degrees so your nose, shoulders, hips, and knees stay in one profile line.' },
-  { key: 'back', title: 'Back', subtitle: 'Keep your back to the camera with head to knees visible and body centered on the guide.' },
+  { key: 'front', title: 'Front', subtitle: 'Face the camera squarely with both shoulders and hips visible, arms relaxed slightly away from the body.' },
+  { key: 'side', title: 'Side', subtitle: 'Turn fully 90 degrees so your shoulders and hips form a clean side profile.' },
+  { key: 'back', title: 'Back', subtitle: 'Keep your back square to the camera with both shoulders and hips fully visible.' },
 ];
 
 async function downscaleDataUrl(dataUrl: string, maxW = 720): Promise<string> {
@@ -66,8 +67,6 @@ const BodyScanScreen: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadTargetRef = useRef<IntendedView>('front');
-  const imageRef = useRef<HTMLImageElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const captureTimeoutRef = useRef<number | null>(null);
 
   const [modelStatus, setModelStatus] = useState<PoseModelStatus>('idle');
@@ -76,6 +75,12 @@ const BodyScanScreen: React.FC = () => {
   const [flow, setFlow] = useState<'intro' | 'pick' | 'camera' | 'preview' | 'review3' | 'done'>('intro');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [report, setReport] = useState<PostureReport | null>(null);
+  const [scanReport, setScanReport] = useState<ScanReport | null>(null);
+  const [allKeypoints, setAllKeypoints] = useState<Record<IntendedView, Keypoint[]>>({
+    front: [],
+    side: [],
+    back: [],
+  });
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
@@ -85,7 +90,6 @@ const BodyScanScreen: React.FC = () => {
   const [uploadCaptureMode, setUploadCaptureMode] = useState<'user' | 'environment' | undefined>(undefined);
 
   const currentStep = STEPS[stepIndex];
-  const highlightedProblems = report ? getHighlightedProblems(report.problems, 3) : [];
 
   useEffect(() => {
     let cancelled = false;
@@ -344,6 +348,8 @@ const BodyScanScreen: React.FC = () => {
       });
 
       const stableReport = scanReportToPostureReport(scan);
+      setScanReport(scan);
+      setAllKeypoints(allKeypoints);
       setReport(stableReport);
 
       sessionStorage.setItem('postureReport', JSON.stringify(stableReport));
@@ -352,14 +358,21 @@ const BodyScanScreen: React.FC = () => {
       localStorage.setItem('posturefix_scan_report', JSON.stringify(stableReport));
       sessionStorage.setItem('scanCaptures', JSON.stringify({ front: photos.front, side: photos.side, back: photos.back }));
       sessionStorage.setItem('scanImageUrl', photos.side || photos.front || photos.back || '');
+      try {
+        localStorage.setItem('posturefix_scan_v2', JSON.stringify(scan));
+        localStorage.setItem('posturefix_scan_captures', JSON.stringify({ front: photos.front, side: photos.side, back: photos.back }));
+      } catch {
+        // Large data URLs can exceed storage quota on some devices.
+      }
 
-      saveUserProfile({
+      const savedProfile = saveUserProfile({
         postureLevel: scan.postureLevel,
         detectedProblems: scan.problems.map(p => p.id),
         problemCount: scan.problems.length,
         scanTimestamp: Date.now(),
         exerciseDifficulty: levelToDefaultDifficulty(scan.postureLevel),
       });
+      generateAndStoreDailyProgram(savedProfile);
 
       appendLocalScanLog(buildLocalScanEntry(scan));
       void tryCloudPersistScan(scan);
@@ -373,32 +386,6 @@ const BodyScanScreen: React.FC = () => {
     setAnalyzing(false);
   }, [photos]);
 
-  useEffect(() => {
-    if (flow !== 'done') return;
-    const raw = sessionStorage.getItem('postureSideKeypoints');
-    if (!raw) return;
-    let keypoints: Keypoint[];
-    try {
-      keypoints = JSON.parse(raw) as Keypoint[];
-    } catch {
-      return;
-    }
-    const img = imageRef.current;
-    const canvas = canvasRef.current;
-    if (!img || !canvas || !keypoints?.length) return;
-
-    const paint = () => {
-      const w = img.clientWidth;
-      const h = img.clientHeight;
-      if (w < 2 || h < 2) return;
-      drawSkeleton(canvas, keypoints, w, h);
-    };
-
-    img.addEventListener('load', paint);
-    if (img.complete) requestAnimationFrame(paint);
-    return () => img.removeEventListener('load', paint);
-  }, [flow, previewUrl, report]);
-
   const resetAll = useCallback(() => {
     if (captureTimeoutRef.current) {
       window.clearTimeout(captureTimeoutRef.current);
@@ -409,6 +396,8 @@ const BodyScanScreen: React.FC = () => {
     setStepIndex(0);
     setPreviewUrl(null);
     setReport(null);
+    setScanReport(null);
+    setAllKeypoints({ front: [], side: [], back: [] });
     setFlow('intro');
     setError(null);
   }, []);
@@ -515,6 +504,7 @@ const BodyScanScreen: React.FC = () => {
               <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--color-text-sec)', fontSize: 13, lineHeight: 1.55 }}>
                 <li>Plain wall, even light</li>
                 <li>Step back until your head and knees stay inside the frame</li>
+                <li>Face front/back photos square to the camera and rotate the side photo fully to profile</li>
                 <li>Use fitted clothing when possible for cleaner landmark detection</li>
                 <li>Educational only — not medical advice</li>
               </ul>
@@ -775,101 +765,15 @@ const BodyScanScreen: React.FC = () => {
           </div>
         )}
 
-        {flow === 'done' && (previewUrl || photos.front) && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 24 }}>
-            <p style={{ fontSize: 12, color: 'var(--color-text-tert)' }}>Preview: side view (or front if no side)</p>
-            <div style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', background: '#000' }}>
-              <img ref={imageRef} src={previewUrl || photos.front || ''} alt="" style={{ width: '100%', display: 'block' }} />
-              <canvas
-                ref={canvasRef}
-                style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
-              />
-            </div>
-
-            {report && (
-              <>
-                <div style={{
-                  background: 'var(--color-surface)',
-                  borderRadius: 18,
-                  padding: 16,
-                  border: '1px solid var(--color-border)',
-                }}>
-                  <p style={{ fontSize: 12, color: 'var(--color-text-tert)', marginBottom: 8 }}>
-                    Combined views: {report.viewsCombined?.map(view => VIEW_LABELS[view]).join(' + ') || 'Multi-view'}
-                  </p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>Overall posture score</span>
-                    <span style={{
-                      fontWeight: 800,
-                      color: report.overallScore >= 70 ? 'var(--color-accent)' : report.overallScore >= 40 ? 'var(--color-warning)' : 'var(--color-danger)',
-                    }}>{report.overallScore}/100</span>
-                  </div>
-                  <p style={{ fontSize: 12, color: 'var(--color-text-tert)', lineHeight: 1.5 }}>
-                    Scores are stabilized into bands so similar poses read the same across retakes. Open the full report for your level and exercises.
-                  </p>
-                </div>
-
-                <PostureBodyMap findings={report.problems} compact maxFindings={3} />
-
-                {highlightedProblems.length > 0 && (
-                  <div style={{
-                    background: 'var(--color-surface)',
-                    borderRadius: 18,
-                    padding: 16,
-                    border: '1px solid var(--color-border)',
-                  }}>
-                    {highlightedProblems.map(problem => (
-                      <div key={problem.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>
-                            {problem.mapLabel ?? BODY_REGION_LABELS[problem.bodyRegion]}
-                          </div>
-                          <div style={{ fontSize: 11, color: 'var(--color-text-tert)', marginTop: 3 }}>
-                            {problem.confidenceLabel}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>
-                          {problem.riskCategory
-                            ? RISK_INFO[problem.riskCategory].label
-                            : problem.score >= 20
-                              ? `${problem.severity.charAt(0).toUpperCase()}${problem.severity.slice(1)}`
-                              : '—'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-
-            <button
-              type="button"
-              onClick={() => navigate('/scan/program')}
-              style={{
-                width: '100%', padding: 16, borderRadius: 18,
-                background: 'var(--color-primary)', color: '#fff', fontSize: 16, fontWeight: 700,
-                border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-button)',
-              }}
-            >
-              See your daily plan →
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/progress')}
-              style={{
-                width: '100%', padding: 12, borderRadius: 16,
-                background: 'var(--color-surface)', color: 'var(--color-text)',
-                fontSize: 14, border: '1px solid var(--color-border)', cursor: 'pointer',
-              }}
-            >
-              View progress
-            </button>
-            <button type="button" onClick={resetAll} style={{
-              padding: 12, borderRadius: 16,
-              background: 'var(--color-surface)', color: 'var(--color-text)',
-              fontSize: 14, border: '1px solid var(--color-border)', cursor: 'pointer',
-            }}>New scan</button>
-          </div>
+        {flow === 'done' && scanReport && photos.front && photos.side && photos.back && (
+          <ScanAnalysisView
+            report={scanReport}
+            photos={{ front: photos.front, side: photos.side, back: photos.back }}
+            keypoints={allKeypoints}
+            onViewDailyPlan={() => navigate('/scan/program')}
+            onViewFullReport={() => navigate('/progress')}
+            onNewScan={resetAll}
+          />
         )}
       </div>
     </div>

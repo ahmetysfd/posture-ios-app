@@ -117,6 +117,7 @@ export function validatePoseForView(
   const MIN_CONF = 0.3;
 
   const isVisible = (idx: number) => kps[idx] && kps[idx].score >= MIN_CONF;
+  const kp = (idx: number) => (isVisible(idx) ? kps[idx] : null);
 
   const hasShoulders = isVisible(KP.LEFT_SHOULDER) && isVisible(KP.RIGHT_SHOULDER);
   const hasHips = isVisible(KP.LEFT_HIP) && isVisible(KP.RIGHT_HIP);
@@ -126,16 +127,78 @@ export function validatePoseForView(
   if (!hasHips)
     return { valid: false, reason: 'Hips not visible. Make sure your full torso is in the photo.' };
 
-  if (view === 'front' || view === 'back') {
+  const ls = kp(KP.LEFT_SHOULDER);
+  const rs = kp(KP.RIGHT_SHOULDER);
+  const lh = kp(KP.LEFT_HIP);
+  const rh = kp(KP.RIGHT_HIP);
+  const shoulderWidth = ls && rs ? Math.abs(ls.x - rs.x) : 0;
+  const hipWidth = lh && rh ? Math.abs(lh.x - rh.x) : 0;
+  const shouldersMidX = ls && rs ? (ls.x + rs.x) / 2 : 0;
+  const hipsMidX = lh && rh ? (lh.x + rh.x) / 2 : 0;
+  const torsoOffset = Math.abs(shouldersMidX - hipsMidX);
+
+  if (view === 'front') {
     const hasNose = isVisible(KP.NOSE);
     if (!hasNose)
       return { valid: false, reason: 'Head not visible. Include your head in the frame.' };
+    if (shoulderWidth < 0.14 || hipWidth < 0.1) {
+      return {
+        valid: false,
+        reason: 'Turn more square to the camera for the front photo so both shoulders and hips are clearly visible.',
+      };
+    }
+    if (torsoOffset > 0.08) {
+      return {
+        valid: false,
+        reason: 'Stand more centered and avoid twisting your torso in the front photo.',
+      };
+    }
+  }
+
+  if (view === 'back') {
+    // Back-view photos often hide the nose; use any head landmark.
+    const hasHeadLandmark =
+      isVisible(KP.NOSE) ||
+      isVisible(KP.LEFT_EYE) ||
+      isVisible(KP.RIGHT_EYE) ||
+      isVisible(KP.LEFT_EAR) ||
+      isVisible(KP.RIGHT_EAR);
+    if (!hasHeadLandmark) {
+      return {
+        valid: false,
+        reason: 'Head top is not clear in back view. Step back and keep your full head in frame.',
+      };
+    }
+    if (shoulderWidth < 0.14 || hipWidth < 0.1) {
+      return {
+        valid: false,
+        reason: 'Turn more square to the camera for the back photo so both shoulders and hips are clearly visible.',
+      };
+    }
+    if (torsoOffset > 0.08) {
+      return {
+        valid: false,
+        reason: 'Avoid twisting in the back photo. Keep both shoulders level and facing away from the camera.',
+      };
+    }
   }
 
   if (view === 'side') {
     const hasKnee = isVisible(KP.LEFT_KNEE) || isVisible(KP.RIGHT_KNEE);
     if (!hasKnee)
       return { valid: false, reason: 'Knees not visible. Stand farther from the camera.' };
+    if (shoulderWidth > 0.16 || hipWidth > 0.12) {
+      return {
+        valid: false,
+        reason: 'Rotate more to the side so your shoulders and hips form a cleaner profile view.',
+      };
+    }
+    if (torsoOffset > 0.1) {
+      return {
+        valid: false,
+        reason: 'Keep your side photo centered and avoid twisting your torso toward the camera.',
+      };
+    }
   }
 
   return { valid: true };

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import YoutubeModal from '../components/YoutubeModal';
-import { loadDailyProgram, markExerciseComplete, type DailyExercise } from '../services/DailyProgram';
+import { getOrRefreshDailyProgram, loadDailyProgram, markExerciseComplete, type DailyExercise } from '../services/DailyProgram';
+import { loadUserProfile } from '../services/UserProfile';
 
 const T = {
   bg: '#0A0A0A', surface: '#141414', surfaceEl: '#1E1E1E',
@@ -16,7 +17,8 @@ const DailyExerciseFlow: React.FC = () => {
 
   // Only work on exercises that aren't done yet
   const [exercises] = useState<DailyExercise[]>(() => {
-    const p = loadDailyProgram();
+    const profile = loadUserProfile();
+    const p = profile?.scanTimestamp ? getOrRefreshDailyProgram(profile) : loadDailyProgram();
     return p?.exercises.filter(e => !e.completed) ?? [];
   });
 

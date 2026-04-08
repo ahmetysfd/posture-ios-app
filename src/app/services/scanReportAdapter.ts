@@ -3,7 +3,7 @@
  */
 import type { PostureReport as LegacyReport, PostureProblem as LegacyProblem } from './PostureAnalysisEngine';
 import { summarizeConfidence, generateRecommendations } from './PostureAnalysisEngine';
-import type { ScanReport } from './PostureAnalysisEngineV2';
+import type { ScanReport, PostureProblem as ScanProblem } from './PostureAnalysisEngineV2';
 import type { RiskCategory } from '../types/assessment';
 
 function riskToSeverity(r: RiskCategory): LegacyProblem['severity'] {
@@ -19,10 +19,17 @@ function riskToSeverity(r: RiskCategory): LegacyProblem['severity'] {
   }
 }
 
+function overlayPanels(p: ScanProblem): NonNullable<LegacyProblem['mapPanels']> {
+  if (p.showOnViews?.length) return p.showOnViews;
+  return p.detectedInViews.length ? p.detectedInViews : [p.dominantView];
+}
+
 export function scanReportToPostureReport(scan: ScanReport): LegacyReport {
   const problems: LegacyProblem[] = scan.problems.map((p) => {
+    const viewsForConfidence =
+      p.detectedInViews.length > 0 ? p.detectedInViews : overlayPanels(p);
     const { confidenceLevel, confidenceLabel } = summarizeConfidence(
-      p.detectedInViews,
+      viewsForConfidence,
       p.dominantView,
     );
     return {
@@ -39,8 +46,11 @@ export function scanReportToPostureReport(scan: ScanReport): LegacyReport {
       description: p.description,
       details: p.description,
       mapLabel: p.mapLabel,
-      mapPanels: p.detectedInViews,
+      mapPanels: overlayPanels(p),
       riskCategory: p.riskCategory,
+      confidenceScore: p.confidenceScore,
+      supportingMeasurements: p.supportingMeasurements,
+      rawMetrics: p.rawMetrics,
     };
   });
 
