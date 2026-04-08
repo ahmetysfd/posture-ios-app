@@ -409,7 +409,24 @@ export function loadDailyProgram(): StoredDailyProgram | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as StoredDailyProgram;
+    const program = JSON.parse(raw) as StoredDailyProgram;
+
+    // Auto-reset on new day: if the program was generated on a previous calendar
+    // day (device local time), clear all completion flags so the user starts fresh.
+    const programDate = new Date(program.generatedAt).toLocaleDateString('en-CA'); // YYYY-MM-DD local
+    const today = new Date().toLocaleDateString('en-CA');
+    if (programDate !== today) {
+      const reset: StoredDailyProgram = {
+        ...program,
+        generatedAt: Date.now(),
+        completedAt: undefined,
+        exercises: program.exercises.map(ex => ({ ...ex, completed: false })),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(reset));
+      return reset;
+    }
+
+    return program;
   } catch {
     return null;
   }
@@ -584,6 +601,15 @@ export function getDailyStats(): {
   return { streak, totalMinutes, completedToday };
 }
 
+/** Count distinct days in the current calendar month where the program was fully completed. */
+export function getMonthlyCompletionCount(): number {
+  const log = loadProgressLog();
+  const now = new Date();
+  // Build "YYYY-MM" prefix for the current local month
+  const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  return log.filter(e => e.fullyCompleted && e.date.startsWith(prefix)).length;
+}
+
 // ── Session bridge ────────────────────────────────────────────────────────────
 
 /** Convert stored program to the PersonalizedProgram shape for PersonalizedProgramScreen. */
@@ -748,7 +774,7 @@ export function updateExerciseParams(
       return next;
     }),
   };
-  const totalSec = updated.exercises.reduce((s, e) => s + e.duration + REST_BETWEEN_SEC, 0);
+  const totalSec = updated.exercises.reduce((s, e) => s + e.duration * e.sets + REST_BETWEEN_SEC, 0);
   updated.totalDurationMin = Math.round(totalSec / 60);
   saveDailyProgram(updated);
   return updated;

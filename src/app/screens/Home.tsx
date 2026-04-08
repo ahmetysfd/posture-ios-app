@@ -346,7 +346,7 @@ const Home: React.FC = () => {
                           {ex.name}
                         </div>
                         <div style={{ fontSize: 11, color: T.text3, marginTop: 2 }}>
-                          {ex.displayReps} {ex.targetProblemLabels[0] ? `· ${ex.targetProblemLabels[0]}` : ''}
+                          {ex.sets > 1 ? `${ex.sets} sets · ` : ''}{ex.displayReps}{ex.targetProblemLabels[0] ? ` · ${ex.targetProblemLabels[0]}` : ''}
                         </div>
                       </div>
                       {ex.completed && (

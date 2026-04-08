@@ -3,19 +3,17 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import DetectedReasonsSection from '../components/DetectedReasonsSection';
 import Layout from '../components/Layout';
 import ScanAnalysisView from '../components/ScanAnalysisView';
+import SwapFlowModal from '../components/SwapFlowModal';
 import { postureProblems, type PostureProblem as AppPostureProblem } from '../data/postureData';
 import {
-  BODY_REGION_LABELS,
-  getHighlightedProblems,
   type PostureReport,
-  VIEW_LABELS,
 } from '../services/PostureAnalysisEngine';
-import { RISK_INFO, type ScanReport } from '../services/PostureAnalysisEngineV2';
+import { type ScanReport } from '../services/PostureAnalysisEngineV2';
 import {
   getDailyStats,
+  getMonthlyCompletionCount,
   loadDailyProgram,
   loadProgressLog,
-  getReplacementCandidates,
   replaceExercise,
   updateExerciseParams,
   isStrengthExercise,
@@ -39,8 +37,6 @@ const T = {
   font: "system-ui, -apple-system, 'Helvetica Neue', sans-serif",
 };
 
-const severityColor = (s: string) =>
-  s === 'severe' ? T.orange : s === 'moderate' ? T.gold : T.green;
 
 const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div style={{ fontSize: 15, letterSpacing: '-0.01em', color: T.text, fontWeight: 500, marginBottom: 14, fontFamily: T.font }}>{children}</div>
@@ -121,6 +117,7 @@ const Progress: React.FC = () => {
   const [upgradePopup, setUpgradePopup] = useState<{ exercise: DailyExercise; suggestion: Exercise | null } | null>(null);
   const [localProgram, setLocalProgram] = useState<StoredDailyProgram | null>(() => loadDailyProgram());
   const { streak, completedToday } = getDailyStats();
+  const monthlyCount = getMonthlyCompletionCount();
   const profile = loadUserProfile();
 
   const sortedExercises = localProgram
@@ -128,17 +125,10 @@ const Progress: React.FC = () => {
         (a.targetProblemLabels[0] ?? '').localeCompare(b.targetProblemLabels[0] ?? ''))
     : [];
 
-  // Candidates for the exercise currently being swapped
-  const swapEx = swapTarget ? localProgram?.exercises.find(e => e.id === swapTarget) ?? null : null;
-  const swapCandidates: Exercise[] = swapEx && localProgram
-    ? getReplacementCandidates(swapEx, localProgram, profile?.hasEquipment !== false)
-    : [];
-
-  function handleReplace(newExercise: Exercise) {
+  function handleExerciseReplace(newExercise: Exercise) {
     if (!swapTarget || !localProgram) return;
     const updated = replaceExercise(localProgram, swapTarget, newExercise);
     setLocalProgram(updated);
-    setSwapTarget(null);
   }
 
   function handleParamChange(
@@ -184,7 +174,6 @@ const Progress: React.FC = () => {
     }
   }, [programExpanded, localProgram]);
 
-  const highlighted = report ? getHighlightedProblems(report.problems, 4) : [];
   const detectedProblemCards: AppPostureProblem[] = report
     ? report.problems
         .map(problem => postureProblems.find(item => item.id === problem.id))
@@ -213,7 +202,7 @@ const Progress: React.FC = () => {
           <ScanAnalysisView
             report={latestScan}
             photos={scanCaptures}
-            keypoints={latestScan.allKeypoints}
+            keypoints={latestScan.allKeypoints as { front: any[]; side: any[]; back: any[] }}
             onViewDailyPlan={() => navigate('/scan/program')}
             onViewFullReport={() => {}}
             onNewScan={() => navigate('/scan')}
@@ -224,15 +213,24 @@ const Progress: React.FC = () => {
 
       <div style={{ padding: '20px 24px 0', animation: 'slideUp 0.35s ease 0.02s both' }}>
         <div style={{ background: T.surface, borderRadius: 14, padding: 16, border: `1px solid ${T.border2}`, marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+            {/* Left — streak */}
             <div>
               <div style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.text3, fontWeight: 500, marginBottom: 4, fontFamily: T.font }}>Streak</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                <span style={{ fontSize: 28, fontWeight: 700, color: streak > 0 ? T.gold : T.text, fontFamily: T.font }}>{streak}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span style={{ fontSize: 20, lineHeight: 1 }}>🔥</span>
+                <span style={{ fontSize: 22, fontWeight: 700, color: streak > 0 ? T.gold : T.text, fontFamily: T.font, letterSpacing: '-0.02em' }}>{streak}</span>
                 <span style={{ fontSize: 13, color: T.text3, fontFamily: T.font }}>days</span>
               </div>
             </div>
-            <div style={{ fontSize: 28 }}>{streak > 0 ? '🔥' : completedToday ? '✅' : '—'}</div>
+            {/* Right — monthly completion count */}
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.text3, fontWeight: 500, marginBottom: 4, fontFamily: T.font }}>This month</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, justifyContent: 'flex-end' }}>
+                <span style={{ fontSize: 22, fontWeight: 700, color: monthlyCount > 0 ? T.green : T.text, fontFamily: T.font, letterSpacing: '-0.02em' }}>{monthlyCount}</span>
+                <span style={{ fontSize: 13, color: T.text3, fontFamily: T.font }}>days</span>
+              </div>
+            </div>
           </div>
           <CompletionCalendar />
         </div>
@@ -448,67 +446,16 @@ const Progress: React.FC = () => {
         </div>
       )}
 
-      {/* ── Swap bottom sheet ── */}
-      {swapTarget && (
-        <>
-          {/* Backdrop */}
-          <div
-            onClick={() => setSwapTarget(null)}
-            style={{
-              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-              zIndex: 100, backdropFilter: 'blur(2px)',
-            }}
-          />
-          {/* Sheet */}
-          <div style={{
-            position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 101,
-            background: '#1A1A1A', borderRadius: '16px 16px 0 0',
-            border: `1px solid ${T.border2}`, borderBottom: 'none',
-            maxHeight: '70vh', display: 'flex', flexDirection: 'column',
-          }}>
-            {/* Sheet header */}
-            <div style={{ padding: '16px 20px 12px', borderBottom: `1px solid ${T.border}` }}>
-              <div style={{ width: 36, height: 4, background: T.border2, borderRadius: 2, margin: '0 auto 14px' }} />
-              <div style={{ fontSize: 11, fontWeight: 500, color: T.text3, fontFamily: T.font, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>
-                Swap exercise
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: T.text, fontFamily: T.font, letterSpacing: '-0.01em' }}>
-                {swapEx?.name}
-              </div>
-            </div>
-            {/* Candidate list */}
-            <div style={{ overflowY: 'auto', padding: '8px 16px 32px' }}>
-              {swapCandidates.length === 0 ? (
-                <p style={{ fontSize: 13, color: T.text3, fontFamily: T.font, padding: '20px 0', textAlign: 'center' }}>
-                  No other exercises available for this problem.
-                </p>
-              ) : swapCandidates.map(candidate => (
-                <button
-                  key={candidate.id}
-                  type="button"
-                  onClick={() => handleReplace(candidate)}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '12px 14px', marginBottom: 8,
-                    background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10,
-                    cursor: 'pointer', fontFamily: T.font, textAlign: 'left',
-                  }}
-                >
-                  <span style={{ fontSize: 20, flexShrink: 0 }}>{candidate.emoji}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: T.text, fontFamily: T.font }}>{candidate.name}</div>
-                    <div style={{ fontSize: 11, color: T.text3, fontFamily: T.font, marginTop: 2 }}>
-                      {candidate.duration}s · {candidate.difficulty ?? 'beginner'}
-                    </div>
-                  </div>
-                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
+      {/* ── Swap flow modal ── */}
+      {swapTarget && localProgram && (
+        <SwapFlowModal
+          swapExerciseId={swapTarget}
+          program={localProgram}
+          detectedProblemIds={profile?.detectedProblems ?? []}
+          hasEquipment={profile?.hasEquipment !== false}
+          onReplace={handleExerciseReplace}
+          onClose={() => setSwapTarget(null)}
+        />
       )}
 
       {/* ── 21-day milestone popup ── */}
@@ -681,36 +628,9 @@ const Progress: React.FC = () => {
 
           <Divider />
 
+
           <div style={{ padding: '24px 24px 0', animation: 'slideUp 0.35s ease 0.18s both' }}>
             <DetectedReasonsSection report={report} maxCards={4} />
-          </div>
-
-          <div style={{ padding: '24px 24px 0', animation: 'slideUp 0.35s ease 0.2s both' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <Label>Detected issues</Label>
-              {highlighted.length > 0 && (
-                <span style={{ fontSize: 11, fontWeight: 500, color: T.gold, background: 'rgba(217,184,76,0.1)', padding: '2px 8px', borderRadius: 10, fontFamily: T.font, marginBottom: 14 }}>{highlighted.length}</span>
-              )}
-            </div>
-            {highlighted.length > 0 ? highlighted.map(problem => {
-              const color = severityColor(problem.severity);
-              return (
-                <div key={problem.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: T.surface, borderRadius: 10, marginBottom: 8 }}>
-                  <div style={{ width: 3, height: 28, borderRadius: 2, background: color, flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: T.text, fontFamily: T.font, marginBottom: 2 }}>{problem.mapLabel ?? BODY_REGION_LABELS[problem.bodyRegion]}</div>
-                    <div style={{ fontSize: 11, color: T.text3, fontFamily: T.font }}>
-                      {problem.riskCategory
-                        ? RISK_INFO[problem.riskCategory].label
-                        : `${problem.severity.charAt(0).toUpperCase()}${problem.severity.slice(1)}`}
-                      {' · '}{VIEW_LABELS[problem.dominantView]}
-                    </div>
-                  </div>
-                </div>
-              );
-            }) : (
-              <p style={{ fontSize: 14, color: T.text2, lineHeight: 1.6, fontFamily: T.font }}>No major body-region issues were flagged in the latest scan.</p>
-            )}
           </div>
 
           <div style={{ padding: '24px', animation: 'slideUp 0.35s ease 0.25s both' }}>

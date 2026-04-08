@@ -12,6 +12,20 @@ const T = {
   font: "system-ui, -apple-system, 'Helvetica Neue', sans-serif",
 };
 
+const SET_REST_KEY = 'posturefix_set_rest_sec';
+const SET_REST_MIN = 5;
+const SET_REST_MAX = 60;
+const SET_REST_STEP = 5;
+const SET_REST_DEFAULT = 20;
+
+function loadSetRestSec(): number {
+  const v = parseInt(localStorage.getItem(SET_REST_KEY) ?? '', 10);
+  return isNaN(v) ? SET_REST_DEFAULT : Math.min(SET_REST_MAX, Math.max(SET_REST_MIN, v));
+}
+function saveSetRestSec(sec: number): void {
+  localStorage.setItem(SET_REST_KEY, String(sec));
+}
+
 const DailyExerciseFlow: React.FC = () => {
   const navigate = useNavigate();
 
@@ -23,9 +37,11 @@ const DailyExerciseFlow: React.FC = () => {
   });
 
   const [exIdx, setExIdx] = useState(0);
-  const [phase, setPhase] = useState<'intro' | 'active' | 'rest'>('intro');
+  const [phase, setPhase] = useState<'intro' | 'active' | 'set-rest' | 'rest'>('intro');
   const [timeLeft, setTimeLeft] = useState(0);
+  const [currentSet, setCurrentSet] = useState(1);
   const [paused, setPaused] = useState(false);
+  const [setRestSec, setSetRestSec] = useState(() => loadSetRestSec());
   const [ytModal, setYtModal] = useState<{ url: string; title: string } | null>(null);
 
   const ex = exercises[exIdx];
@@ -39,7 +55,7 @@ const DailyExerciseFlow: React.FC = () => {
   }, [exercises, navigate]);
 
   const beginEx = useCallback(() => {
-    if (ex) { setPhase('active'); setTimeLeft(ex.duration); setPaused(false); }
+    if (ex) { setCurrentSet(1); setPhase('active'); setTimeLeft(ex.duration); setPaused(false); }
   }, [ex]);
 
   const finishEx = useCallback(() => {
@@ -53,30 +69,67 @@ const DailyExerciseFlow: React.FC = () => {
     }
   }, [ex, exIdx, total, navigate]);
 
+  // Called when one set's timer reaches 0
+  const completeSet = useCallback(() => {
+    if (!ex) return;
+    if (currentSet < ex.sets) {
+      // More sets remain — short rest between sets
+      setPhase('set-rest');
+      setTimeLeft(setRestSec);
+      setPaused(false);
+    } else {
+      // All sets done — finish the exercise
+      finishEx();
+    }
+  }, [ex, currentSet, finishEx, setRestSec]);
+
+  // Advance from set-rest into the next set
+  const startNextSet = useCallback(() => {
+    if (!ex) return;
+    setCurrentSet(s => s + 1);
+    setPhase('active');
+    setTimeLeft(ex.duration);
+    setPaused(false);
+  }, [ex]);
+
+  // Skip = move on WITHOUT marking as completed
   const skipEx = useCallback(() => {
     if (!ex) return;
-    markExerciseComplete(ex.id);
     if (exIdx < total - 1) {
       setExIdx(i => i + 1);
+      setCurrentSet(1);
       setPhase('intro');
+      setPaused(false);
     } else {
       navigate('/');
     }
   }, [ex, exIdx, total, navigate]);
 
-  // Active timer
+  // Active timer (per set)
   useEffect(() => {
     if (phase !== 'active' || paused || timeLeft <= 0) return;
     const t = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev <= 1) { clearInterval(t); finishEx(); return 0; }
+        if (prev <= 1) { clearInterval(t); completeSet(); return 0; }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(t);
-  }, [phase, paused, timeLeft, finishEx]);
+  }, [phase, paused, timeLeft, completeSet]);
 
-  // Rest timer
+  // Set-rest timer
+  useEffect(() => {
+    if (phase !== 'set-rest' || paused || timeLeft <= 0) return;
+    const t = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) { clearInterval(t); startNextSet(); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [phase, paused, timeLeft, startNextSet]);
+
+  // Between-exercises rest timer
   useEffect(() => {
     if (phase !== 'rest' || timeLeft <= 0) return;
     const t = setInterval(() => {
@@ -84,6 +137,7 @@ const DailyExerciseFlow: React.FC = () => {
         if (prev <= 1) {
           clearInterval(t);
           setExIdx(i => i + 1);
+          setCurrentSet(1);
           setPhase('intro');
           return 0;
         }
@@ -97,7 +151,7 @@ const DailyExerciseFlow: React.FC = () => {
 
   if (!ex) return null;
 
-  const totalDur = phase === 'active' ? ex.duration : 10;
+  const totalDur = phase === 'active' ? ex.duration : phase === 'set-rest' ? setRestSec : 10;
   const ringOffset = circ - (timeLeft / totalDur) * circ;
 
   return (
@@ -193,6 +247,115 @@ const DailyExerciseFlow: React.FC = () => {
           </div>
         )}
 
+        {/* SET-REST ─────────────────────────────────────────────── */}
+        {phase === 'set-rest' && (
+          <div style={{
+            flex: 1, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            textAlign: 'center', gap: 20,
+          }}>
+            <div style={{
+              width: 68, height: 68, borderRadius: 20,
+              background: 'rgba(217,184,76,0.1)', border: `1.5px solid rgba(217,184,76,0.3)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32,
+            }}>
+              {ex.emoji}
+            </div>
+
+            <div>
+              <h2 style={{ fontSize: 22, fontWeight: 700, color: T.text, marginBottom: 6 }}>
+                Set {currentSet} done
+              </h2>
+              <p style={{ fontSize: 13, color: T.text3 }}>
+                <span style={{ color: T.gold, fontWeight: 600 }}>{ex.sets - currentSet}</span>
+                {' '}set{ex.sets - currentSet !== 1 ? 's' : ''} remaining · {ex.name}
+              </p>
+            </div>
+
+            {/* Ring */}
+            <div style={{ position: 'relative', width: 130, height: 130 }}>
+              <svg width="130" height="130" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+                <circle cx="50" cy="50" r="45" fill="none" stroke={T.gold} strokeWidth="5" strokeLinecap="round"
+                  strokeDasharray={circ} strokeDashoffset={ringOffset}
+                  style={{ transition: 'stroke-dashoffset 1s linear' }} />
+              </svg>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontSize: 34, fontWeight: 800, color: T.text, letterSpacing: '-0.03em' }}>{timeLeft}</div>
+                <div style={{ fontSize: 10, color: T.text3, fontWeight: 500, marginTop: 2 }}>seconds</div>
+              </div>
+            </div>
+
+            {/* Rest duration control */}
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+              background: T.surface, borderRadius: 14, padding: '12px 20px',
+              border: `1px solid ${T.border2}`,
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: T.text3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Rest between sets
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <button
+                  type="button"
+                  disabled={setRestSec <= SET_REST_MIN}
+                  onClick={() => {
+                    const next = Math.max(SET_REST_MIN, setRestSec - SET_REST_STEP);
+                    setSetRestSec(next);
+                    saveSetRestSec(next);
+                  }}
+                  style={{
+                    width: 32, height: 32, borderRadius: 8,
+                    background: setRestSec <= SET_REST_MIN ? 'transparent' : T.surfaceEl,
+                    border: `1px solid ${T.border2}`,
+                    color: setRestSec <= SET_REST_MIN ? T.text3 : T.text,
+                    fontSize: 18, cursor: setRestSec <= SET_REST_MIN ? 'default' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    opacity: setRestSec <= SET_REST_MIN ? 0.3 : 1,
+                    fontFamily: T.font,
+                  }}
+                >−</button>
+                <span style={{ fontSize: 17, fontWeight: 700, color: T.text, minWidth: 40, textAlign: 'center', fontFamily: T.font }}>
+                  {setRestSec}s
+                </span>
+                <button
+                  type="button"
+                  disabled={setRestSec >= SET_REST_MAX}
+                  onClick={() => {
+                    const next = Math.min(SET_REST_MAX, setRestSec + SET_REST_STEP);
+                    setSetRestSec(next);
+                    saveSetRestSec(next);
+                  }}
+                  style={{
+                    width: 32, height: 32, borderRadius: 8,
+                    background: setRestSec >= SET_REST_MAX ? 'transparent' : T.surfaceEl,
+                    border: `1px solid ${T.border2}`,
+                    color: setRestSec >= SET_REST_MAX ? T.text3 : T.text,
+                    fontSize: 18, cursor: setRestSec >= SET_REST_MAX ? 'default' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    opacity: setRestSec >= SET_REST_MAX ? 0.3 : 1,
+                    fontFamily: T.font,
+                  }}
+                >+</button>
+              </div>
+            </div>
+
+            {/* Skip rest */}
+            <button
+              type="button"
+              onClick={startNextSet}
+              style={{
+                fontSize: 13, fontWeight: 600, color: T.gold,
+                background: 'none', border: `1px solid rgba(217,184,76,0.3)`,
+                borderRadius: 10, padding: '8px 24px',
+                cursor: 'pointer', fontFamily: T.font,
+              }}
+            >
+              Skip rest →
+            </button>
+          </div>
+        )}
+
         {/* INTRO ────────────────────────────────────────────────── */}
         {phase === 'intro' && (
           <div style={{ display: 'flex', flexDirection: 'column', animation: 'slideUp 0.35s ease' }}>
@@ -210,7 +373,9 @@ const DailyExerciseFlow: React.FC = () => {
               <div>
                 <h2 style={{ fontSize: 21, fontWeight: 700, color: T.text, lineHeight: 1.2 }}>{ex.name}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                  <span style={{ fontSize: 12, color: T.gold, fontWeight: 600 }}>{ex.displayReps}</span>
+                  <span style={{ fontSize: 12, color: T.gold, fontWeight: 600 }}>
+                    {ex.sets > 1 ? `${ex.sets} sets · ` : ''}{ex.displayReps}
+                  </span>
                   {ex.requiresEquipment && (
                     <span style={{ fontSize: 10, color: T.text3, background: T.surface, padding: '2px 6px', borderRadius: 5, border: `1px solid ${T.border2}` }}>
                       Band
@@ -312,7 +477,12 @@ const DailyExerciseFlow: React.FC = () => {
               {ex.emoji}
             </div>
 
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: T.text, marginBottom: 28 }}>{ex.name}</h2>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: T.text, marginBottom: 6 }}>{ex.name}</h2>
+            {ex.sets > 1 && (
+              <div style={{ fontSize: 13, color: T.gold, fontWeight: 600, marginBottom: 22 }}>
+                Set {currentSet} of {ex.sets}
+              </div>
+            )}
 
             {/* Timer ring */}
             <div style={{ position: 'relative', width: 170, height: 170, marginBottom: 36 }}>
