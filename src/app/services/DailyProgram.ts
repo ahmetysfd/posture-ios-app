@@ -116,9 +116,9 @@ function getDisplayReps(ex: Exercise, diff: ExerciseDifficulty): string {
 
 const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
   'forward-head': {
-    beginner: ['Chin Tuck', 'Supine Chin Tuck', 'Side Lying Chin Tuck', 'Weight Assisted Neck Stretch', 'Suboccipital Massage'],
-    medium:   ['Wall Lean Chin Tuck', 'Chin Tuck Floor Angels', 'Chin Tuck Rotations'],
-    hard:     ['Banded Chin Tucks', 'Chin Tuck Neck Bridge', 'Prone Chin Tuck'],
+    beginner: ['Chin Tuck', 'Supine Chin Tuck', 'Upper Trapezius Stretch'],
+    medium:   ['Chin Tuck Floor Angels', 'Chin Tuck Rotations', 'Wall Lean Chin Tuck'],
+    hard:     ['Prone Chin Tuck', 'Chin Tuck Neck Bridge', 'Banded Chin Tucks'],
   },
   'rounded-shoulders': {
     beginner: ['Doorway Chest Stretch', 'Quadruped Scapular Push', 'Floor Angel'],
@@ -131,9 +131,9 @@ const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
     hard:     ['Sphinx Cat Camels', 'Prone Y-Raise', 'Banded Reverse Fly'],
   },
   'anterior-pelvic': {
-    beginner: ['Supine Pelvic Tilt', 'Standing Pelvic Tilt', 'Pelvic Twist'],
-    medium:   ['Wall Lean Plank', 'Split Squat Pelvic Tilts'],
-    hard:     ['Swimmers'],
+    beginner: ['Standing Pelvic Tilt', 'Supine Pelvic Tilt', 'Pelvic Rocks'],
+    medium:   ['Unilateral Frog Stretch', 'Wall Lean Plank', 'Swimmers'],
+    hard:     ['Split Squat Pelvic Tilts', 'Adductor Squeeze Crunch', 'Crossed Leg Forward Stretch'],
   },
   'uneven-shoulders': {
     beginner: ['Lower Trap Activation', 'Levator Scapulae Stretch', 'Wall Lean'],
@@ -141,9 +141,9 @@ const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
     hard:     ['Single-Arm Plank', 'Advanced Bird Dog', 'Half Kneel Pallof Press'],
   },
   'winging-scapula': {
-    beginner: ['Wall Angel', 'Air Angel', 'Shoulder Rockets', 'Thoracic Foam Roll'],
-    medium:   ['Floor Angel'],
-    hard:     ['Bent Over Y Raise', 'Cuffed Angels', 'Chin Tuck Floor Angels'],
+    beginner: ['Quadruped Scapular Push', 'Air Angel', 'Floor Angel'],
+    medium:   ['Side Lean Wall Slide', 'Wall Angel', 'Scapular Flutters'],
+    hard:     ['Bear Crawl Scapular Push Up', 'Quadruped Scapular Circles', 'Elevated Scapular Push Up'],
   },
 };
 
@@ -153,39 +153,63 @@ const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
 const EXERCISE_PROBLEMS: Record<string, string[]> = {
   // Forward Head only
   'Chin Tuck':               ['forward-head'],
-  'Side Lying Chin Tuck':    ['forward-head'],
-  'Suboccipital Massage':    ['forward-head'],
+  'Supine Chin Tuck':        ['forward-head'],
+  'Upper Trapezius Stretch': ['forward-head'],
+  'Chin Tuck Floor Angels':  ['forward-head'],
   'Wall Lean Chin Tuck':     ['forward-head'],
   'Chin Tuck Rotations':     ['forward-head'],
   'Banded Chin Tucks':       ['forward-head'],
   'Chin Tuck Neck Bridge':   ['forward-head'],
   'Prone Chin Tuck':         ['forward-head'],
-  // Forward Head only (previously also Kyphosis — KY dataset replaced)
-  'Supine Chin Tuck':        ['forward-head'],
-  // Forward Head only (previously also Uneven Shoulders — US dataset replaced)
-  'Weight Assisted Neck Stretch': ['forward-head'],
-  // Forward Head + Winging Scapula (previously also Kyphosis — KY dataset replaced)
-  'Chin Tuck Floor Angels':  ['forward-head', 'winging-scapula'],
   // Rounded Shoulders + Winging Scapula
-  // (Air Angel: KY and US removed — RS medium still has it, WS beginner still has it)
-  'Air Angel':               ['rounded-shoulders', 'winging-scapula'],
-  // Winging Scapula only (previously also RS, KY, US — all replaced)
-  'Thoracic Foam Roll':      ['winging-scapula'],
-  'Wall Angel':              ['winging-scapula'],
-  'Shoulder Rockets':        ['winging-scapula'],
-  'Bent Over Y Raise':       ['winging-scapula'],
-  'Cuffed Angels':           ['winging-scapula'],
-  // Rounded Shoulders + Winging Scapula
-  // (Floor Angel: KY removed, RS beginner still has it, WS medium still has it)
+  'Quadruped Scapular Push': ['rounded-shoulders', 'winging-scapula'],
   'Floor Angel':             ['rounded-shoulders', 'winging-scapula'],
-  // Anterior Pelvic Tilt only (Swimmers: KY removed, APT still has it)
-  'Swimmers':                ['anterior-pelvic'],
+  'Air Angel':               ['rounded-shoulders', 'winging-scapula'],
+  // Rounded Shoulders only
+  'Doorway Chest Stretch':   ['rounded-shoulders'],
+  'Bear Hold':               ['rounded-shoulders'],
+  'Prone T-Raise':           ['rounded-shoulders'],
+  'Archer Push-Up':          ['rounded-shoulders'],
+  'Push-Up Plus':            ['rounded-shoulders'],
+  'Y-Pull with Band':        ['rounded-shoulders'],
+  // Kyphosis only
+  'Baby Cobra':              ['kyphosis'],
+  'Foam Roller Thoracic Extension': ['kyphosis'],
+  'Quadruped Thoracic Rotation (Hand Behind Head)': ['kyphosis'],
+  'Thoracic Extension':      ['kyphosis'],
+  'Wall Assisted Shoulder Flexion': ['kyphosis'],
+  'Wall Slide':              ['kyphosis'],
+  'Scapular Rows':           ['kyphosis'],
+  'Sphinx Cat Camels':       ['kyphosis'],
+  'Prone Y-Raise':           ['kyphosis'],
+  'Banded Reverse Fly':      ['kyphosis'],
   // Anterior Pelvic Tilt only
-  'Supine Pelvic Tilt':      ['anterior-pelvic'],
   'Standing Pelvic Tilt':    ['anterior-pelvic'],
-  'Pelvic Twist':            ['anterior-pelvic'],
+  'Supine Pelvic Tilt':      ['anterior-pelvic'],
+  'Pelvic Rocks':            ['anterior-pelvic'],
+  'Unilateral Frog Stretch': ['anterior-pelvic'],
+  'Swimmers':                ['anterior-pelvic'],
   'Wall Lean Plank':         ['anterior-pelvic'],
   'Split Squat Pelvic Tilts':['anterior-pelvic'],
+  'Adductor Squeeze Crunch': ['anterior-pelvic'],
+  'Crossed Leg Forward Stretch': ['anterior-pelvic'],
+  // Uneven Shoulders only
+  'Lower Trap Activation':   ['uneven-shoulders'],
+  'Levator Scapulae Stretch':['uneven-shoulders'],
+  'Wall Lean':               ['uneven-shoulders'],
+  'Side Plank':              ['uneven-shoulders'],
+  'Bird Dog':                ['uneven-shoulders'],
+  'Banded Lat Pull-Down':    ['uneven-shoulders'],
+  'Single-Arm Plank':        ['uneven-shoulders'],
+  'Advanced Bird Dog':       ['uneven-shoulders'],
+  'Half Kneel Pallof Press': ['uneven-shoulders'],
+  // Winging Scapula only
+  'Side Lean Wall Slide':    ['winging-scapula'],
+  'Wall Angel':              ['winging-scapula'],
+  'Scapular Flutters':       ['winging-scapula'],
+  'Bear Crawl Scapular Push Up': ['winging-scapula'],
+  'Quadruped Scapular Circles': ['winging-scapula'],
+  'Elevated Scapular Push Up': ['winging-scapula'],
 };
 
 // ── Generation ────────────────────────────────────────────────────────────────
