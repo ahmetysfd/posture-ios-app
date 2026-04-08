@@ -121,14 +121,14 @@ const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
     hard:     ['Banded Chin Tucks', 'Chin Tuck Neck Bridge', 'Prone Chin Tuck'],
   },
   'rounded-shoulders': {
-    beginner: ['Air Angel', 'Thoracic Openers', 'Thoracic Foam Roll', 'Shoulder Rockets'],
-    medium:   ['Wall Angel', 'Floor Angel'],
-    hard:     ['Bent Over Y Raise', 'Cuffed Angels'],
+    beginner: ['Doorway Chest Stretch', 'Quadruped Scapular Push', 'Floor Angel'],
+    medium:   ['Air Angel', 'Bear Hold', 'Prone T-Raise'],
+    hard:     ['Archer Push-Up', 'Push-Up Plus', 'Y-Pull with Band'],
   },
   'kyphosis': {
-    beginner: ['Air Angel', 'Thoracic Openers', 'Thoracic Foam Roll', 'Supine Chin Tuck'],
-    medium:   ['Wall Angel', 'Floor Angel'],
-    hard:     ['Bent Over Y Raise', 'Swimmers', 'Chin Tuck Floor Angels', 'Cuffed Angels'],
+    beginner: ['Baby Cobra', 'Foam Roller Thoracic Extension', 'Quadruped Thoracic Rotation (Hand Behind Head)'],
+    medium:   ['Thoracic Extension', 'Wall Assisted Shoulder Flexion', 'Wall Slide', 'Scapular Rows'],
+    hard:     ['Sphinx Cat Camels', 'Prone Y-Raise', 'Banded Reverse Fly'],
   },
   'anterior-pelvic': {
     beginner: ['Supine Pelvic Tilt', 'Standing Pelvic Tilt', 'Pelvic Twist'],
@@ -136,9 +136,9 @@ const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
     hard:     ['Swimmers'],
   },
   'uneven-shoulders': {
-    beginner: ['Air Angel', 'Thoracic Openers', 'Shoulder Rockets', 'Thoracic Foam Roll', 'Weight Assisted Neck Stretch'],
-    medium:   ['Wall Angel'],
-    hard:     ['Overhead Shrug Neck Rotations'],
+    beginner: ['Lower Trap Activation', 'Levator Scapulae Stretch', 'Wall Lean'],
+    medium:   ['Side Plank', 'Bird Dog', 'Banded Lat Pull-Down'],
+    hard:     ['Single-Arm Plank', 'Advanced Bird Dog', 'Half Kneel Pallof Press'],
   },
   'winging-scapula': {
     beginner: ['Wall Angel', 'Air Angel', 'Shoulder Rockets', 'Thoracic Foam Roll'],
@@ -160,34 +160,32 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
   'Banded Chin Tucks':       ['forward-head'],
   'Chin Tuck Neck Bridge':   ['forward-head'],
   'Prone Chin Tuck':         ['forward-head'],
-  // Forward Head + Kyphosis
-  'Supine Chin Tuck':        ['forward-head', 'kyphosis'],
-  // Forward Head + Uneven Shoulders
-  'Weight Assisted Neck Stretch': ['forward-head', 'uneven-shoulders'],
-  // Forward Head + Kyphosis + Winging Scapula
-  'Chin Tuck Floor Angels':  ['forward-head', 'kyphosis', 'winging-scapula'],
-  // Rounded Shoulders + Kyphosis + Uneven Shoulders + Winging Scapula
-  'Air Angel':               ['rounded-shoulders', 'kyphosis', 'uneven-shoulders', 'winging-scapula'],
-  'Thoracic Foam Roll':      ['rounded-shoulders', 'kyphosis', 'uneven-shoulders', 'winging-scapula'],
-  'Wall Angel':              ['rounded-shoulders', 'kyphosis', 'uneven-shoulders', 'winging-scapula'],
-  // Rounded Shoulders + Kyphosis + Uneven Shoulders
-  'Thoracic Openers':        ['rounded-shoulders', 'kyphosis', 'uneven-shoulders'],
-  // Rounded Shoulders + Uneven Shoulders + Winging Scapula
-  'Shoulder Rockets':        ['rounded-shoulders', 'uneven-shoulders', 'winging-scapula'],
-  // Rounded Shoulders + Kyphosis + Winging Scapula
-  'Floor Angel':             ['rounded-shoulders', 'kyphosis', 'winging-scapula'],
-  'Bent Over Y Raise':       ['rounded-shoulders', 'kyphosis', 'winging-scapula'],
-  'Cuffed Angels':           ['rounded-shoulders', 'kyphosis', 'winging-scapula'],
-  // Kyphosis + Anterior Pelvic Tilt
-  'Swimmers':                ['kyphosis', 'anterior-pelvic'],
+  // Forward Head only (previously also Kyphosis — KY dataset replaced)
+  'Supine Chin Tuck':        ['forward-head'],
+  // Forward Head only (previously also Uneven Shoulders — US dataset replaced)
+  'Weight Assisted Neck Stretch': ['forward-head'],
+  // Forward Head + Winging Scapula (previously also Kyphosis — KY dataset replaced)
+  'Chin Tuck Floor Angels':  ['forward-head', 'winging-scapula'],
+  // Rounded Shoulders + Winging Scapula
+  // (Air Angel: KY and US removed — RS medium still has it, WS beginner still has it)
+  'Air Angel':               ['rounded-shoulders', 'winging-scapula'],
+  // Winging Scapula only (previously also RS, KY, US — all replaced)
+  'Thoracic Foam Roll':      ['winging-scapula'],
+  'Wall Angel':              ['winging-scapula'],
+  'Shoulder Rockets':        ['winging-scapula'],
+  'Bent Over Y Raise':       ['winging-scapula'],
+  'Cuffed Angels':           ['winging-scapula'],
+  // Rounded Shoulders + Winging Scapula
+  // (Floor Angel: KY removed, RS beginner still has it, WS medium still has it)
+  'Floor Angel':             ['rounded-shoulders', 'winging-scapula'],
+  // Anterior Pelvic Tilt only (Swimmers: KY removed, APT still has it)
+  'Swimmers':                ['anterior-pelvic'],
   // Anterior Pelvic Tilt only
   'Supine Pelvic Tilt':      ['anterior-pelvic'],
   'Standing Pelvic Tilt':    ['anterior-pelvic'],
   'Pelvic Twist':            ['anterior-pelvic'],
   'Wall Lean Plank':         ['anterior-pelvic'],
   'Split Squat Pelvic Tilts':['anterior-pelvic'],
-  // Uneven Shoulders only
-  'Overhead Shrug Neck Rotations': ['uneven-shoulders'],
 };
 
 // ── Generation ────────────────────────────────────────────────────────────────
