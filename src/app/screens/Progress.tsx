@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DetectedReasonsSection from '../components/DetectedReasonsSection';
 import Layout from '../components/Layout';
@@ -30,11 +30,20 @@ import { loadUserProfile } from '../services/UserProfile';
 import type { Exercise } from '../data/postureData';
 
 const T = {
-  bg: '#0A0A0A', surface: '#141414', surface2: '#1A1A1A',
-  border: 'rgba(255,255,255,0.06)', border2: 'rgba(255,255,255,0.10)',
-  text: '#EDEDED', text2: 'rgba(160,160,155,1)', text3: 'rgba(102,102,100,1)',
-  gold: '#D9B84C', orange: '#E68C33', green: '#3DA878', blue: '#5BA8D9',
+  bg: '#09090B', surface: '#141416', surface2: '#1A1A1E',
+  border: 'rgba(255,255,255,0.05)', border2: 'rgba(255,255,255,0.10)',
+  text: '#FFFFFF', text2: 'rgba(161,161,170,1)', text3: 'rgba(113,113,122,1)',
+  gold: '#F97316', orange: '#FB923C', green: '#22C55E', blue: '#5BA8D9',
   font: "system-ui, -apple-system, 'Helvetica Neue', sans-serif",
+};
+
+const CARD_ACCENTS: Record<string, { glow: string; border: string; gradient: string }> = {
+  'forward-head': { glow: 'rgba(249,115,22,0.16)', border: 'rgba(249,115,22,0.22)', gradient: 'linear-gradient(180deg, rgba(249,115,22,0.12) 0%, rgba(249,115,22,0) 100%)' },
+  'winging-scapula': { glow: 'rgba(244,63,94,0.16)', border: 'rgba(244,63,94,0.22)', gradient: 'linear-gradient(180deg, rgba(244,63,94,0.12) 0%, rgba(244,63,94,0) 100%)' },
+  'anterior-pelvic': { glow: 'rgba(251,113,133,0.16)', border: 'rgba(251,113,133,0.22)', gradient: 'linear-gradient(180deg, rgba(251,113,133,0.12) 0%, rgba(251,113,133,0) 100%)' },
+  'rounded-shoulders': { glow: 'rgba(59,130,246,0.16)', border: 'rgba(59,130,246,0.22)', gradient: 'linear-gradient(180deg, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0) 100%)' },
+  kyphosis: { glow: 'rgba(168,85,247,0.16)', border: 'rgba(168,85,247,0.22)', gradient: 'linear-gradient(180deg, rgba(168,85,247,0.12) 0%, rgba(168,85,247,0) 100%)' },
+  'uneven-shoulders': { glow: 'rgba(245,158,11,0.16)', border: 'rgba(245,158,11,0.22)', gradient: 'linear-gradient(180deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0) 100%)' },
 };
 
 
@@ -116,6 +125,7 @@ const Progress: React.FC = () => {
   const [swapTarget, setSwapTarget] = useState<string | null>(null);
   const [upgradePopup, setUpgradePopup] = useState<{ exercise: DailyExercise; suggestion: Exercise | null } | null>(null);
   const [localProgram, setLocalProgram] = useState<StoredDailyProgram | null>(() => loadDailyProgram());
+  const programSectionRef = useRef<HTMLDivElement | null>(null);
   const { streak, completedToday } = getDailyStats();
   const monthlyCount = getMonthlyCompletionCount();
   const profile = loadUserProfile();
@@ -174,6 +184,18 @@ const Progress: React.FC = () => {
     }
   }, [programExpanded, localProgram]);
 
+  useEffect(() => {
+    const shouldOpenEditor = Boolean((location.state as { openProgramEditor?: boolean } | null)?.openProgramEditor);
+    if (!shouldOpenEditor || !localProgram) return;
+
+    setProgramExpanded(true);
+    setEditMode(true);
+
+    requestAnimationFrame(() => {
+      programSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [location.key, location.state, localProgram]);
+
   const detectedProblemCards: AppPostureProblem[] = report
     ? report.problems
         .map(problem => postureProblems.find(item => item.id === problem.id))
@@ -186,24 +208,34 @@ const Progress: React.FC = () => {
 
   return (
     <Layout>
-      <div style={{ padding: '56px 24px 20px', borderBottom: `1px solid ${T.border}`, animation: 'fadeIn 0.4s ease' }}>
-        <div style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.text3, fontWeight: 500, marginBottom: 6, fontFamily: T.font }}>Body scan</div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-          <h1 style={{ fontSize: 22, fontWeight: 500, color: T.text, letterSpacing: '-0.02em', fontFamily: T.font }}>Progress</h1>
-          {lastScanLabel && <span style={{ fontSize: 12, color: T.text3, fontFamily: T.font }}>{lastScanLabel}</span>}
+      <div style={{ padding: '52px 24px 8px', animation: 'fadeIn 0.4s ease' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.text3, fontWeight: 700, marginBottom: 4, fontFamily: T.font }}>Body Scan</div>
+            <h1 style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 30, fontWeight: 800, color: T.text, letterSpacing: '-0.04em', fontFamily: T.font, lineHeight: 1 }}>
+              <span>Posture</span>
+              <span style={{ color: T.gold }}>Fix</span>
+            </h1>
+          </div>
+          {lastScanLabel && (
+            <div style={{ textAlign: 'right', marginTop: 4 }}>
+              <div style={{ fontSize: 10, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.15em', fontFamily: T.font }}>Latest scan</div>
+              <div style={{ fontSize: 11, color: T.text2, marginTop: 4, fontFamily: T.font }}>{lastScanLabel}</div>
+            </div>
+          )}
         </div>
       </div>
 
       {latestScan && scanCaptures && (
         <div style={{ padding: '20px 24px 0', animation: 'slideUp 0.35s ease 0.01s both' }}>
-          <div style={{ marginBottom: 14, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.text3, fontWeight: 500, fontFamily: T.font }}>
+          <div style={{ marginBottom: 12, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.text3, fontWeight: 700, fontFamily: T.font }}>
             Latest analysis
           </div>
           <ScanAnalysisView
             report={latestScan}
             photos={scanCaptures}
             keypoints={latestScan.allKeypoints as { front: any[]; side: any[]; back: any[] }}
-            onViewDailyPlan={() => navigate('/scan/program')}
+            onViewDailyPlan={() => navigate('/program')}
             onViewFullReport={() => {}}
             onNewScan={() => navigate('/scan')}
             showFullReportButton={false}
@@ -212,11 +244,12 @@ const Progress: React.FC = () => {
       )}
 
       <div style={{ padding: '20px 24px 0', animation: 'slideUp 0.35s ease 0.02s both' }}>
-        <div style={{ background: T.surface, borderRadius: 14, padding: 16, border: `1px solid ${T.border2}`, marginBottom: 16 }}>
+        <div style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #1E1E22 0%, #121215 100%)', borderRadius: 24, padding: 18, border: `1px solid ${T.border}`, marginBottom: 16 }}>
+          <div style={{ position: 'absolute', top: '-20%', right: '-5%', width: 120, height: 120, borderRadius: '50%', background: 'rgba(249,115,22,0.08)', filter: 'blur(36px)', pointerEvents: 'none' }} />
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
             {/* Left — streak */}
             <div>
-              <div style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.text3, fontWeight: 500, marginBottom: 4, fontFamily: T.font }}>Streak</div>
+              <div style={{ fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.text3, fontWeight: 700, marginBottom: 6, fontFamily: T.font }}>Streak</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                 <span style={{ fontSize: 20, lineHeight: 1 }}>🔥</span>
                 <span style={{ fontSize: 22, fontWeight: 700, color: streak > 0 ? T.gold : T.text, fontFamily: T.font, letterSpacing: '-0.02em' }}>{streak}</span>
@@ -225,7 +258,7 @@ const Progress: React.FC = () => {
             </div>
             {/* Right — monthly completion count */}
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.text3, fontWeight: 500, marginBottom: 4, fontFamily: T.font }}>This month</div>
+              <div style={{ fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.text3, fontWeight: 700, marginBottom: 6, fontFamily: T.font }}>This month</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, justifyContent: 'flex-end' }}>
                 <span style={{ fontSize: 22, fontWeight: 700, color: monthlyCount > 0 ? T.green : T.text, fontFamily: T.font, letterSpacing: '-0.02em' }}>{monthlyCount}</span>
                 <span style={{ fontSize: 13, color: T.text3, fontFamily: T.font }}>days</span>
@@ -238,7 +271,7 @@ const Progress: React.FC = () => {
 
       {/* ── Daily Program (collapsible, lives below monthly tracker) ── */}
       {localProgram && sortedExercises.length > 0 && (
-        <div style={{ padding: '0 24px', animation: 'slideUp 0.35s ease 0.06s both' }}>
+        <div ref={programSectionRef} style={{ padding: '0 24px', animation: 'slideUp 0.35s ease 0.06s both' }}>
 
           {/* Collapsible header */}
           <button
@@ -543,81 +576,86 @@ const Progress: React.FC = () => {
       {!report ? (
         <div style={{ padding: '0 24px 24px', animation: 'slideUp 0.4s ease both' }}>
           <div style={{ padding: '28px 0 8px' }}>
-            <p style={{ fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.text3, fontWeight: 500, marginBottom: 16, fontFamily: T.font }}>No scan yet</p>
-            <p style={{ fontSize: 14, color: T.text2, lineHeight: 1.6, marginBottom: 24, fontFamily: T.font }}>Take a front, side, and back posture scan to discover your posture level and get a personalized plan.</p>
-            <button type="button" onClick={() => navigate('/scan')} style={{ width: '100%', padding: 15, borderRadius: 10, background: T.gold, color: '#0A0A0A', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: T.font }}>Start body scan</button>
+            <p style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.text3, fontWeight: 700, marginBottom: 16, fontFamily: T.font }}>No scan yet</p>
+            <div style={{ background: 'linear-gradient(135deg, #1E1E22 0%, #121215 100%)', border: `1px solid ${T.border}`, borderRadius: 24, padding: 20, boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.04), 0 8px 24px rgba(0,0,0,0.5)' }}>
+              <p style={{ fontSize: 14, color: T.text2, lineHeight: 1.6, marginBottom: 20, fontFamily: T.font }}>Take a front, side, and back posture scan to discover your posture level and get a personalized plan.</p>
+              <button type="button" onClick={() => navigate('/scan')} style={{ width: '100%', padding: 16, borderRadius: 18, background: 'linear-gradient(90deg, #EA580C 0%, #FB923C 100%)', color: '#FFFFFF', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: T.font, boxShadow: '0 0 24px rgba(249,115,22,0.22)' }}>Start body scan</button>
+            </div>
           </div>
         </div>
       ) : (
         <>
           <div style={{ padding: '20px 24px 0', animation: 'slideUp 0.35s ease 0.1s both' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <Label>Detected problem images</Label>
-              <span style={{ fontSize: 12, color: T.text3, marginBottom: 14, fontFamily: T.font }}>
+              <div style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.text3, fontWeight: 700, fontFamily: T.font }}>
+                Detected Problems
+              </div>
+              <span style={{ fontSize: 10, color: T.text3, fontFamily: T.font, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                 {detectedProblemCards.length} shown
               </span>
             </div>
             {detectedProblemCards.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {detectedProblemCards.map((problem, index) => (
-                  <button
-                    key={problem.id}
-                    type="button"
-                    onClick={() => navigate(`/problem/${problem.id}`)}
-                    style={{
-                      background: T.surface,
-                      border: `1px solid ${T.border}`,
-                      borderRadius: 14,
-                      padding: 0,
-                      overflow: 'hidden',
-                      cursor: 'pointer',
-                      display: 'block',
-                      animation: `slideUp 0.35s ease ${0.12 + index * 0.04}s both`,
-                    }}
-                  >
-                    <div style={{
-                      height: 172,
-                      background: '#0A0A0A',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
+                {detectedProblemCards.map((problem, index) => {
+                  const accent = CARD_ACCENTS[problem.id] ?? CARD_ACCENTS['forward-head'];
+                  return (
+                    <button
+                      key={problem.id}
+                      type="button"
+                      onClick={() => navigate(`/problem/${problem.id}`)}
+                      style={{
+                        position: 'relative',
+                        aspectRatio: '4 / 5',
+                        background: '#141416',
+                        border: `1px solid ${T.border}`,
+                        borderRadius: 22,
+                        padding: 0,
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'stretch',
+                        justifyContent: 'flex-end',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.26)',
+                        animation: `slideUp 0.35s ease ${0.12 + index * 0.04}s both`,
+                      }}
+                    >
+                      <div style={{ position: 'absolute', inset: 0, background: accent.gradient, opacity: 0.95, pointerEvents: 'none' }} />
+                      <div style={{ position: 'absolute', top: -24, left: '50%', transform: 'translateX(-50%)', width: 130, height: 130, borderRadius: '50%', background: accent.glow, filter: 'blur(28px)', pointerEvents: 'none' }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.18) 60%, rgba(0,0,0,0.82) 100%)', zIndex: 1, pointerEvents: 'none' }} />
+                      <div style={{ position: 'absolute', inset: 0, background: '#080809', zIndex: 0 }} />
                       <img
                         src={problem.cardImage}
                         alt={problem.title}
                         draggable={false}
                         style={{
-                          maxWidth: '100%',
-                          maxHeight: '100%',
-                          width: 'auto',
-                          height: 'auto',
-                          objectFit: 'contain',
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
                           objectPosition: problem.cardImageObjectPosition ?? 'center',
-                          display: 'block',
+                          transform: 'scale(1.06)',
+                          zIndex: 0,
                         }}
                       />
-                    </div>
-                    <div style={{
-                      padding: '10px 10px 12px',
-                      textAlign: 'left',
-                      lineHeight: 1.35,
-                    }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: T.text, fontFamily: T.font }}>
-                        {problem.title}
+                      <div style={{ position: 'relative', zIndex: 2, width: '100%', padding: '0 12px 12px', textAlign: 'left' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: T.text, fontFamily: T.font, lineHeight: 1.2, textShadow: '0 2px 10px rgba(0,0,0,0.55)' }}>
+                          {problem.title}
+                        </div>
+                        <div style={{ fontSize: 10, color: T.text2, marginTop: 4, fontFamily: T.font }}>
+                          Open exercises and details
+                        </div>
                       </div>
-                      <div style={{ fontSize: 11, color: T.text3, marginTop: 3, fontFamily: T.font }}>
-                        Open exercises and details
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <div style={{
-                background: T.surface,
+                background: 'linear-gradient(135deg, #1E1E22 0%, #121215 100%)',
                 border: `1px solid ${T.border}`,
-                borderRadius: 12,
-                padding: 16,
+                borderRadius: 20,
+                padding: 18,
               }}>
                 <p style={{ fontSize: 13, color: T.text2, lineHeight: 1.55, fontFamily: T.font }}>
                   No known posture problem images matched the latest scan yet.
@@ -634,7 +672,7 @@ const Progress: React.FC = () => {
           </div>
 
           <div style={{ padding: '24px', animation: 'slideUp 0.35s ease 0.25s both' }}>
-            <button type="button" onClick={() => navigate('/scan')} style={{ width: '100%', padding: 14, borderRadius: 10, background: 'none', color: T.text2, border: `1px solid ${T.border2}`, fontSize: 13, fontWeight: 400, cursor: 'pointer', fontFamily: T.font, display: 'block', marginBottom: 24 }}>Take another scan</button>
+            <button type="button" onClick={() => navigate('/scan')} style={{ width: '100%', padding: 15, borderRadius: 18, background: T.surface, color: T.text2, border: `1px solid ${T.border}`, fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: T.font, display: 'block', marginBottom: 24 }}>Take another scan</button>
           </div>
         </>
       )}

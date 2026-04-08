@@ -267,14 +267,14 @@ const Home: React.FC = () => {
                   <div
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(hasProgram ? '/daily-exercise' : '/scan');
+                      navigate(hasProgram ? '/program' : '/scan');
                     }}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        navigate(hasProgram ? '/daily-exercise' : '/scan');
+                        navigate(hasProgram ? '/program' : '/scan');
                       }
                     }}
                     style={{ cursor: 'pointer', outline: 'none' }}
@@ -362,7 +362,7 @@ const Home: React.FC = () => {
                 <div style={{ padding: 16 }}>
                   <button
                     type="button"
-                    onClick={() => navigate('/daily-exercise')}
+                    onClick={() => navigate('/program')}
                     style={{
                       width: '100%',
                       padding: '13px 16px',

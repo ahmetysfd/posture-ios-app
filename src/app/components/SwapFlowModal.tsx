@@ -1,30 +1,20 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { postureProblems, type Exercise, type PostureProblem } from '../data/postureData';
 import { type StoredDailyProgram } from '../services/DailyProgram';
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
-  bg: '#111111',
-  sheet: '#1C1C1E',       // iOS system grouped background
-  cell: '#2C2C2E',        // iOS cell background (dark)
-  separator: 'rgba(255,255,255,0.08)',
-  border: 'rgba(255,255,255,0.06)',
-  border2: 'rgba(255,255,255,0.12)',
+  bg: '#09090B',
+  surface: '#141418',
+  border: 'rgba(255,255,255,0.05)',
+  border2: 'rgba(255,255,255,0.08)',
   text: '#FFFFFF',
-  text2: 'rgba(235,235,245,0.6)',   // iOS secondary label
-  text3: 'rgba(235,235,245,0.3)',   // iOS tertiary label
-  gold: '#D9B84C',
-  orange: '#FF9F0A',    // iOS system orange
-  green: '#30D158',     // iOS system green
-  blue: '#0A84FF',      // iOS system blue
-  tint: '#D9B84C',      // app tint
-  font: "-apple-system, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif",
+  text2: 'rgba(161,161,170,1)',
+  text3: 'rgba(113,113,122,1)',
+  text4: 'rgba(82,82,91,1)',
+  gold: '#F97316',
+  gold2: '#FB923C',
+  font: "system-ui, -apple-system, 'Helvetica Neue', sans-serif",
 };
-
-const DIFF_LABEL: Record<string, string> = { beginner: 'Easy', medium: 'Medium', hard: 'Hard' };
-const DIFF_COLOR: Record<string, string> = { beginner: T.green, medium: T.gold, hard: T.orange };
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function extractVideoId(url: string): string | null {
   const m = url.match(/(?:shorts\/|watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -42,42 +32,25 @@ export function isExerciseSelectable(
   return !otherNames.has(exercise.name);
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+function difficultyLabel(diff?: string): string {
+  if (diff === 'medium') return 'Medium';
+  if (diff === 'hard') return 'Hard';
+  return 'Beginner';
+}
 
-/** iOS-style inset grouped section wrapper */
-const Section: React.FC<{
-  label?: string;
-  labelColor?: string;
-  children: React.ReactNode;
-}> = ({ label, labelColor, children }) => (
-  <div style={{ marginBottom: 24 }}>
-    {label && (
-      <div style={{
-        fontSize: 13, fontWeight: 600, fontFamily: T.font,
-        color: labelColor ?? T.text2,
-        letterSpacing: '0.02em',
-        marginBottom: 8, paddingLeft: 4,
-        textTransform: 'uppercase',
-      }}>
-        {label}
-      </div>
-    )}
-    <div style={{
-      borderRadius: 12,
-      overflow: 'hidden',
-      background: T.cell,
-    }}>
-      {children}
-    </div>
-  </div>
-);
+function difficultyTint(diff?: string): string {
+  if (diff === 'medium') return '#2DD4BF';
+  if (diff === 'hard') return '#FB923C';
+  return '#A1A1AA';
+}
 
-/** Hairline separator between rows */
-const RowSep = () => (
-  <div style={{ height: 1, background: T.separator, marginLeft: 16 }} />
-);
-
-// ── Main component ─────────────────────────────────────────────────────────────
+function matchScore(isTarget: boolean, selectable: boolean, difficulty?: string): number {
+  let score = isTarget ? 92 : 78;
+  if (difficulty === 'medium') score -= 4;
+  if (difficulty === 'hard') score -= 8;
+  if (!selectable) score -= 18;
+  return Math.max(60, Math.min(97, score));
+}
 
 interface Props {
   swapExerciseId: string;
@@ -96,405 +69,381 @@ const SwapFlowModal: React.FC<Props> = ({
 }) => {
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedProblem, setSelectedProblem] = useState<PostureProblem | null>(null);
-  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
   const [confirmedId, setConfirmedId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
 
   const swapEx = program.exercises.find(e => e.id === swapExerciseId);
   const swapExName = swapEx?.name ?? '';
   const targetSet = new Set(swapEx?.targetProblemIds ?? []);
 
+  const categoryExercises = useMemo(() => {
+    if (!selectedProblem) return [];
+    return [...selectedProblem.exerciseList].sort((a, b) => {
+      const aSelectable = isExerciseSelectable(program, a, swapExerciseId);
+      const bSelectable = isExerciseSelectable(program, b, swapExerciseId);
+      if (aSelectable !== bSelectable) return aSelectable ? -1 : 1;
+      const rank = (d?: string) => d === 'hard' ? 2 : d === 'medium' ? 1 : 0;
+      return rank(a.difficulty) - rank(b.difficulty);
+    });
+  }, [program, selectedProblem, swapExerciseId]);
+
+  const filteredExercises = useMemo(() => {
+    return categoryExercises.filter(ex =>
+      ex.name.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [categoryExercises, search]);
+
   function handleSelectProblem(problem: PostureProblem) {
     setSelectedProblem(problem);
+    setSelectedExerciseId(null);
+    setSearch('');
     setStep(2);
   }
 
   function handleBack() {
     setStep(1);
     setSelectedProblem(null);
+    setSelectedExerciseId(null);
+    setSearch('');
   }
 
-  function handleSelectExercise(exercise: Exercise) {
-    if (!isExerciseSelectable(program, exercise, swapExerciseId)) return;
+  function handleConfirm() {
+    if (!selectedExerciseId) return;
+    const exercise = categoryExercises.find(ex => ex.id === selectedExerciseId);
+    if (!exercise || !isExerciseSelectable(program, exercise, swapExerciseId)) return;
     setConfirmedId(exercise.id);
-    setTimeout(() => { onReplace(exercise); onClose(); }, 480);
+    setTimeout(() => {
+      onReplace(exercise);
+      onClose();
+    }, 420);
   }
-
-  const grouped = selectedProblem ? {
-    beginner: selectedProblem.exerciseList.filter(e => (e.difficulty ?? 'beginner') === 'beginner'),
-    medium:   selectedProblem.exerciseList.filter(e => e.difficulty === 'medium'),
-    hard:     selectedProblem.exerciseList.filter(e => e.difficulty === 'hard'),
-  } as const : null;
 
   return (
     <>
-      {/* ── Dim backdrop ── */}
       <div
         onClick={onClose}
         style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.55)',
-          zIndex: 200,
-          WebkitBackdropFilter: 'blur(8px)',
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.7)',
           backdropFilter: 'blur(8px)',
+          zIndex: 240,
         }}
       />
 
-      {/* ── Sheet ── */}
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 201,
-        background: T.bg,
-        display: 'flex',
-        flexDirection: 'column',
-        // slide up from bottom
-        animation: 'swapSheetIn 0.36s cubic-bezier(0.32, 0.72, 0, 1) both',
-      }}>
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 241,
+          background: T.bg,
+          animation: 'swapPageIn 0.28s ease both',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         <style>{`
-          @keyframes swapSheetIn {
-            from { transform: translateY(100%); }
-            to   { transform: translateY(0); }
+          @keyframes swapPageIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
           }
         `}</style>
 
-        {/* ── Drag handle ── */}
-        <div style={{
-          paddingTop: 'max(14px, env(safe-area-inset-top))',
-          display: 'flex', justifyContent: 'center', paddingBottom: 6,
-          flexShrink: 0,
-        }}>
-          <div style={{
-            width: 36, height: 5, borderRadius: 3,
-            background: 'rgba(255,255,255,0.18)',
-          }} />
-        </div>
-
-        {/* ── Navigation bar (iOS 44pt) ── */}
-        <div style={{
-          height: 44,
-          display: 'flex', alignItems: 'center',
-          paddingLeft: 8, paddingRight: 8,
-          flexShrink: 0,
-          position: 'relative',
-        }}>
-          {/* Left — back or close */}
-          <button
-            type="button"
-            onClick={step === 2 ? handleBack : onClose}
-            style={{
-              minWidth: 44, height: 44,
-              background: 'none', border: 'none',
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 3,
-              color: T.tint,
-              padding: '0 4px',
-              flexShrink: 0,
-            }}
-          >
-            {step === 2 ? (
-              <>
-                <svg width={11} height={18} viewBox="0 0 11 18" fill="none">
-                  <path d="M9.5 1.5L2 9l7.5 7.5" stroke={T.tint} strokeWidth={2.2}
-                    strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span style={{ fontSize: 17, fontFamily: T.font, color: T.tint }}>Back</span>
-              </>
-            ) : (
-              <span style={{ fontSize: 17, fontFamily: T.font, color: T.tint }}>Close</span>
-            )}
-          </button>
-
-          {/* Center — title */}
-          <div style={{
-            position: 'absolute', left: 0, right: 0,
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            pointerEvents: 'none',
-          }}>
-            <span style={{
-              fontSize: 17, fontWeight: 600, fontFamily: T.font,
-              color: T.text, letterSpacing: '-0.02em',
-            }}>
-              {step === 1 ? 'Replace Exercise' : selectedProblem?.title}
-            </span>
+        <main style={{ flex: 1, overflowY: 'auto', padding: '32px 20px 100px', fontFamily: T.font }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <button
+              type="button"
+              onClick={step === 2 ? handleBack : onClose}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: T.gold2, fontSize: 13, fontFamily: T.font }}
+            >
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              {step === 2 ? 'Back' : 'Close'}
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 24, height: 4, borderRadius: 999, background: step === 1 ? T.gold : 'rgba(249,115,22,0.3)' }} />
+              <div style={{ width: 24, height: 4, borderRadius: 999, background: step === 2 ? T.gold : 'rgba(255,255,255,0.06)' }} />
+            </div>
           </div>
 
-          {/* Right — step pills */}
-          <div style={{
-            marginLeft: 'auto', display: 'flex', gap: 5,
-            paddingRight: 4, flexShrink: 0,
-          }}>
-            <div style={{
-              width: 18, height: 4, borderRadius: 2,
-              background: T.tint,
-            }} />
-            <div style={{
-              width: 18, height: 4, borderRadius: 2,
-              background: step === 2 ? T.tint : 'rgba(255,255,255,0.18)',
-              transition: 'background 0.25s ease',
-            }} />
+          <div style={{ marginTop: 16, marginBottom: 4 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: T.text3, textTransform: 'uppercase', marginBottom: 4 }}>
+              {step === 1 ? 'Step 1 - Choose Category' : 'Step 2 - Pick Exercise'}
+            </p>
+            <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.04em', color: T.text, lineHeight: 1 }}>
+              Replace Exercise
+            </h1>
           </div>
-        </div>
 
-        {/* ── Context bar — "replacing: Name" ── */}
-        <div style={{
-          height: 36,
-          display: 'flex', alignItems: 'center',
-          paddingLeft: 16, paddingRight: 16,
-          background: 'rgba(255,255,255,0.03)',
-          borderTop: `1px solid ${T.separator}`,
-          borderBottom: `1px solid ${T.separator}`,
-          flexShrink: 0,
-        }}>
-          <span style={{ fontSize: 12, fontFamily: T.font, color: T.text3 }}>
-            Replacing
-          </span>
-          <span style={{ fontSize: 12, fontFamily: T.font, color: T.text2, marginLeft: 5, fontWeight: 500 }}>
-            {swapExName}
-          </span>
-          {step === 1 && (
-            <span style={{ fontSize: 12, fontFamily: T.font, color: T.text3, marginLeft: 'auto' }}>
-              Step {step} of 2
-            </span>
-          )}
-        </div>
-
-        {/* ── Scrollable content ── */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
-          overscrollBehavior: 'contain',
-          padding: '16px 16px',
-          paddingBottom: 'max(32px, env(safe-area-inset-bottom))',
-        } as React.CSSProperties}>
-
-          {/* ════ STEP 1 — Category grid ════ */}
-          {step === 1 && (
-            <>
-              {/* Hint text */}
-              <div style={{
-                fontSize: 13, fontFamily: T.font, color: T.text3,
-                marginBottom: 16, lineHeight: 1.5,
-              }}>
-                Select a posture category to browse replacement exercises.
-                {targetSet.size > 0 && (
-                  <span style={{ color: T.tint }}> Highlighted categories match this exercise.</span>
-                )}
+          <div style={{ position: 'relative', marginTop: 16, borderRadius: 18, overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #1E1E22 0%, #121215 100%)', border: `1px solid ${T.border}`, borderRadius: 18 }} />
+            <div style={{ position: 'absolute', top: '-40%', left: '-15%', width: 128, height: 128, borderRadius: '50%', background: 'rgba(249,115,22,0.08)', filter: 'blur(35px)', pointerEvents: 'none' }} />
+            <div style={{ position: 'relative', zIndex: 1, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div>
+                <p style={{ fontSize: 10, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 700, marginBottom: 4 }}>
+                  Replacing
+                </p>
+                <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>
+                  {swapExName}
+                </p>
               </div>
+              {step === 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: T.gold2, textAlign: 'right' }}>
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />
+                  </svg>
+                  <span>Matched categories highlighted</span>
+                </div>
+              )}
+            </div>
+          </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {postureProblems.map(problem => {
-                  const isTarget = targetSet.has(problem.id);
-                  return (
-                    <button
-                      key={problem.id}
-                      type="button"
-                      onClick={() => handleSelectProblem(problem)}
+          {step === 1 && (
+            <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {postureProblems.map((problem) => {
+                const isTarget = targetSet.has(problem.id);
+                return (
+                  <button
+                    key={problem.id}
+                    type="button"
+                    onClick={() => handleSelectProblem(problem)}
+                    style={{
+                      position: 'relative',
+                      borderRadius: 18,
+                      overflow: 'hidden',
+                      textAlign: 'left',
+                      padding: 0,
+                      border: `1px solid ${isTarget ? 'rgba(249,115,22,0.30)' : 'rgba(255,255,255,0.04)'}`,
+                      background: T.surface,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {isTarget && (
+                      <div style={{ position: 'absolute', top: -10, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(249,115,22,0.12)', filter: 'blur(24px)', pointerEvents: 'none' }} />
+                    )}
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.72) 100%)', pointerEvents: 'none', zIndex: 1 }} />
+                    <div style={{ position: 'absolute', inset: 0, background: '#080809', zIndex: 0 }} />
+                    <img
+                      src={problem.cardImage}
+                      alt={problem.title}
                       style={{
-                        background: T.cell,
-                        border: `1.5px solid ${isTarget ? T.tint : 'transparent'}`,
-                        borderRadius: 16,
-                        padding: 0,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        fontFamily: T.font,
-                        overflow: 'hidden',
-                        position: 'relative',
-                        WebkitTapHighlightColor: 'transparent',
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: problem.cardImageObjectPosition ?? 'center',
+                        zIndex: 0,
+                        transform: 'scale(1.05)',
                       }}
-                    >
-                      {/* Gold dot for targeted categories */}
-                      {isTarget && (
-                        <div style={{
-                          position: 'absolute', top: 9, right: 9, zIndex: 1,
-                          width: 8, height: 8, borderRadius: '50%',
-                          background: T.tint,
-                          boxShadow: `0 0 0 2px ${T.cell}`,
-                        }} />
-                      )}
-
-                      {/* Image */}
-                      <div style={{
-                        width: '100%', height: 100,
-                        background: '#0A0A0A',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        overflow: 'hidden',
-                      }}>
-                        <img
-                          src={problem.cardImage}
-                          alt={problem.title}
-                          style={{
-                            width: '100%', height: '100%',
-                            objectFit: 'contain',
-                          }}
-                        />
+                    />
+                    <div style={{ position: 'relative', zIndex: 2, minHeight: 122, padding: '14px 14px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                        <span style={{ display: 'inline-flex', padding: '3px 8px', borderRadius: 999, fontSize: 9, fontWeight: 700, color: isTarget ? T.gold2 : T.text2, background: isTarget ? 'rgba(249,115,22,0.10)' : 'rgba(255,255,255,0.05)', border: `1px solid ${isTarget ? 'rgba(249,115,22,0.20)' : 'rgba(255,255,255,0.06)'}` }}>
+                          {problem.exerciseList.length} exercises
+                        </span>
+                        {isTarget && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 6px', borderRadius: 6, background: 'rgba(249,115,22,0.10)', color: T.gold2, fontSize: 8, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', border: '1px solid rgba(249,115,22,0.20)' }}>
+                            Match
+                          </span>
+                        )}
                       </div>
-
-                      {/* Label */}
-                      <div style={{ padding: '10px 12px 12px' }}>
-                        <div style={{
-                          fontSize: 14, fontWeight: 600, color: T.text,
-                          letterSpacing: '-0.01em', lineHeight: 1.2,
-                          marginBottom: 3,
-                        }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: T.text, lineHeight: 1.15, textShadow: '0 2px 10px rgba(0,0,0,0.55)' }}>
                           {problem.title}
                         </div>
-                        <div style={{ fontSize: 12, color: T.text3 }}>
-                          {problem.exerciseList.length} exercises
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                          <span style={{ fontSize: 11, color: T.text3 }}>Browse replacements</span>
+                          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {step === 2 && selectedProblem && (
+            <>
+              <div style={{ position: 'relative', marginTop: 18 }}>
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M21 21l-4.3-4.3" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search exercises..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: T.surface,
+                    border: `1px solid ${T.border}`,
+                    borderRadius: 14,
+                    padding: '11px 14px 11px 38px',
+                    color: T.text,
+                    fontSize: 13,
+                    fontFamily: T.font,
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, marginBottom: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: targetSet.has(selectedProblem.id) ? T.gold2 : T.text2 }}>
+                  {selectedProblem.title}
+                </span>
+                <span style={{ fontSize: 10, color: T.text4 }}>
+                  {filteredExercises.length} available
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {filteredExercises.map((exercise) => {
+                  const selectable = isExerciseSelectable(program, exercise, swapExerciseId);
+                  const selected = selectedExerciseId === exercise.id;
+                  const match = matchScore(targetSet.has(selectedProblem.id), selectable, exercise.difficulty);
+                  const vidId = exercise.youtubeUrl
+                    ? extractVideoId(exercise.youtubeUrl)
+                    : (exercise.videoId ?? null);
+
+                  return (
+                    <button
+                      key={exercise.id}
+                      type="button"
+                      onClick={() => selectable && setSelectedExerciseId(selected ? null : exercise.id)}
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        textAlign: 'left',
+                        borderRadius: 18,
+                        overflow: 'hidden',
+                        padding: 0,
+                        border: `1px solid ${selected ? 'rgba(249,115,22,0.30)' : 'rgba(255,255,255,0.04)'}`,
+                        background: selected ? 'rgba(249,115,22,0.06)' : T.surface,
+                        cursor: selectable ? 'pointer' : 'default',
+                        opacity: selectable ? 1 : 0.42,
+                      }}
+                    >
+                      {selected && (
+                        <div style={{ position: 'absolute', top: -18, right: -12, width: 96, height: 96, borderRadius: '50%', background: 'rgba(249,115,22,0.10)', filter: 'blur(28px)', pointerEvents: 'none' }} />
+                      )}
+                      <div style={{ position: 'relative', zIndex: 1, padding: '14px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <h3 style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.15, color: selected ? '#FDBA74' : T.text, margin: 0 }}>
+                                {exercise.name}
+                              </h3>
+                              <span style={{
+                                fontSize: 9,
+                                fontWeight: 700,
+                                padding: '2px 6px',
+                                borderRadius: 6,
+                                border: `1px solid ${match >= 90 ? 'rgba(16,185,129,0.20)' : match >= 80 ? 'rgba(45,212,191,0.20)' : 'rgba(113,113,122,0.20)'}`,
+                                background: match >= 90 ? 'rgba(16,185,129,0.10)' : match >= 80 ? 'rgba(45,212,191,0.10)' : 'rgba(113,113,122,0.10)',
+                                color: match >= 90 ? '#34D399' : match >= 80 ? '#2DD4BF' : T.text2,
+                              }}>
+                                {match}%
+                              </span>
+                            </div>
+                            <p style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>
+                              {(exercise.difficulty && difficultyLabel(exercise.difficulty)) || 'Beginner'} · {exercise.duration}s
+                            </p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.04em', padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', color: difficultyTint(exercise.difficulty) }}>
+                                {selectedProblem.title}
+                              </span>
+                              {!selectable && (
+                                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.04em', padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', color: T.text4 }}>
+                                  Already in program
+                                </span>
+                              )}
+                            </div>
+                            {selected && vidId && (
+                              <div style={{ marginTop: 12 }}>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveVideoId(vidId);
+                                  }}
+                                  style={{
+                                    height: 34,
+                                    padding: '0 12px',
+                                    borderRadius: 10,
+                                    background: 'rgba(255,255,255,0.04)',
+                                    border: `1px solid ${T.border2}`,
+                                    color: T.text2,
+                                    cursor: 'pointer',
+                                    fontFamily: T.font,
+                                    fontSize: 12,
+                                  }}
+                                >
+                                  Demo
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <div style={{
+                            flexShrink: 0,
+                            width: 24,
+                            height: 24,
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: selected ? T.gold : 'rgba(255,255,255,0.04)',
+                            border: selected ? 'none' : `1px solid ${T.border}`,
+                          }}>
+                            {selected ? (
+                              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     </button>
                   );
                 })}
               </div>
+
+              {selectedExerciseId && (
+                <div style={{ marginTop: 18 }}>
+                  <button
+                    type="button"
+                    onClick={handleConfirm}
+                    disabled={!!confirmedId}
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      borderRadius: 18,
+                      border: 'none',
+                      cursor: confirmedId ? 'default' : 'pointer',
+                      background: confirmedId ? '#22C55E' : 'linear-gradient(90deg, #EA580C 0%, #FB923C 100%)',
+                      color: '#FFFFFF',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      fontFamily: T.font,
+                      boxShadow: '0 0 24px rgba(249,115,22,0.22)',
+                    }}
+                  >
+                    {confirmedId ? 'Exercise swapped' : 'Swap Exercise'}
+                  </button>
+                </div>
+              )}
             </>
           )}
-
-          {/* ════ STEP 2 — Exercise list ════ */}
-          {step === 2 && grouped && selectedProblem && (
-            <div>
-              {(['beginner', 'medium', 'hard'] as const).map(diff => {
-                const exercises = grouped[diff];
-                if (exercises.length === 0) return null;
-
-                return (
-                  <Section
-                    key={diff}
-                    label={DIFF_LABEL[diff]}
-                    labelColor={DIFF_COLOR[diff]}
-                  >
-                    {exercises.map((exercise, idx) => {
-                      const selectable = isExerciseSelectable(program, exercise, swapExerciseId);
-                      const confirmed = confirmedId === exercise.id;
-                      const exDiff = exercise.difficulty ?? 'beginner';
-                      const vidId = exercise.youtubeUrl
-                        ? extractVideoId(exercise.youtubeUrl)
-                        : (exercise.videoId ?? null);
-
-                      return (
-                        <React.Fragment key={exercise.id}>
-                          {idx > 0 && <RowSep />}
-                          <div style={{
-                            padding: '14px 16px',
-                            opacity: selectable ? 1 : 0.38,
-                            background: confirmed
-                              ? 'rgba(48, 209, 88, 0.10)'
-                              : 'transparent',
-                            transition: 'background 0.3s ease',
-                          }}>
-                            {/* Row top: emoji + name + badge */}
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
-                              <span style={{ fontSize: 26, lineHeight: 1, flexShrink: 0 }}>
-                                {exercise.emoji}
-                              </span>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{
-                                  fontSize: 15, fontWeight: 600, color: T.text,
-                                  fontFamily: T.font, letterSpacing: '-0.02em',
-                                  marginBottom: 4,
-                                }}>
-                                  {exercise.name}
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <span style={{
-                                    fontSize: 11, fontWeight: 600, fontFamily: T.font,
-                                    color: DIFF_COLOR[exDiff],
-                                    background: `${DIFF_COLOR[exDiff]}20`,
-                                    padding: '2px 8px', borderRadius: 20,
-                                    letterSpacing: '0.01em',
-                                  }}>
-                                    {DIFF_LABEL[exDiff]}
-                                  </span>
-                                  {!selectable && (
-                                    <span style={{
-                                      fontSize: 11, fontFamily: T.font, color: T.text3,
-                                    }}>
-                                      Already in program
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Description */}
-                            <div style={{
-                              fontSize: 13, color: T.text2, fontFamily: T.font,
-                              lineHeight: 1.5, marginBottom: 12,
-                              paddingLeft: 38, // align with text above
-                            }}>
-                              {exercise.description}
-                            </div>
-
-                            {/* Action buttons */}
-                            <div style={{ display: 'flex', gap: 8, paddingLeft: 38 }}>
-                              {vidId && (
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveVideoId(vidId)}
-                                  style={{
-                                    height: 36, flex: 1,
-                                    background: 'rgba(255,255,255,0.07)',
-                                    border: `1px solid ${T.border2}`,
-                                    borderRadius: 10,
-                                    cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center',
-                                    justifyContent: 'center', gap: 6,
-                                    fontFamily: T.font,
-                                    WebkitTapHighlightColor: 'transparent',
-                                  }}
-                                >
-                                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-                                    <circle cx="12" cy="12" r="10" stroke={T.text2} strokeWidth={1.5} />
-                                    <polygon points="10 8 16 12 10 16 10 8" fill={T.text2} />
-                                  </svg>
-                                  <span style={{ fontSize: 13, fontWeight: 500, color: T.text2 }}>Demo</span>
-                                </button>
-                              )}
-
-                              {selectable && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleSelectExercise(exercise)}
-                                  disabled={!!confirmedId}
-                                  style={{
-                                    height: 36, flex: 1,
-                                    background: confirmed ? T.green : T.tint,
-                                    border: 'none',
-                                    borderRadius: 10,
-                                    cursor: confirmedId ? 'default' : 'pointer',
-                                    display: 'flex', alignItems: 'center',
-                                    justifyContent: 'center', gap: 6,
-                                    fontFamily: T.font,
-                                    transition: 'background 0.3s ease',
-                                    WebkitTapHighlightColor: 'transparent',
-                                  }}
-                                >
-                                  {confirmed ? (
-                                    <>
-                                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-                                        <polyline points="20 6 9 17 4 12" stroke="#000" strokeWidth={2.5}
-                                          strokeLinecap="round" strokeLinejoin="round" />
-                                      </svg>
-                                      <span style={{ fontSize: 13, fontWeight: 600, color: '#000' }}>Added</span>
-                                    </>
-                                  ) : (
-                                    <span style={{ fontSize: 13, fontWeight: 600, color: '#000' }}>Select</span>
-                                  )}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </React.Fragment>
-                      );
-                    })}
-                  </Section>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        </main>
       </div>
 
-      {/* ── Video overlay ── */}
       {activeVideoId && (
         <>
           <div

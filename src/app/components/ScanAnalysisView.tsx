@@ -30,10 +30,10 @@ interface ScanAnalysisViewProps {
 }
 
 const T = {
-  bg: '#0A0A0A', surface: '#141414', border: 'rgba(255,255,255,0.08)',
-  border2: 'rgba(255,255,255,0.10)', text: '#EDEDED',
-  text2: 'rgba(160,160,155,1)', text3: 'rgba(102,102,100,1)',
-  gold: '#D9B84C', orange: '#E68C33', green: '#3DA878',
+  bg: '#09090B', surface: '#141416', surface2: '#1A1A1E', border: 'rgba(255,255,255,0.05)',
+  border2: 'rgba(255,255,255,0.10)', text: '#FFFFFF',
+  text2: 'rgba(161,161,170,1)', text3: 'rgba(113,113,122,1)',
+  gold: '#FB923C', orange: '#F97316', green: '#22C55E',
   font: "system-ui, -apple-system, 'Helvetica Neue', sans-serif",
 };
 
@@ -66,10 +66,10 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
       onClick={onPress}
       style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        gap: 6, padding: '10px 0', borderRadius: 10,
-        background: active ? 'rgba(255,255,255,0.06)' : 'transparent',
-        border: `1px solid ${active ? T.border2 : 'transparent'}`,
-        color: active ? T.text : T.text3,
+        gap: 6, padding: '12px 0', borderRadius: 14,
+        background: active ? T.surface2 : T.surface,
+        border: `1px solid ${active ? T.border2 : T.border}`,
+        color: active ? '#D4D4D8' : T.text3,
         fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: T.font,
       }}
     >
@@ -84,7 +84,7 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
     if (probs.length === 0) return null;
     const info = RISK_INFO[risk];
     return (
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 18 }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
         }}>
@@ -107,9 +107,9 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
         {probs.map(p => (
           <div key={p.id} style={{
             display: 'flex', alignItems: 'center', gap: 10,
-            padding: '10px 12px', background: T.surface,
-            borderRadius: 8, marginBottom: 4,
-            borderLeft: `3px solid ${info.color}`,
+            padding: '4px 0 4px 12px',
+            marginBottom: 8,
+            borderLeft: `2px solid ${info.color}99`,
           }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 500, color: T.text, fontFamily: T.font }}>
@@ -150,29 +150,49 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
 
       {/* ── Level result card ──────────────────── */}
       <div style={{
-        background: T.surface, borderRadius: 14, padding: 16,
-        border: `1px solid ${T.border2}`,
+        position: 'relative',
+        overflow: 'hidden',
+        background: 'linear-gradient(135deg, #1E1E22 0%, #121215 100%)',
+        borderRadius: 24,
+        padding: 20,
+        border: `1px solid ${T.border}`,
+        boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.04), 0 8px 24px rgba(0,0,0,0.5)',
       }}>
         <div style={{
+          position: 'absolute',
+          top: '-30%',
+          right: '-10%',
+          width: 160,
+          height: 160,
+          borderRadius: '50%',
+          background: 'rgba(249,115,22,0.10)',
+          filter: 'blur(40px)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'relative',
+          zIndex: 1,
           fontSize: 11, fontWeight: 600, color: levelInfo.color,
           padding: '3px 8px', borderRadius: 6,
           background: levelInfo.bgColor,
           display: 'inline-block', marginBottom: 8,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
         }}>
           {levelInfo.label}
         </div>
-        <div style={{ fontSize: 16, fontWeight: 500, color: T.text, marginBottom: 4, fontFamily: T.font }}>
+        <div style={{ position: 'relative', zIndex: 1, fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 4, fontFamily: T.font, letterSpacing: '-0.02em' }}>
           {levelInfo.tagline}
         </div>
-        <p style={{ fontSize: 12, color: T.text2, lineHeight: 1.5, fontFamily: T.font }}>
+        <p style={{ position: 'relative', zIndex: 1, fontSize: 12, color: T.text2, lineHeight: 1.5, fontFamily: T.font }}>
           {report.problems.length} posture issue{report.problems.length !== 1 ? 's' : ''} detected across 3 views.
         </p>
-        <p style={{ fontSize: 11, color: T.text3, lineHeight: 1.5, fontFamily: T.font, marginTop: 6 }}>
+        <p style={{ position: 'relative', zIndex: 1, fontSize: 10, color: T.text3, lineHeight: 1.55, fontFamily: T.font, marginTop: 6 }}>
           Low findings stay visible so front and back asymmetries do not disappear from the report.
         </p>
 
         {/* Level bar */}
-        <div style={{ display: 'flex', gap: 4, marginTop: 12 }}>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 4, marginTop: 12 }}>
           {(['beginner', 'intermediate', 'advanced'] as PostureLevel[]).map(l => (
             <div key={l} style={{
               flex: 1, height: 5, borderRadius: 3,
@@ -182,7 +202,7 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
             }} />
           ))}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
           <span style={{ fontSize: 9, color: T.text3 }}>Beginner</span>
           <span style={{ fontSize: 9, color: T.text3 }}>Intermediate</span>
           <span style={{ fontSize: 9, color: T.text3 }}>Advanced</span>
@@ -191,7 +211,7 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
 
       {/* ── View tabs ─────────────────────────── */}
       <div style={{
-        display: 'flex', background: '#161616', borderRadius: 10, padding: 4,
+        display: 'flex', background: T.surface, borderRadius: 18, padding: 4, border: `1px solid ${T.border}`,
       }}>
         {(['front', 'side', 'back'] as const).map(v => (
           <button
@@ -200,11 +220,11 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
             onClick={() => setActiveView(v)}
             style={{
               flex: 1, textAlign: 'center', padding: '9px 0',
-              borderRadius: 7, fontSize: 13,
+              borderRadius: 12, fontSize: 12,
               fontWeight: activeView === v ? 600 : 400,
               cursor: 'pointer', fontFamily: T.font, border: 'none',
               color: activeView === v ? T.text : T.text3,
-              background: activeView === v ? 'rgba(255,255,255,0.06)' : 'transparent',
+              background: activeView === v ? 'linear-gradient(135deg, #2A2A2F 0%, #1A1A1E 100%)' : 'transparent',
               transition: 'all 0.15s ease',
             }}
           >
@@ -241,12 +261,30 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
 
       {/* ── Risk summary ─────────────────────── */}
       <div style={{
-        background: T.surface, borderRadius: 14, padding: 16,
-        border: `1px solid ${T.border2}`,
+        position: 'relative',
+        overflow: 'hidden',
+        background: 'linear-gradient(135deg, #1E1E22 0%, #121215 100%)',
+        borderRadius: 24,
+        padding: 20,
+        border: `1px solid ${T.border}`,
+        boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.04), 0 8px 24px rgba(0,0,0,0.5)',
       }}>
         <div style={{
-          fontSize: 15, fontWeight: 500, color: T.text,
+          position: 'absolute',
+          top: '-20%',
+          right: '-5%',
+          width: 128,
+          height: 128,
+          borderRadius: '50%',
+          background: 'rgba(244,63,94,0.08)',
+          filter: 'blur(35px)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'relative', zIndex: 1,
+          fontSize: 11, fontWeight: 700, color: T.text3,
           fontFamily: T.font, marginBottom: 14,
+          letterSpacing: '0.15em', textTransform: 'uppercase',
         }}>
           Risk analysis
         </div>
@@ -262,8 +300,8 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
         )}
 
         {report.problems.some(p => p.rawMetrics && Object.keys(p.rawMetrics).length > 0) && (
-          <details style={{ marginTop: 12 }}>
-            <summary style={{ cursor: 'pointer', fontSize: 12, color: T.text2, fontFamily: T.font }}>
+          <details style={{ marginTop: 12, position: 'relative', zIndex: 1 }}>
+            <summary style={{ cursor: 'pointer', fontSize: 11, color: T.text2, fontFamily: T.font }}>
               Measurement details
             </summary>
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -271,7 +309,7 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
                 const entries = Object.entries(problem.rawMetrics ?? {}).slice(0, 4);
                 if (!entries.length) return null;
                 return (
-                  <div key={`${problem.id}-metrics`} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: 10 }}>
+                  <div key={`${problem.id}-metrics`} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 10 }}>
                     <div style={{ fontSize: 12, color: T.text, fontFamily: T.font, marginBottom: 4 }}>
                       {problem.mapLabel}
                     </div>
@@ -288,7 +326,7 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
 
       {/* ── Disclaimer ────────────────────────── */}
       <div style={{
-        padding: '10px 14px', background: 'rgba(255,255,255,0.02)',
+        padding: '2px 4px',
         borderRadius: 8,
       }}>
         <p style={{ fontSize: 10, color: T.text3, lineHeight: 1.5, fontFamily: T.font }}>
@@ -301,10 +339,11 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
         type="button"
         onClick={onViewDailyPlan}
         style={{
-          width: '100%', padding: 15, borderRadius: 10,
-          background: T.gold, color: '#0A0A0A',
+          width: '100%', padding: 16, borderRadius: 18,
+          background: 'linear-gradient(90deg, #EA580C 0%, #FB923C 100%)', color: '#FFFFFF',
           fontSize: 14, fontWeight: 600, border: 'none',
           cursor: 'pointer', fontFamily: T.font,
+          boxShadow: '0 0 24px rgba(249,115,22,0.22)',
         }}
       >
         See your daily plan
@@ -314,11 +353,11 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
           type="button"
           onClick={onViewFullReport}
           style={{
-            width: '100%', padding: 15, borderRadius: 10,
-            background: 'none', color: T.text,
-            fontSize: 14, fontWeight: 600,
+            width: '100%', padding: 15, borderRadius: 16,
+            background: T.surface, color: T.text,
+            fontSize: 13, fontWeight: 500,
             cursor: 'pointer', fontFamily: T.font,
-            border: `1px solid ${T.border2}`,
+            border: `1px solid ${T.border}`,
           }}
         >
           Full report →
@@ -329,9 +368,9 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
           type="button"
           onClick={onNewScan}
           style={{
-            width: '100%', padding: 12, borderRadius: 10,
-            background: 'none', color: T.text2,
-            border: `1px solid ${T.border2}`,
+            width: '100%', padding: 15, borderRadius: 16,
+            background: T.surface, color: T.text2,
+            border: `1px solid ${T.border}`,
             fontSize: 13, cursor: 'pointer', fontFamily: T.font,
           }}
         >

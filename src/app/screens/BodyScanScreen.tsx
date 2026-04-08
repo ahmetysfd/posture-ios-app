@@ -770,7 +770,7 @@ const BodyScanScreen: React.FC = () => {
             report={scanReport}
             photos={{ front: photos.front, side: photos.side, back: photos.back }}
             keypoints={allKeypoints}
-            onViewDailyPlan={() => navigate('/scan/program')}
+            onViewDailyPlan={() => navigate('/program')}
             onViewFullReport={() => navigate('/progress')}
             onNewScan={resetAll}
           />

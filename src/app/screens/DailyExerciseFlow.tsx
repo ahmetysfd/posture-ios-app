@@ -164,7 +164,7 @@ const DailyExerciseFlow: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '52px 20px 12px' }}>
         <button
           type="button"
-          onClick={() => navigate('/scan/program')}
+          onClick={() => navigate('/program')}
           style={{
             width: 38, height: 38, borderRadius: 11,
             background: T.surface, border: `1px solid ${T.border2}`,
