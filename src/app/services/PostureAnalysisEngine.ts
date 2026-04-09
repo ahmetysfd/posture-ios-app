@@ -1051,14 +1051,14 @@ export function stabilizeScore(rawScore: number): {
 
 export function classifyOverallSeverityBand(
   report: PostureReport,
-): 'mild' | 'moderate' | 'severe' {
+): 'low' | 'medium' | 'high' {
   const detected = report.problems.filter(p => p.score >= 20);
-  if (detected.length === 0) return 'mild';
+  if (detected.length === 0) return 'low';
 
   const maxScore = Math.max(...detected.map(p => p.score));
-  if (maxScore >= 65) return 'severe';
-  if (maxScore >= 40 || detected.length >= 3) return 'moderate';
-  return 'mild';
+  if (maxScore >= 65) return 'high';
+  if (maxScore >= 40 || detected.length >= 3) return 'medium';
+  return 'low';
 }
 
 export function stabilizeReport(report: PostureReport): PostureReport {
@@ -1101,12 +1101,16 @@ export function finalizeAssessment(rawReport: PostureReport): {
   const level = determinePostureLevel(detectedIds, severityBand, existingProfile);
   const difficulty = levelToDefaultDifficulty(level);
 
-  // Build per-problem severity map (keyed by scan problem ID)
-  const detectedProblemSeverities: Record<string, 'mild' | 'moderate' | 'severe'> = {};
+  // Build per-problem risk level map (keyed by scan problem ID)
+  // Prefer riskCategory (set directly from ScanReport body analysis) over the
+  // lossy severity round-trip (riskCategory→mild/moderate/severe→low/medium/high).
+  const detectedProblemSeverities: Record<string, 'low' | 'medium' | 'high'> = {};
   for (const p of detected) {
-    if (p.severity !== 'none') {
-      detectedProblemSeverities[p.id] = p.severity;
-    }
+    if (p.riskCategory) {
+      detectedProblemSeverities[p.id] = p.riskCategory;
+    } else if (p.severity === 'severe')        detectedProblemSeverities[p.id] = 'high';
+    else if (p.severity === 'moderate') detectedProblemSeverities[p.id] = 'medium';
+    else if (p.severity === 'mild')     detectedProblemSeverities[p.id] = 'low';
   }
 
   const profile = saveUserProfile({

@@ -365,9 +365,14 @@ const BodyScanScreen: React.FC = () => {
         // Large data URLs can exceed storage quota on some devices.
       }
 
+      const detectedProblemSeverities: Record<string, 'low' | 'medium' | 'high'> = {};
+      for (const p of scan.problems) {
+        detectedProblemSeverities[p.id] = p.riskCategory;
+      }
       const savedProfile = saveUserProfile({
         postureLevel: scan.postureLevel,
         detectedProblems: scan.problems.map(p => p.id),
+        detectedProblemSeverities,
         problemCount: scan.problems.length,
         scanTimestamp: Date.now(),
         exerciseDifficulty: levelToDefaultDifficulty(scan.postureLevel),

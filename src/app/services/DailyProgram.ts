@@ -9,7 +9,7 @@ import type { PersonalizedProgram } from './PostureAnalysisEngine';
 
 const STORAGE_KEY = 'posturefix_daily_program';
 const PROGRESS_KEY = 'posturefix_progress_log';
-const SCHEMA_VERSION = 2; // bump when generation logic changes to force regeneration
+const SCHEMA_VERSION = 8; // bump when generation logic changes to force regeneration
 
 // Map profile / scan problem IDs → postureData problem IDs (some scan IDs differ)
 const TO_APP_PROBLEM: Record<string, string> = {
@@ -36,6 +36,7 @@ export interface DailyExercise {
   sets: number;
   displayReps: string;          // e.g. "10–12 reps" or "40s"
   difficulty: ExerciseDifficulty;
+  type: ExercisePhase;          // physiological classification: mobility | activation | strength
   targetProblemIds: string[];   // all app problem route IDs this exercise addresses
   targetProblemLabels: string[]; // human-readable labels (merged when deduped)
   postureTypes: string[];       // merged list of posture type labels for this exercise
@@ -68,10 +69,7 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-// 1 set per exercise — no multi-set rest needed
-const REST_BETWEEN_SEC = 15;
-const TARGET_MIN_SEC   = 600; // 10 min
-const TARGET_MAX_SEC   = 720; // 12 min
+const REST_BETWEEN_SEC = 15; // seconds between exercises
 
 function isStrength(name: string): boolean {
   return /raise|row|fly|pull|push|bridge|plank|squat|swimmer|rocket|banded|cuffed/i.test(name);
@@ -79,25 +77,37 @@ function isStrength(name: string): boolean {
 
 type ExercisePhase = 'mobility' | 'activation' | 'strength';
 
-/** Classify exercise into session phase for sequencing. */
+/** Classify exercise into session phase — static lookup first, regex as fallback. */
 function getPhase(name: string): ExercisePhase {
+  const staticType = EXERCISE_TYPE[name];
+  if (staticType) return staticType;
   if (/foam roll|massage|opener|stretch|twist/i.test(name)) return 'mobility';
   if (isStrength(name)) return 'strength';
   return 'activation';
 }
 
-type ProblemSeverity = 'mild' | 'moderate' | 'severe';
+type ProblemSeverity = 'low' | 'medium' | 'high';
+
+/** Normalize legacy 'mild'/'moderate'/'severe' values alongside new 'low'/'medium'/'high'. */
+function normalizeSeverity(raw: string | undefined): ProblemSeverity | undefined {
+  if (!raw) return undefined;
+  if (raw === 'high' || raw === 'medium' || raw === 'low') return raw as ProblemSeverity;
+  if (raw === 'severe')   return 'high';
+  if (raw === 'moderate') return 'medium';
+  if (raw === 'mild')     return 'low';
+  return undefined;
+}
 
 function severityToDiff(severity: ProblemSeverity): ExerciseDifficulty {
-  if (severity === 'severe')   return 'beginner';
-  if (severity === 'moderate') return 'medium';
-  return 'hard';
+  if (severity === 'high')   return 'beginner';
+  if (severity === 'medium') return 'medium';
+  return 'hard'; // low
 }
 
 function severityWeight(severity: ProblemSeverity): number {
-  if (severity === 'severe')   return 3;
-  if (severity === 'moderate') return 2;
-  return 1;
+  if (severity === 'high')   return 3;
+  if (severity === 'medium') return 2;
+  return 1; // low
 }
 
 function getDisplayReps(ex: Exercise, diff: ExerciseDifficulty): string {
@@ -111,14 +121,15 @@ function getDisplayReps(ex: Exercise, diff: ExerciseDifficulty): string {
 }
 
 // ── Priority map ──────────────────────────────────────────────────────────────
-// Exercise names in descending priority per problem per difficulty tier.
-// mild severity → use 'hard' tier first; moderate → 'medium'; severe → 'beginner'.
+// Exercises in EXACT priority order per problem per difficulty tier.
+// high risk → beginner tier (3 exercises); medium → medium tier (2); low → hard tier (2).
+// Each tier has exactly 3 exercises matching the official priority list.
 
 const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
   'forward-head': {
-    beginner: ['Chin Tuck', 'Supine Chin Tuck', 'Side Lying Chin Tuck', 'Weight Assisted Neck Stretch', 'Suboccipital Massage'],
-    medium:   ['Wall Lean Chin Tuck', 'Chin Tuck Floor Angels', 'Chin Tuck Rotations'],
-    hard:     ['Banded Chin Tucks', 'Chin Tuck Neck Bridge', 'Prone Chin Tuck'],
+    beginner: ['Chin Tuck', 'Supine Chin Tuck', 'Upper Trapezius Stretch'],
+    medium:   ['Chin Tuck Floor Angels', 'Chin Tuck Rotations', 'Wall Lean Chin Tuck'],
+    hard:     ['Prone Chin Tuck', 'Chin Tuck Neck Bridge', 'Banded Chin Tucks'],
   },
   'rounded-shoulders': {
     beginner: ['Doorway Chest Stretch', 'Quadruped Scapular Push', 'Floor Angel'],
@@ -131,9 +142,9 @@ const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
     hard:     ['Sphinx Cat Camels', 'Prone Y-Raise', 'Banded Reverse Fly'],
   },
   'anterior-pelvic': {
-    beginner: ['Supine Pelvic Tilt', 'Standing Pelvic Tilt', 'Pelvic Twist'],
-    medium:   ['Wall Lean Plank', 'Split Squat Pelvic Tilts'],
-    hard:     ['Swimmers'],
+    beginner: ['Standing Pelvic Tilt', 'Supine Pelvic Tilt', 'Pelvic Rocks'],
+    medium:   ['TVA Frog Leg', 'Wall Lean Plank', 'Swimmers'],
+    hard:     ['Split Squat Pelvic Tilts', 'Adductor Squeeze Crunch', 'Crossed Leg Forward Stretch'],
   },
   'uneven-shoulders': {
     beginner: ['Lower Trap Activation', 'Levator Scapulae Stretch', 'Wall Lean'],
@@ -141,51 +152,140 @@ const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
     hard:     ['Single-Arm Plank', 'Advanced Bird Dog', 'Half Kneel Pallof Press'],
   },
   'winging-scapula': {
-    beginner: ['Wall Angel', 'Air Angel', 'Shoulder Rockets', 'Thoracic Foam Roll'],
-    medium:   ['Floor Angel'],
-    hard:     ['Bent Over Y Raise', 'Cuffed Angels', 'Chin Tuck Floor Angels'],
+    beginner: ['Quadruped Scapular Push', 'Air Angel', 'Floor Angel'],
+    medium:   ['Side Lean Wall Slide', 'Wall Angel', 'Scapular Flutters'],
+    hard:     ['Quadruped Scapular Circles', 'Bear Crawl Scapular Push Up', 'Elevated Scapular Push Up'],
   },
 };
 
 // ── Static cross-reference: exercise name → all problem IDs it addresses ──────
-// Derived directly from the priority list. Used to enrich targetProblemLabels
-// after selection so an exercise always shows every issue it targets.
+// Rebuilt from the updated PRIORITY map. Exercises appearing in multiple problems
+// list all of them — these get merged labels on the exercise card.
 const EXERCISE_PROBLEMS: Record<string, string[]> = {
-  // Forward Head only
-  'Chin Tuck':               ['forward-head'],
-  'Side Lying Chin Tuck':    ['forward-head'],
-  'Suboccipital Massage':    ['forward-head'],
-  'Wall Lean Chin Tuck':     ['forward-head'],
-  'Chin Tuck Rotations':     ['forward-head'],
-  'Banded Chin Tucks':       ['forward-head'],
-  'Chin Tuck Neck Bridge':   ['forward-head'],
-  'Prone Chin Tuck':         ['forward-head'],
-  // Forward Head only (previously also Kyphosis — KY dataset replaced)
-  'Supine Chin Tuck':        ['forward-head'],
-  // Forward Head only (previously also Uneven Shoulders — US dataset replaced)
-  'Weight Assisted Neck Stretch': ['forward-head'],
-  // Forward Head + Winging Scapula (previously also Kyphosis — KY dataset replaced)
-  'Chin Tuck Floor Angels':  ['forward-head', 'winging-scapula'],
-  // Rounded Shoulders + Winging Scapula
-  // (Air Angel: KY and US removed — RS medium still has it, WS beginner still has it)
-  'Air Angel':               ['rounded-shoulders', 'winging-scapula'],
-  // Winging Scapula only (previously also RS, KY, US — all replaced)
-  'Thoracic Foam Roll':      ['winging-scapula'],
-  'Wall Angel':              ['winging-scapula'],
-  'Shoulder Rockets':        ['winging-scapula'],
-  'Bent Over Y Raise':       ['winging-scapula'],
-  'Cuffed Angels':           ['winging-scapula'],
-  // Rounded Shoulders + Winging Scapula
-  // (Floor Angel: KY removed, RS beginner still has it, WS medium still has it)
-  'Floor Angel':             ['rounded-shoulders', 'winging-scapula'],
-  // Anterior Pelvic Tilt only (Swimmers: KY removed, APT still has it)
-  'Swimmers':                ['anterior-pelvic'],
-  // Anterior Pelvic Tilt only
-  'Supine Pelvic Tilt':      ['anterior-pelvic'],
-  'Standing Pelvic Tilt':    ['anterior-pelvic'],
-  'Pelvic Twist':            ['anterior-pelvic'],
-  'Wall Lean Plank':         ['anterior-pelvic'],
-  'Split Squat Pelvic Tilts':['anterior-pelvic'],
+  // ── Forward Head ────────────────────────────────────────────────────────────
+  'Chin Tuck':                       ['forward-head'],
+  'Supine Chin Tuck':                ['forward-head'],
+  'Upper Trapezius Stretch':         ['forward-head'],
+  'Chin Tuck Floor Angels':          ['forward-head'],
+  'Chin Tuck Rotations':             ['forward-head'],
+  'Wall Lean Chin Tuck':             ['forward-head'],
+  'Prone Chin Tuck':                 ['forward-head'],
+  'Chin Tuck Neck Bridge':           ['forward-head'],
+  'Banded Chin Tucks':                ['forward-head'],
+  // ── Rounded Shoulders (some shared with Winging Scapula) ────────────────────
+  'Doorway Chest Stretch':           ['rounded-shoulders'],
+  'Quadruped Scapular Push':         ['rounded-shoulders', 'winging-scapula'],
+  'Floor Angel':                     ['rounded-shoulders', 'winging-scapula'],
+  'Air Angel':                       ['rounded-shoulders', 'winging-scapula'],
+  'Bear Hold':                       ['rounded-shoulders'],
+  'Prone T-Raise':                   ['rounded-shoulders'],
+  'Archer Push-Up':                  ['rounded-shoulders'],
+  'Push-Up Plus':                    ['rounded-shoulders'],
+  'Y-Pull with Band':                ['rounded-shoulders'],
+  // ── Kyphosis ────────────────────────────────────────────────────────────────
+  'Baby Cobra':                      ['kyphosis'],
+  'Foam Roller Thoracic Extension':  ['kyphosis'],
+  'Quadruped Thoracic Rotation (Hand Behind Head)': ['kyphosis'],
+  'Thoracic Extension':              ['kyphosis'],
+  'Wall Assisted Shoulder Flexion':  ['kyphosis'],
+  'Wall Slide':                      ['kyphosis'],
+  'Scapular Rows':                   ['kyphosis'],
+  'Sphinx Cat Camels':               ['kyphosis'],
+  'Prone Y-Raise':                   ['kyphosis'],
+  'Banded Reverse Fly':              ['kyphosis'],
+  // ── Anterior Pelvic ─────────────────────────────────────────────────────────
+  'Standing Pelvic Tilt':            ['anterior-pelvic'],
+  'Supine Pelvic Tilt':              ['anterior-pelvic'],
+  'Pelvic Rocks':                    ['anterior-pelvic'],
+  'TVA Frog Leg':                    ['anterior-pelvic'],
+  'Wall Lean Plank':                 ['anterior-pelvic'],
+  'Swimmers':                        ['anterior-pelvic'],
+  'Split Squat Pelvic Tilts':        ['anterior-pelvic'],
+  'Adductor Squeeze Crunch':         ['anterior-pelvic'],
+  'Crossed Leg Forward Stretch':     ['anterior-pelvic'],
+  // ── Uneven Shoulders ────────────────────────────────────────────────────────
+  'Lower Trap Activation':           ['uneven-shoulders'],
+  'Levator Scapulae Stretch':        ['uneven-shoulders'],
+  'Wall Lean':                       ['uneven-shoulders'],
+  'Side Plank':                      ['uneven-shoulders'],
+  'Bird Dog':                        ['uneven-shoulders'],
+  'Banded Lat Pull-Down':            ['uneven-shoulders'],
+  'Single-Arm Plank':                ['uneven-shoulders'],
+  'Advanced Bird Dog':               ['uneven-shoulders'],
+  'Half Kneel Pallof Press':         ['uneven-shoulders'],
+  // ── Winging Scapula (unique exercises — shared ones listed under RS above) ──
+  'Side Lean Wall Slide':            ['winging-scapula'],
+  'Wall Angel':                      ['winging-scapula'],
+  'Scapular Flutters':               ['winging-scapula'],
+  'Quadruped Scapular Circles':      ['winging-scapula'],
+  'Bear Crawl Scapular Push Up':     ['winging-scapula'],
+  'Elevated Scapular Push Up':       ['winging-scapula'],
+};
+
+// ── Static exercise type lookup ───────────────────────────────────────────────
+// Physiotherapy classification for every exercise in the PRIORITY map.
+// Replaces regex-based phase detection — no guessing from names.
+const EXERCISE_TYPE: Record<string, ExercisePhase> = {
+  // ── Mobility: release, elongate, restore range of motion ─────────────────
+  'Doorway Chest Stretch':                          'mobility',
+  'Foam Roller Thoracic Extension':                 'mobility',
+  'Suboccipital Massage':                           'mobility',
+  'Thoracic Foam Roll':                             'mobility',
+  'Levator Scapulae Stretch':                       'mobility',
+  'Upper Trapezius Stretch':                        'mobility',
+  'Pelvic Rocks':                                   'mobility',
+  'Crossed Leg Forward Stretch':                    'mobility',
+  'Weight Assisted Neck Stretch':                   'mobility',
+  'Pelvic Twist':                                   'mobility',
+  'Baby Cobra':                                     'mobility',
+  'Quadruped Thoracic Rotation (Hand Behind Head)': 'mobility',
+  'Side Lying Chin Tuck':                           'mobility',
+  'Sphinx Cat Camels':                              'mobility',
+  // ── Activation: motor control, postural retraining, endurance ────────────
+  'Chin Tuck':                                      'activation',
+  'Supine Chin Tuck':                               'activation',
+  'Wall Lean Chin Tuck':                            'activation',
+  'Chin Tuck Rotations':                            'activation',
+  'Prone Chin Tuck':                                'activation',
+  'Chin Tuck Floor Angels':                         'activation',
+  'Wall Angel':                                     'activation',
+  'Air Angel':                                      'activation',
+  'Floor Angel':                                    'activation',
+  'Quadruped Scapular Push':                        'activation',
+  'Bear Hold':                                      'activation',
+  'Wall Slide':                                     'activation',
+  'Wall Assisted Shoulder Flexion':                 'activation',
+  'Thoracic Extension':                             'activation',
+  'Lower Trap Activation':                          'activation',
+  'Wall Lean':                                      'activation',
+  'Bird Dog':                                       'activation',
+  'Supine Pelvic Tilt':                             'activation',
+  'Standing Pelvic Tilt':                           'activation',
+  'TVA Frog Leg':                                   'activation',
+  'Side Lean Wall Slide':                           'activation',
+  'Scapular Flutters':                              'activation',
+  'Quadruped Scapular Circles':                     'activation',
+  // ── Strength: progressive load, build capacity ────────────────────────────
+  'Prone T-Raise':                                  'strength',
+  'Prone Y-Raise':                                  'strength',
+  'Y-Pull with Band':                               'strength',
+  'Banded Chin Tucks':                               'strength',
+  'Banded Reverse Fly':                             'strength',
+  'Banded Lat Pull-Down':                           'strength',
+  'Archer Push-Up':                                 'strength',
+  'Push-Up Plus':                                   'strength',
+  'Side Plank':                                     'strength',
+  'Single-Arm Plank':                               'strength',
+  'Wall Lean Plank':                                'strength',
+  'Swimmers':                                       'strength',
+  'Scapular Rows':                                  'strength',
+  'Advanced Bird Dog':                              'strength',
+  'Split Squat Pelvic Tilts':                       'strength',
+  'Chin Tuck Neck Bridge':                          'strength',
+  'Half Kneel Pallof Press':                        'strength',
+  'Adductor Squeeze Crunch':                        'strength',
+  'Bear Crawl Scapular Push Up':                    'strength',
+  'Elevated Scapular Push Up':                      'strength',
 };
 
 // ── Generation ────────────────────────────────────────────────────────────────
@@ -226,6 +326,7 @@ function makeEntry(
     sets: 1,
     displayReps: getDisplayReps(ex, exDiff),
     difficulty: exDiff,
+    type: EXERCISE_TYPE[ex.name] ?? getPhase(ex.name), // static lookup, regex fallback
     targetProblemIds: [appId],
     targetProblemLabels: [problemTitle],
     postureTypes: [problemTitle],
@@ -240,15 +341,11 @@ export function generateDailyProgram(profile: UserProfile): StoredDailyProgram {
   const detectedIds: string[] = profile.detectedProblems ?? [];
   const problemSeverities = profile.detectedProblemSeverities ?? {};
   const overallDiff: ExerciseDifficulty = profile.exerciseDifficulty ?? 'medium';
-  const hasEquipment = profile.hasEquipment !== false; // default: assume equipment available
+  const hasEquipment = profile.hasEquipment !== false;
 
-  const tierOrderMap: Record<ExerciseDifficulty, ExerciseDifficulty[]> = {
-    beginner: ['beginner', 'medium'],
-    medium:   ['medium', 'beginner'],
-    hard:     ['hard', 'medium'],
-  };
-
-  // ── Step 1: Build per-problem entries with individual severity + difficulty ──
+  // ── Step 1: Build per-problem entries ────────────────────────────────────────
+  // Risk level → exercise difficulty: high → beginner, medium → medium, low → hard
+  // Tier search order always ascends from the mapped difficulty (easy → medium → hard).
 
   type ProblemEntry = {
     appId: string;
@@ -260,6 +357,11 @@ export function generateDailyProgram(profile: UserProfile): StoredDailyProgram {
     candidates: Exercise[];
   };
 
+  // Pre-compute all detected app IDs for multi-problem candidate sorting
+  const allDetectedAppIds = new Set(
+    detectedIds.map(rawId => TO_APP_PROBLEM[rawId] ?? rawId),
+  );
+
   const focusAreas: string[] = [];
   const problemEntries: ProblemEntry[] = [];
 
@@ -268,34 +370,49 @@ export function generateDailyProgram(profile: UserProfile): StoredDailyProgram {
     const problem = postureProblems.find(p => p.id === appId);
     if (!problem) continue;
 
-    // Per-problem severity: try app ID, then raw scan ID, then fall back to overall
+    const rawSev = (problemSeverities as Record<string, string>)[appId]
+      ?? (problemSeverities as Record<string, string>)[rawId];
     const severity: ProblemSeverity =
-      problemSeverities[appId] ??
-      problemSeverities[rawId] ??
-      (overallDiff === 'beginner' ? 'severe' : overallDiff === 'hard' ? 'mild' : 'moderate');
+      normalizeSeverity(rawSev) ??
+      (overallDiff === 'beginner' ? 'high' : overallDiff === 'hard' ? 'low' : 'medium');
 
     const diff = severityToDiff(severity);
-    const tierOrder = tierOrderMap[diff];
+    // Single tier only — no cascading. Risk level determines exactly which tier to use:
+    //   high → 2 beginner + 1 medium, medium → medium (2), low → hard (2)
+    const tierOrder: ExerciseDifficulty[] = [diff];
 
     let candidates = getPriorityCandidates(problem, appId, tierOrder);
-    // Equipment filter: remove exercises that require gear the user doesn't have
-    if (!hasEquipment) {
-      candidates = candidates.filter(ex => !ex.requiresEquipment);
+    // For high-risk: append up to 1 medium exercise after the beginner candidates
+    if (severity === 'high') {
+      const medCandidates = getPriorityCandidates(problem, appId, ['medium']);
+      for (const ex of medCandidates) {
+        if (!candidates.find(c => c.name === ex.name)) {
+          candidates = [...candidates, ex];
+          break; // only 1 medium exercise appended
+        }
+      }
     }
+    if (!hasEquipment) candidates = candidates.filter(ex => !ex.requiresEquipment);
+
+    // Prioritize exercises that address multiple detected problems (stable sort)
+    candidates.sort((a, b) => {
+      const aHits = (EXERCISE_PROBLEMS[a.name] ?? []).filter(id => allDetectedAppIds.has(id)).length;
+      const bHits = (EXERCISE_PROBLEMS[b.name] ?? []).filter(id => allDetectedAppIds.has(id)).length;
+      return bHits - aHits;
+    });
 
     focusAreas.push(problem.title);
     problemEntries.push({ appId, rawId, problem, severity, diff, weight: severityWeight(severity), candidates });
   }
 
-  // Sort by severity so the most impactful problem is processed first
+  // Sort by risk weight so the most impactful problem is processed first
   problemEntries.sort((a, b) => b.weight - a.weight);
 
-  // ── Step 2: Weighted slot allocation ──────────────────────────────────────
-  // Severe problem gets 3 slots, moderate 2, mild 1.
-  // Total pool target = 10 exercises before time cutoff trims.
-
-  const TARGET_POOL = 10;
-  const totalWeight = problemEntries.reduce((s, e) => s + e.weight, 0) || 1;
+  // ── Step 2: Fixed slot allocation by risk level ───────────────────────────────
+  // high → 2 beginner + 1 medium (3 total, candidates list already ordered this way)
+  // medium → 2 exercises from medium tier
+  // low → 2 exercises from hard tier
+  // Problems are processed most-severe-first so high-risk exercises always win dedup.
 
   type MergedEntry = { exercise: Exercise; diff: ExerciseDifficulty };
   const labelMap = new Map<string, { appIds: string[]; titles: string[]; diff: ExerciseDifficulty }>();
@@ -303,20 +420,20 @@ export function generateDailyProgram(profile: UserProfile): StoredDailyProgram {
   const seenNames = new Set<string>();
 
   for (const entry of problemEntries) {
-    const slots = Math.max(1, Math.round((entry.weight / totalWeight) * TARGET_POOL));
+    // Slot count is fixed by severity — respects the exact priority-list intent
+    const slots = entry.severity === 'high' ? 3 : 2;
     let taken = 0;
     for (const ex of entry.candidates) {
       const key = ex.name;
       if (seenNames.has(key)) {
-        // Always merge labels onto existing exercises regardless of slot quota
+        // Exercise already added by a higher-priority problem — merge its label
         const lbl = labelMap.get(key)!;
         if (!lbl.appIds.includes(entry.appId)) {
           lbl.appIds.push(entry.appId);
           lbl.titles.push(entry.problem.title);
         }
       } else {
-        // Slot quota only blocks adding brand-new exercises
-        if (taken >= slots) continue;
+        if (taken >= slots) break; // stop once we have exactly the right count
         seenNames.add(key);
         labelMap.set(key, { appIds: [entry.appId], titles: [entry.problem.title], diff: entry.diff });
         merged.push({ exercise: ex, diff: entry.diff });
@@ -325,15 +442,39 @@ export function generateDailyProgram(profile: UserProfile): StoredDailyProgram {
     }
   }
 
-  // ── Step 3: Duration-based selection ─────────────────────────────────────
-  // Accumulate until ≥ TARGET_MIN_SEC; stop before exceeding TARGET_MAX_SEC.
+  // ── Step 2b: Maintenance exercises for undetected disorders ──────────────────
+  // For every posture disorder NOT detected in this scan, add the #1 hard-tier
+  // exercise as a low-priority maintenance item. These go at the END of merged
+  // and are only included if the time budget allows.
+  const detectedAppIdSet = new Set(problemEntries.map(e => e.appId));
+  for (const uProblem of postureProblems) {
+    if (!PRIORITY[uProblem.id] || detectedAppIdSet.has(uProblem.id)) continue;
+    const nameIndex = new Map(uProblem.exerciseList.map(e => [e.name, e]));
+    for (const name of (PRIORITY[uProblem.id].hard ?? [])) {
+      const ex = nameIndex.get(name);
+      if (!ex || seenNames.has(ex.name)) continue;
+      if (!hasEquipment && ex.requiresEquipment) continue;
+      seenNames.add(ex.name);
+      labelMap.set(ex.name, { appIds: [uProblem.id], titles: [uProblem.title], diff: 'hard' });
+      merged.push({ exercise: ex, diff: 'hard' });
+      break; // exactly 1 per undetected disorder
+    }
+  }
 
-  const selectedMap = new Map<string, DailyExercise>(); // keyed by name
+  // ── Step 3: Duration-based selection (target 10–14 min, flexible upper bound) ─
+
+  const TARGET_MIN_SEC = 600; // 10 min
+  const TARGET_MAX_SEC = 840; // 14 min (flexible — prefer 12 min, allow up to 14)
+
+  const selectedMap = new Map<string, DailyExercise>();
   let accSec = 0;
 
   for (const { exercise: ex, diff } of merged) {
+    if (selectedMap.has(ex.name)) continue;
     const slot = ex.duration + REST_BETWEEN_SEC;
-    if (accSec >= TARGET_MIN_SEC && accSec + slot > TARGET_MAX_SEC) break;
+    // If we've hit the minimum time, skip exercises that would overshoot the max
+    // but keep scanning — a shorter exercise later in the list might still fit.
+    if (accSec >= TARGET_MIN_SEC && accSec + slot > TARGET_MAX_SEC) continue;
     const lbl = labelMap.get(ex.name) ?? { appIds: [], titles: [], diff };
     const entry = makeEntry(ex, lbl.appIds[0] ?? '', lbl.titles[0] ?? '', lbl.diff);
     entry.targetProblemIds = lbl.appIds;
@@ -343,22 +484,160 @@ export function generateDailyProgram(profile: UserProfile): StoredDailyProgram {
     accSec += slot;
   }
 
-  // ── Step 4: Smarter fallback ──────────────────────────────────────────────
-  // If fewer than 4 exercises, pad from the highest-severity detected problem.
+  // ── Step 4: Fill time gap — variety first, then set boost (max 2) as fallback ─
+  // Prefer adding new exercises over inflating sets. Only boost sets if the merged
+  // pool is exhausted and we're still under the 10-min minimum.
 
-  if (selectedMap.size < 4 && problemEntries.length > 0) {
-    const primary = problemEntries[0]; // already sorted by weight desc
-    for (const ex of primary.candidates) {
+  if (accSec < TARGET_MIN_SEC) {
+    // 4a: Add more exercises from the unselected merged pool (variety-first)
+    for (const { exercise: ex, diff } of merged) {
+      if (accSec >= TARGET_MIN_SEC) break;
       if (selectedMap.has(ex.name)) continue;
       const slot = ex.duration + REST_BETWEEN_SEC;
-      if (accSec >= TARGET_MIN_SEC && accSec + slot > TARGET_MAX_SEC) break;
-      const entry = makeEntry(ex, primary.appId, primary.problem.title, primary.diff);
-      selectedMap.set(ex.name, entry);
+      if (accSec + slot > TARGET_MAX_SEC) continue;
+      const lbl = labelMap.get(ex.name) ?? { appIds: [], titles: [], diff };
+      const e = makeEntry(ex, lbl.appIds[0] ?? '', lbl.titles[0] ?? '', lbl.diff);
+      e.targetProblemIds = lbl.appIds;
+      e.targetProblemLabels = lbl.titles;
+      e.postureTypes = lbl.titles;
+      selectedMap.set(ex.name, e);
       accSec += slot;
+    }
+
+    // 4b: Still short? Boost sets (max 2) for high-risk exercises — last resort
+    if (accSec < TARGET_MIN_SEC && selectedMap.size > 0) {
+      for (const entry of problemEntries) {
+        if (accSec >= TARGET_MIN_SEC) break;
+        for (const dailyEx of selectedMap.values()) {
+          if (!dailyEx.targetProblemIds.includes(entry.appId)) continue;
+          if (dailyEx.sets >= 2) continue;
+          const extra = dailyEx.duration;
+          if (accSec + extra <= TARGET_MAX_SEC) {
+            dailyEx.sets += 1;
+            accSec += extra;
+          }
+          if (accSec >= TARGET_MIN_SEC) break;
+        }
+      }
     }
   }
 
-  // ── Step 5: Phase sequencing ──────────────────────────────────────────────
+  // ── Step 5: Minimum compliance + smart padding ────────────────────────────────
+  // Allow a small extra window to satisfy minimums without hard time rejection.
+  const FLEX_MAX_SEC = TARGET_MAX_SEC + 180; // 3 min extra flex for fallback only
+
+  // 5a: Guarantee the target exercise count per detected problem.
+  //   high risk → ensure 3 exercises in program; medium / low → ensure 2.
+  //   Uses only candidates from the problem's assigned tier (single-tier rule respected).
+  for (const entry of problemEntries) {
+    const target = entry.severity === 'high' ? 3 : 2;
+    const count = [...selectedMap.values()]
+      .filter(e => e.targetProblemIds.includes(entry.appId)).length;
+    if (count >= target) continue;
+    let added = count;
+    for (const ex of entry.candidates) {
+      if (added >= target) break;
+      if (selectedMap.has(ex.name)) continue;
+      const slot = ex.duration + REST_BETWEEN_SEC;
+      if (accSec + slot > FLEX_MAX_SEC) continue;
+      const dailyEx = makeEntry(ex, entry.appId, entry.problem.title, entry.diff);
+      dailyEx.targetProblemIds = [entry.appId];
+      dailyEx.targetProblemLabels = [entry.problem.title];
+      dailyEx.postureTypes = [entry.problem.title];
+      selectedMap.set(ex.name, dailyEx);
+      accSec += slot;
+      added++;
+    }
+  }
+
+  // ── Step 6: Type balance enforcement ─────────────────────────────────────────
+  // Ensure physiologically correct session composition:
+  //   Hard minimum: ≥1 mobility, ≥1 activation, ≥1 strength
+  //   Soft balance: mobility ≤40%, activation ≥30%, strength ≥30%
+  //
+  // IMPORTANT: Only uses the severity-tiered `merged` pool — never reaches into
+  // wrong tiers (e.g. beginner exercises for a low-risk problem). Additions and
+  // swaps are strictly limited to exercises that respect the original tierOrder.
+  {
+    // Only exercises from the properly-tiered merged pool that are not yet selected
+    const unselected = merged.filter(m => !selectedMap.has(m.exercise.name));
+
+    const typeCounts = (): Record<ExercisePhase, number> => {
+      const c = { mobility: 0, activation: 0, strength: 0 };
+      for (const e of selectedMap.values()) c[getPhase(e.name)]++;
+      return c;
+    };
+
+    // Try to add an unselected exercise of `needed` type — tier-respecting pool only
+    const tryAdd = (needed: ExercisePhase): boolean => {
+      const cand = unselected.find(
+        m => !selectedMap.has(m.exercise.name) && getPhase(m.exercise.name) === needed,
+      );
+      if (!cand) return false;
+      const slot = cand.exercise.duration + REST_BETWEEN_SEC;
+      if (accSec + slot > FLEX_MAX_SEC) return false;
+      const lbl = labelMap.get(cand.exercise.name) ?? { appIds: [], titles: [], diff: cand.diff };
+      const e = makeEntry(cand.exercise, lbl.appIds[0] ?? '', lbl.titles[0] ?? '', lbl.diff);
+      e.targetProblemIds = lbl.appIds; e.targetProblemLabels = lbl.titles; e.postureTypes = lbl.titles;
+      selectedMap.set(cand.exercise.name, e);
+      accSec += slot;
+      return true;
+    };
+
+    // Replace the last exercise of `fromType` with one of `toType` — tier-respecting pool only
+    const trySwap = (fromType: ExercisePhase, toType: ExercisePhase): boolean => {
+      if (typeCounts()[fromType] <= 1) return false; // never strip a type to zero
+      const cand = unselected.find(
+        m => !selectedMap.has(m.exercise.name) && getPhase(m.exercise.name) === toType,
+      );
+      if (!cand) return false;
+      const victims = [...selectedMap.values()].filter(e => getPhase(e.name) === fromType);
+      if (victims.length === 0) return false;
+      const victim = victims[victims.length - 1]; // last added = lowest priority
+      const removeSlot = victim.duration * victim.sets + REST_BETWEEN_SEC;
+      const addSlot = cand.exercise.duration + REST_BETWEEN_SEC;
+      if (accSec - removeSlot + addSlot > FLEX_MAX_SEC) return false;
+      selectedMap.delete(victim.name);
+      accSec = accSec - removeSlot + addSlot;
+      const lbl = labelMap.get(cand.exercise.name) ?? { appIds: [], titles: [], diff: cand.diff };
+      const e = makeEntry(cand.exercise, lbl.appIds[0] ?? '', lbl.titles[0] ?? '', lbl.diff);
+      e.targetProblemIds = lbl.appIds; e.targetProblemLabels = lbl.titles; e.postureTypes = lbl.titles;
+      selectedMap.set(cand.exercise.name, e);
+      return true;
+    };
+
+    // ── Hard minimum: ≥1 of every type ─────────────────────────────────────
+    for (const needed of ['mobility', 'activation', 'strength'] as ExercisePhase[]) {
+      if (typeCounts()[needed] > 0) continue;
+      // Try adding from tier-respecting pool; if not found, swap from over-represented type
+      if (!tryAdd(needed)) {
+        const counts = typeCounts();
+        const from = (['mobility', 'activation', 'strength'] as ExercisePhase[])
+          .filter(t => t !== needed)
+          .reduce((best, t) => counts[t] > counts[best] ? t : best, 'activation' as ExercisePhase);
+        trySwap(from, needed);
+      }
+    }
+
+    // ── Soft balance: mobility ≤40%, activation ≥30%, strength ≥30% ────────
+    // Prefer swaps over additions to keep exercise count stable.
+    const n = selectedMap.size;
+    if (n > 0) {
+      const counts = typeCounts();
+      const mobMax = Math.floor(n * 0.4);
+      const actMin = Math.ceil(n * 0.3);
+      const strMin = Math.ceil(n * 0.3);
+      if (counts.mobility > mobMax) {
+        const swapTo: ExercisePhase = counts.activation < actMin ? 'activation' : 'strength';
+        trySwap('mobility', swapTo);
+      }
+      const c2 = typeCounts();
+      if (c2.activation < actMin) tryAdd('activation');
+      if (c2.strength  < strMin)  tryAdd('strength');
+    }
+  }
+
+  // ── Step 7: Phase sequencing ─────────────────────────────────────────────────
   // Every session: Mobility (release) → Activation (motor control) → Strength.
 
   const phaseOrder: Record<ExercisePhase, number> = { mobility: 0, activation: 1, strength: 2 };
@@ -366,19 +645,24 @@ export function generateDailyProgram(profile: UserProfile): StoredDailyProgram {
     (a, b) => phaseOrder[getPhase(a.name)] - phaseOrder[getPhase(b.name)],
   );
 
-  // ── Step 6: Enrich labels from static cross-reference ────────────────────
-  // Build the set of app-normalised problem IDs the user actually has so we
-  // only surface issues that are relevant to this user.
-  const userAppIds = new Set(
-    detectedIds.map(rawId => TO_APP_PROBLEM[rawId] ?? rawId),
-  );
+  // ── Step 7b: Under-8-min boost — all exercises → 2 sets ─────────────────────
+  // If the total session time is under 8 minutes after all selection, bump every
+  // exercise to 2 sets so the session reaches a meaningful training stimulus.
+  if (accSec < 480) {
+    for (const ex of selected) {
+      if (ex.sets < 2) ex.sets = 2;
+    }
+    accSec = selected.reduce((s, ex) => s + ex.duration * ex.sets + REST_BETWEEN_SEC, 0);
+  }
+
+  // ── Step 8: Enrich labels from static cross-reference ────────────────────────
+  const userAppIds = new Set(detectedIds.map(rawId => TO_APP_PROBLEM[rawId] ?? rawId));
 
   for (const ex of selected) {
     const allIds = EXERCISE_PROBLEMS[ex.name];
     if (!allIds) continue;
     const relevantIds = allIds.filter(id => userAppIds.has(id));
     if (relevantIds.length === 0) continue;
-    // Primary reason the exercise was selected comes first; rest follow static map order
     const primaryId = ex.targetProblemIds[0];
     const ordered = [
       ...(relevantIds.includes(primaryId) ? [primaryId] : []),
@@ -734,6 +1018,7 @@ export function replaceExercise(
     sets: original.sets,
     displayReps: strength ? original.displayReps : `${newExercise.duration}s`,
     difficulty: (newExercise.difficulty as ExerciseDifficulty) ?? original.difficulty,
+    type: EXERCISE_TYPE[newExercise.name] ?? getPhase(newExercise.name),
     targetProblemIds: resolvedIds,
     targetProblemLabels: newTargetLabels,
     postureTypes: newTargetLabels,

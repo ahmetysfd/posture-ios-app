@@ -20,7 +20,7 @@ export interface UserProfile {
   /** Posture assessment result */
   postureLevel: PostureLevel;
   detectedProblems: string[];            // problem IDs like 'forward-head'
-  detectedProblemSeverities?: Record<string, 'mild' | 'moderate' | 'severe'>; // per-problem severity
+  detectedProblemSeverities?: Record<string, 'low' | 'medium' | 'high'>; // per-problem risk level
   problemCount: number;
   scanTimestamp: number;
 
@@ -93,7 +93,7 @@ export function isOnboardingComplete(): boolean {
  */
 export function determinePostureLevel(
   detectedProblemIds: string[],
-  severityBand: 'mild' | 'moderate' | 'severe',
+  severityBand: 'low' | 'medium' | 'high',
   profile: Partial<UserProfile>,
 ): PostureLevel {
   const count = detectedProblemIds.length;
@@ -109,16 +109,16 @@ export function determinePostureLevel(
 
   // Severity is the primary driver; count + risk are secondary modifiers.
 
-  // Severe → always beginner
-  if (severityBand === 'severe') return 'beginner';
+  // High risk → always beginner
+  if (severityBand === 'high') return 'beginner';
 
-  // Moderate → intermediate (medium exercises), downgrade only under very high risk
-  if (severityBand === 'moderate') {
+  // Medium risk → intermediate, downgrade only under very high lifestyle risk
+  if (severityBand === 'medium') {
     if (riskBoost >= 2) return 'beginner';
     return 'intermediate';
   }
 
-  // Mild zone
+  // Low risk zone
   if (count === 0) return 'advanced';
   if (riskBoost >= 2 || count >= 3) return 'intermediate';
   if (count === 1 && riskBoost === 0) return 'advanced';

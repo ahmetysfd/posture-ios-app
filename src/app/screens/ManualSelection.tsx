@@ -30,7 +30,7 @@ const ManualSelection: React.FC = () => {
   };
 
   const confirm = () => {
-    const level = determinePostureLevel(selected, selected.length >= 3 ? 'moderate' : 'mild', {});
+    const level = determinePostureLevel(selected, selected.length >= 3 ? 'medium' : 'low', {});
     const difficulty = levelToDefaultDifficulty(level);
     const profile = saveUserProfile({
       detectedProblems: selected,
