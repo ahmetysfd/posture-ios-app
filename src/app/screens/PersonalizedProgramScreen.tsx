@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import {
   getActiveProgramId,
-  getExerciseDaysCompleted,
   loadActiveProgramForSession,
   loadProgramLibrary,
   setActiveProgramId,
@@ -20,11 +19,32 @@ const T = {
   font: "system-ui, -apple-system, 'Helvetica Neue', sans-serif",
 };
 
-/** Neutral pills for target areas (e.g. Forward Head) — no accent color */
-const targetProblemTagStyle: React.CSSProperties = {
-  color: T.text2,
-  borderColor: 'rgba(255,255,255,0.08)',
-  background: 'rgba(255,255,255,0.03)',
+/** Map of exercise name → local image. Only mapped exercises show a picture. */
+interface ExerciseImage {
+  src: string;
+  /** Extra pixels to translate the image horizontally from the default offset. */
+  offsetX?: number;
+}
+const DEFAULT_IMAGE_OFFSET_X = 15;
+const EXERCISE_IMAGES: Record<string, ExerciseImage> = {
+  'Chin Tuck Neck Bridge':   { src: '/exercises/chin-tuck-neck-bridge.jpg',   offsetX: 0 },
+  'Quadruped Scapular Push': { src: '/exercises/quadruped-scapular-push.jpg', offsetX: 0 },
+  'Air Angel':               { src: '/exercises/air-angel.jpg', offsetX: 9 },
+  'Floor Angel':             { src: '/exercises/floor-angel.jpg', offsetX: 11 },
+  'Chin Tuck Floor Angels':  { src: '/exercises/floor-angel.jpg', offsetX: 10 },
+  'Chin Tuck Rotations':     { src: '/exercises/chin-tuck-rotations.jpg', offsetX: 5 },
+  'Bird Dog':                { src: '/exercises/bird-dog.jpg' },
+  'Side Plank':              { src: '/exercises/side-plank.jpg' },
+  'Archer Push-Up':          { src: '/exercises/archer-push-up.jpg' },
+  'Push-Up Plus':            { src: '/exercises/push-up-plus.jpg' },
+  'Prone Y-Raise':           { src: '/exercises/prone-y-raise.jpg' },
+  'Split Squat Pelvic Tilts':{ src: '/exercises/split-squat-pelvic-tilts.jpg' },
+};
+
+const DIFFICULTY_LABEL_COLOR: Record<string, string> = {
+  beginner: '#34D399',
+  medium:   '#FBBF24',
+  hard:     '#FB7185',
 };
 
 const PersonalizedProgramScreen: React.FC = () => {
@@ -317,53 +337,93 @@ const PersonalizedProgramScreen: React.FC = () => {
         </div>
 
         {expanded && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {program.exercises.map((ex) => {
-              const days = Math.min(getExerciseDaysCompleted(ex.name), 21);
-              const pct = (days / 21) * 100;
+              const levelLabel = ex.difficulty === 'beginner' ? 'Beginner' : ex.difficulty === 'medium' ? 'Medium' : 'Hard';
+              const levelColor = DIFFICULTY_LABEL_COLOR[ex.difficulty] ?? T.text2;
+              const imageCfg = EXERCISE_IMAGES[ex.name];
+              const imageOffsetX = imageCfg?.offsetX ?? DEFAULT_IMAGE_OFFSET_X;
+              const firstTarget = ex.targetProblemLabels[0];
+              const extraTargets = ex.targetProblemLabels.length - 1;
               return (
-                <div key={ex.id} style={{ position: 'relative', borderRadius: 18, overflow: 'hidden', opacity: ex.completed ? 0.62 : 1 }}>
-                  <div style={{ position: 'absolute', inset: 0, background: T.surface, border: `1px solid rgba(255,255,255,0.04)`, borderRadius: 18 }} />
-                  <div style={{ position: 'relative', zIndex: 1, padding: '14px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                      <div style={{ minWidth: 0 }}>
-                        <h3 style={{ fontSize: 15, fontWeight: 600, color: T.text, lineHeight: 1.2, margin: 0 }}>
-                          {ex.name}
-                        </h3>
-                        <p style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>
-                          {ex.displayReps} · {ex.difficulty === 'beginner' ? 'Beginner' : ex.difficulty === 'medium' ? 'Medium' : 'Hard'}
-                        </p>
-                      </div>
-                      <span style={{ fontSize: 10, color: T.text4, fontWeight: 600, whiteSpace: 'nowrap', marginTop: 2 }}>
-                        {days}/21 days
-                      </span>
+                <div
+                  key={ex.id}
+                  style={{
+                    position: 'relative',
+                    borderRadius: 16,
+                    overflow: 'hidden',
+                    opacity: ex.completed ? 0.62 : 1,
+                  }}
+                >
+                  <div style={{ position: 'absolute', inset: 0, background: '#131316', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16 }} />
+                  <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
+                    {/* Image — square top */}
+                    <div
+                      style={{
+                        width: '100%',
+                        aspectRatio: '1 / 1',
+                        overflow: 'hidden',
+                        borderTopLeftRadius: 16,
+                        borderTopRightRadius: 16,
+                        background: '#18181B',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {imageCfg ? (
+                        <img
+                          src={imageCfg.src}
+                          alt={ex.name}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            display: 'block',
+                            transform: `translateX(${imageOffsetX}px) scale(1.15)`,
+                            transformOrigin: 'center',
+                          }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: 48 }} aria-hidden>{ex.emoji}</span>
+                      )}
                     </div>
 
-                    <div style={{ marginTop: 10, height: 2, borderRadius: 999, background: 'rgba(255,255,255,0.04)', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, borderRadius: 999, background: 'rgba(249,115,22,0.7)', transition: 'width 0.3s ease' }} />
-                    </div>
-
-                    {ex.targetProblemLabels.length > 0 && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-                        {ex.targetProblemLabels.map((target) => (
-                            <span
-                              key={target}
-                              style={{
-                                fontSize: 9,
-                                fontWeight: 700,
-                                letterSpacing: '0.04em',
-                                padding: '3px 8px',
-                                borderRadius: 6,
-                                border: `1px solid ${targetProblemTagStyle.borderColor}`,
-                                background: targetProblemTagStyle.background,
-                                color: targetProblemTagStyle.color,
-                              }}
-                            >
-                              {target}
-                            </span>
-                        ))}
+                    {/* Info */}
+                    <div style={{ padding: '10px 12px 12px' }}>
+                      <h3 style={{
+                        fontSize: 13, fontWeight: 600, color: T.text, lineHeight: 1.2, margin: 0,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        {ex.name}
+                      </h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 10 }}>
+                        <span style={{ color: T.text3 }}>{ex.displayReps}</span>
+                        <span style={{ color: T.text4 }}>·</span>
+                        <span style={{ color: levelColor }}>{levelLabel}</span>
                       </div>
-                    )}
+                      {firstTarget && (
+                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+                          <span
+                            style={{
+                              fontSize: 7,
+                              fontWeight: 600,
+                              letterSpacing: '0.03em',
+                              padding: '1px 6px',
+                              borderRadius: 4,
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              background: 'rgba(255,255,255,0.03)',
+                              color: 'rgba(161,161,170,0.85)',
+                            }}
+                          >
+                            {firstTarget}
+                          </span>
+                          {extraTargets > 0 && (
+                            <span style={{ fontSize: 7, color: T.text4 }}>+{extraTargets}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
