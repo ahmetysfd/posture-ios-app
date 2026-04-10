@@ -6,10 +6,9 @@ import type { Exercise } from '../data/postureData';
 import {
   DURATION_PRESETS,
   REPS_PRESETS,
-  getOrRefreshDailyProgram,
   getExerciseDaysCompleted,
   isStrengthExercise,
-  loadDailyProgram,
+  loadActiveProgramForSession,
   saveDailyProgram,
   replaceExercise,
   updateExerciseParams,
@@ -33,14 +32,10 @@ const T = {
   font: "system-ui, -apple-system, 'Helvetica Neue', sans-serif",
 };
 
-const tagColors: Record<string, React.CSSProperties> = {
-  'Forward Head': { color: '#FB923C', borderColor: 'rgba(249,115,22,0.25)', background: 'rgba(249,115,22,0.08)' },
-  Kyphosis: { color: '#C084FC', borderColor: 'rgba(168,85,247,0.25)', background: 'rgba(168,85,247,0.08)' },
-  'Rounded Shoulders': { color: '#2DD4BF', borderColor: 'rgba(45,212,191,0.25)', background: 'rgba(45,212,191,0.08)' },
-  'Uneven Shoulders': { color: '#FBBF24', borderColor: 'rgba(245,158,11,0.25)', background: 'rgba(245,158,11,0.08)' },
-  'Winging Scapula': { color: '#FB7185', borderColor: 'rgba(244,63,94,0.25)', background: 'rgba(244,63,94,0.08)' },
-  'Anterior Pelvic Tilt': { color: '#60A5FA', borderColor: 'rgba(59,130,246,0.25)', background: 'rgba(59,130,246,0.08)' },
-  'Lower Back': { color: '#60A5FA', borderColor: 'rgba(59,130,246,0.25)', background: 'rgba(59,130,246,0.08)' },
+const targetProblemTagStyle: React.CSSProperties = {
+  color: T.text2,
+  borderColor: T.border2,
+  background: 'rgba(255,255,255,0.03)',
 };
 
 function recomputeProgram(program: StoredDailyProgram): StoredDailyProgram {
@@ -66,9 +61,9 @@ const iconButton: React.CSSProperties = {
 const ProgramEditScreen: React.FC = () => {
   const navigate = useNavigate();
   const profile = loadUserProfile();
-  const [program, setProgram] = useState<StoredDailyProgram | null>(() => (
-    profile?.scanTimestamp ? getOrRefreshDailyProgram(profile) : loadDailyProgram()
-  ));
+  const [program, setProgram] = useState<StoredDailyProgram | null>(() =>
+    loadActiveProgramForSession(profile),
+  );
   const [swapTarget, setSwapTarget] = useState<string | null>(null);
 
   const exercises = useMemo(() => program?.exercises ?? [], [program]);
@@ -316,9 +311,7 @@ const ProgramEditScreen: React.FC = () => {
                     <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', color: T.text4, textTransform: 'uppercase', marginRight: 2 }}>
                       Targets
                     </span>
-                    {ex.targetProblemLabels.map((target) => {
-                      const tokenStyle = tagColors[target] ?? { color: T.text2, borderColor: 'rgba(63,63,70,1)', background: 'rgba(39,39,42,0.7)' };
-                      return (
+                    {ex.targetProblemLabels.map((target) => (
                         <span
                           key={target}
                           style={{
@@ -327,15 +320,14 @@ const ProgramEditScreen: React.FC = () => {
                             letterSpacing: '0.04em',
                             padding: '3px 8px',
                             borderRadius: 6,
-                            border: `1px solid ${tokenStyle.borderColor}`,
-                            background: tokenStyle.background,
-                            color: tokenStyle.color,
+                            border: `1px solid ${targetProblemTagStyle.borderColor}`,
+                            background: targetProblemTagStyle.background,
+                            color: targetProblemTagStyle.color,
                           }}
                         >
                           {target}
                         </span>
-                      );
-                    })}
+                    ))}
                   </div>
                 </div>
               </div>

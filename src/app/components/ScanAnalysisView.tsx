@@ -7,14 +7,13 @@
  */
 import React, { useState } from 'react';
 import SkeletonOverlay from './SkeletonOverlay';
+import DailyProgramLevelCard from './DailyProgramLevelCard';
 import { type Keypoint } from '../services/MoveNetPoseService';
 import {
   type PostureProblem,
   type RiskCategory,
-  type PostureLevel,
   type ScanReport,
   RISK_INFO,
-  LEVEL_INFO,
   VIEW_LABELS,
 } from '../services/PostureAnalysisEngineV2';
 
@@ -27,6 +26,8 @@ interface ScanAnalysisViewProps {
   onNewScan: () => void;
   showFullReportButton?: boolean;
   showNewScanButton?: boolean;
+  /** When false, hides “See your daily plan” (e.g. on Progress). */
+  showDailyPlanButton?: boolean;
 }
 
 const T = {
@@ -46,12 +47,11 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
   onNewScan,
   showFullReportButton = true,
   showNewScanButton = true,
+  showDailyPlanButton = true,
 }) => {
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
   const [activeView, setActiveView] = useState<'front' | 'side' | 'back'>('front');
-
-  const levelInfo = LEVEL_INFO[report.postureLevel];
 
   // Group problems by risk
   const highRisk = report.problems.filter(p => p.riskCategory === 'high');
@@ -128,16 +128,6 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
                   </>
                 )}
               </div>
-              {typeof p.confidenceScore === 'number' && (
-                <div style={{ fontSize: 11, color: T.text3, fontFamily: T.font, marginTop: 4 }}>
-                  Confidence: {p.confidenceScore}%
-                </div>
-              )}
-              {p.supportingMeasurements && p.supportingMeasurements.length > 0 && (
-                <div style={{ fontSize: 11, color: T.text2, fontFamily: T.font, marginTop: 4, lineHeight: 1.45 }}>
-                  {p.supportingMeasurements.slice(0, 3).join(' · ')}
-                </div>
-              )}
             </div>
           </div>
         ))}
@@ -148,66 +138,8 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 24 }}>
 
-      {/* ── Level result card ──────────────────── */}
-      <div style={{
-        position: 'relative',
-        overflow: 'hidden',
-        background: 'linear-gradient(135deg, #1E1E22 0%, #121215 100%)',
-        borderRadius: 24,
-        padding: 20,
-        border: `1px solid ${T.border}`,
-        boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.04), 0 8px 24px rgba(0,0,0,0.5)',
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: '-30%',
-          right: '-10%',
-          width: 160,
-          height: 160,
-          borderRadius: '50%',
-          background: 'rgba(249,115,22,0.10)',
-          filter: 'blur(40px)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'relative',
-          zIndex: 1,
-          fontSize: 11, fontWeight: 600, color: levelInfo.color,
-          padding: '3px 8px', borderRadius: 6,
-          background: levelInfo.bgColor,
-          display: 'inline-block', marginBottom: 8,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-        }}>
-          {levelInfo.label}
-        </div>
-        <div style={{ position: 'relative', zIndex: 1, fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 4, fontFamily: T.font, letterSpacing: '-0.02em' }}>
-          {levelInfo.tagline}
-        </div>
-        <p style={{ position: 'relative', zIndex: 1, fontSize: 12, color: T.text2, lineHeight: 1.5, fontFamily: T.font }}>
-          {report.problems.length} posture issue{report.problems.length !== 1 ? 's' : ''} detected across 3 views.
-        </p>
-        <p style={{ position: 'relative', zIndex: 1, fontSize: 10, color: T.text3, lineHeight: 1.55, fontFamily: T.font, marginTop: 6 }}>
-          Low findings stay visible so front and back asymmetries do not disappear from the report.
-        </p>
-
-        {/* Level bar */}
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 4, marginTop: 12 }}>
-          {(['beginner', 'intermediate', 'advanced'] as PostureLevel[]).map(l => (
-            <div key={l} style={{
-              flex: 1, height: 5, borderRadius: 3,
-              background: l === report.postureLevel
-                ? (l === 'beginner' ? T.orange : l === 'intermediate' ? T.gold : T.green)
-                : 'rgba(255,255,255,0.05)',
-            }} />
-          ))}
-        </div>
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-          <span style={{ fontSize: 9, color: T.text3 }}>Beginner</span>
-          <span style={{ fontSize: 9, color: T.text3 }}>Intermediate</span>
-          <span style={{ fontSize: 9, color: T.text3 }}>Advanced</span>
-        </div>
-      </div>
+      {/* ── 21-day program level (replaces scan-only badge + thin bars) ── */}
+      <DailyProgramLevelCard />
 
       {/* ── View tabs ─────────────────────────── */}
       <div style={{
@@ -299,23 +231,35 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
           </p>
         )}
 
-        {report.problems.some(p => p.rawMetrics && Object.keys(p.rawMetrics).length > 0) && (
+        {report.problems.some(p => {
+          const conf = typeof p.confidenceScore === 'number';
+          const sup = p.supportingMeasurements && p.supportingMeasurements.length > 0;
+          return conf || sup;
+        }) && (
           <details style={{ marginTop: 12, position: 'relative', zIndex: 1 }}>
             <summary style={{ cursor: 'pointer', fontSize: 11, color: T.text2, fontFamily: T.font }}>
               Measurement details
             </summary>
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
               {report.problems.map(problem => {
-                const entries = Object.entries(problem.rawMetrics ?? {}).slice(0, 4);
-                if (!entries.length) return null;
+                const hasConfidence = typeof problem.confidenceScore === 'number';
+                const hasSupporting = problem.supportingMeasurements && problem.supportingMeasurements.length > 0;
+                if (!hasConfidence && !hasSupporting) return null;
                 return (
                   <div key={`${problem.id}-metrics`} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 10 }}>
-                    <div style={{ fontSize: 12, color: T.text, fontFamily: T.font, marginBottom: 4 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: T.text, fontFamily: T.font, marginBottom: 6 }}>
                       {problem.mapLabel}
                     </div>
-                    <div style={{ fontSize: 11, color: T.text3, fontFamily: T.font, lineHeight: 1.45 }}>
-                      {entries.map(([key, value]) => `${key}: ${value}`).join(' · ')}
-                    </div>
+                    {hasConfidence && (
+                      <div style={{ fontSize: 11, color: T.text3, fontFamily: T.font, marginBottom: hasSupporting ? 4 : 0 }}>
+                        Confidence: {problem.confidenceScore}%
+                      </div>
+                    )}
+                    {hasSupporting && (
+                      <div style={{ fontSize: 11, color: T.text2, fontFamily: T.font, lineHeight: 1.45 }}>
+                        {problem.supportingMeasurements!.join(' · ')}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -335,19 +279,21 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
       </div>
 
       {/* ── Action buttons ────────────────────── */}
-      <button
-        type="button"
-        onClick={onViewDailyPlan}
-        style={{
-          width: '100%', padding: 16, borderRadius: 18,
-          background: 'linear-gradient(90deg, #EA580C 0%, #FB923C 100%)', color: '#FFFFFF',
-          fontSize: 14, fontWeight: 600, border: 'none',
-          cursor: 'pointer', fontFamily: T.font,
-          boxShadow: '0 0 24px rgba(249,115,22,0.22)',
-        }}
-      >
-        See your daily plan
-      </button>
+      {showDailyPlanButton && (
+        <button
+          type="button"
+          onClick={onViewDailyPlan}
+          style={{
+            width: '100%', padding: 16, borderRadius: 18,
+            background: 'linear-gradient(90deg, #EA580C 0%, #FB923C 100%)', color: '#FFFFFF',
+            fontSize: 14, fontWeight: 600, border: 'none',
+            cursor: 'pointer', fontFamily: T.font,
+            boxShadow: '0 0 24px rgba(249,115,22,0.22)',
+          }}
+        >
+          See your daily plan
+        </button>
+      )}
       {showFullReportButton && (
         <button
           type="button"

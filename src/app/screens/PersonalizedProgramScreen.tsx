@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { getExerciseDaysCompleted, getOrRefreshDailyProgram, loadDailyProgram } from '../services/DailyProgram';
+import {
+  getActiveProgramId,
+  getExerciseDaysCompleted,
+  loadActiveProgramForSession,
+  loadProgramLibrary,
+  setActiveProgramId,
+  type StoredDailyProgram,
+} from '../services/DailyProgram';
 import { loadUserProfile } from '../services/UserProfile';
 
 const T = {
@@ -13,26 +20,48 @@ const T = {
   font: "system-ui, -apple-system, 'Helvetica Neue', sans-serif",
 };
 
-const tagColors: Record<string, React.CSSProperties> = {
-  'Forward Head': { color: '#FB923C', borderColor: 'rgba(249,115,22,0.25)', background: 'rgba(249,115,22,0.08)' },
-  Kyphosis: { color: '#C084FC', borderColor: 'rgba(168,85,247,0.25)', background: 'rgba(168,85,247,0.08)' },
-  'Rounded Shoulders': { color: '#2DD4BF', borderColor: 'rgba(45,212,191,0.25)', background: 'rgba(45,212,191,0.08)' },
-  'Uneven Shoulders': { color: '#FBBF24', borderColor: 'rgba(245,158,11,0.25)', background: 'rgba(245,158,11,0.08)' },
-  'Winging Scapula': { color: '#FB7185', borderColor: 'rgba(244,63,94,0.25)', background: 'rgba(244,63,94,0.08)' },
-  'Anterior Pelvic Tilt': { color: '#60A5FA', borderColor: 'rgba(59,130,246,0.25)', background: 'rgba(59,130,246,0.08)' },
-  'Lower Back': { color: '#60A5FA', borderColor: 'rgba(59,130,246,0.25)', background: 'rgba(59,130,246,0.08)' },
+/** Neutral pills for target areas (e.g. Forward Head) — no accent color */
+const targetProblemTagStyle: React.CSSProperties = {
+  color: T.text2,
+  borderColor: 'rgba(255,255,255,0.08)',
+  background: 'rgba(255,255,255,0.03)',
 };
 
 const PersonalizedProgramScreen: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const profile = loadUserProfile();
-  const program = profile?.scanTimestamp ? getOrRefreshDailyProgram(profile) : loadDailyProgram();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [program, setProgram] = useState<StoredDailyProgram | null>(() =>
+    loadActiveProgramForSession(profile),
+  );
   const [expanded, setExpanded] = useState(true);
 
+  useEffect(() => {
+    if (location.pathname !== '/program') return;
+    setProgram(loadActiveProgramForSession(loadUserProfile()));
+  }, [location.pathname, location.key]);
+
+  useEffect(() => {
+    if (!program || program.exercises.length === 0) {
+      navigate('/');
+    }
+  }, [program, navigate]);
+
   if (!program || program.exercises.length === 0) {
-    navigate('/');
     return null;
   }
+
+  const lib = loadProgramLibrary();
+  const sortedEntries = lib
+    ? [...lib.entries].sort((a, b) => {
+        if (a.kind === 'daily' && b.kind !== 'daily') return -1;
+        if (a.kind !== 'daily' && b.kind === 'daily') return 1;
+        return a.name.localeCompare(b.name);
+      })
+    : [];
+  const activeId = getActiveProgramId();
+  const headerProgramTitle = sortedEntries.find(e => e.id === activeId)?.name ?? 'Daily Program';
 
   const total = program.exercises.length;
   const completedCount = program.exercises.filter(e => e.completed).length;
@@ -43,15 +72,132 @@ const PersonalizedProgramScreen: React.FC = () => {
   return (
     <Layout>
       <div style={{ minHeight: '100%', background: T.bg, fontFamily: T.font, display: 'flex', flexDirection: 'column' }}>
-      <main style={{ flex: 1, overflowY: 'auto', padding: '32px 20px 112px' }}>
+      <main style={{ flex: 1, overflowY: 'auto', padding: '32px 20px 160px' }}>
         <div style={{ marginBottom: 4 }}>
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: T.text3, textTransform: 'uppercase', marginBottom: 4 }}>
-            Your routine
-          </p>
-          <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.04em', color: T.text, lineHeight: 1 }}>
-            Daily Program
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 4 }}>
+            <button
+              type="button"
+              aria-label="Open programs"
+              onClick={() => setMenuOpen(true)}
+              style={{
+                marginTop: 2,
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                border: `1px solid ${T.border}`,
+                background: T.surface,
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 5,
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ display: 'block', width: 18, height: 2, borderRadius: 2, background: T.text }} />
+              <span style={{ display: 'block', width: 18, height: 2, borderRadius: 2, background: T.text }} />
+              <span style={{ display: 'block', width: 18, height: 2, borderRadius: 2, background: T.text }} />
+            </button>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: T.text3, textTransform: 'uppercase', marginBottom: 4 }}>
+                Your routine
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.04em', color: T.text, lineHeight: 1, margin: 0 }}>
+                  {headerProgramTitle}
+                </h1>
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); navigate('/program/create'); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '8px 14px', borderRadius: 12,
+                    background: 'rgba(249,115,22,0.08)',
+                    border: '1px solid rgba(249,115,22,0.25)',
+                    cursor: 'pointer', fontFamily: T.font,
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#FB923C" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#FB923C' }}>New</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {menuOpen && (
+          <>
+            <button
+              type="button"
+              aria-label="Close programs menu"
+              onClick={() => setMenuOpen(false)}
+              style={{
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 200, border: 'none', padding: 0, cursor: 'pointer',
+              }}
+            />
+            <aside
+              style={{
+                position: 'fixed', top: 0, left: 0, bottom: 0, width: 'min(88vw, 300px)', zIndex: 201,
+                background: T.surface, borderRight: `1px solid ${T.border}`,
+                padding: '20px 16px 90px', display: 'flex', flexDirection: 'column', fontFamily: T.font,
+                boxShadow: '8px 0 40px rgba(0,0,0,0.35)',
+              }}
+            >
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: T.text3, textTransform: 'uppercase', marginBottom: 12 }}>
+                Programs
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, overflowY: 'auto' }}>
+                {(sortedEntries.length > 0 ? sortedEntries : [{ id: 'daily', name: 'Daily Program', kind: 'daily' as const, program }]).map(entry => {
+                  const isActive = entry.id === activeId;
+                  return (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveProgramId(entry.id, loadUserProfile());
+                        setProgram(loadActiveProgramForSession(loadUserProfile()));
+                        setMenuOpen(false);
+                      }}
+                      style={{
+                        textAlign: 'left', padding: '14px 14px', borderRadius: 14, cursor: 'pointer',
+                        border: `1px solid ${isActive ? 'rgba(249,115,22,0.35)' : 'rgba(255,255,255,0.06)'}`,
+                        background: isActive ? 'rgba(249,115,22,0.10)' : T.bg,
+                        color: T.text,
+                        fontFamily: T.font,
+                      }}
+                    >
+                      <span style={{ fontSize: 14, fontWeight: 700 }}>{entry.name}</span>
+                      {'kind' in entry && entry.kind === 'daily' && (
+                        <span style={{ display: 'block', fontSize: 11, color: T.text3, marginTop: 4 }}>From your scan</span>
+                      )}
+                      {'kind' in entry && entry.kind === 'custom' && (
+                        <span style={{ display: 'block', fontSize: 11, color: T.text3, marginTop: 4 }}>Your playlist</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); navigate('/program/create'); }}
+                style={{
+                  marginTop: 16,
+                  width: '100%',
+                  padding: '14px', borderRadius: 14,
+                  border: `1px dashed rgba(249,115,22,0.35)`, background: 'rgba(249,115,22,0.06)',
+                  color: T.gold2, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: T.font,
+                }}
+              >
+                + New program
+              </button>
+            </aside>
+          </>
+        )}
 
         <div style={{ position: 'relative', marginTop: 20, borderRadius: 22, overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #1E1E22 0%, #121215 100%)', border: `1px solid ${T.border}`, borderRadius: 22 }} />
@@ -60,16 +206,33 @@ const PersonalizedProgramScreen: React.FC = () => {
           <div style={{ position: 'relative', zIndex: 1, padding: '20px 20px 18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 6, background: 'rgba(249,115,22,0.10)', color: T.gold2, fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', border: '1px solid rgba(249,115,22,0.20)' }}>
-                    Today
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                   <span style={{ fontSize: 10, color: T.text3, fontWeight: 600 }}>
                     {completedCount}/{total} done
                   </span>
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: T.text, lineHeight: 1.05, letterSpacing: '-0.03em' }}>
-                  {focusTitle}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {program.exercises.map(ex => {
+                    const dc = ex.difficulty === 'hard'
+                      ? { color: '#EF4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)' }
+                      : ex.difficulty === 'medium'
+                        ? { color: '#FB923C', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.25)' }
+                        : { color: '#D9B84C', bg: 'rgba(217,184,76,0.08)', border: 'rgba(217,184,76,0.25)' };
+                    return (
+                      <span
+                        key={ex.id}
+                        style={{
+                          fontSize: 10, fontWeight: 700, letterSpacing: '0.02em',
+                          padding: '4px 10px', borderRadius: 8,
+                          background: dc.bg,
+                          border: `1px solid ${dc.border}`,
+                          color: dc.color,
+                        }}
+                      >
+                        {ex.name}
+                      </span>
+                    );
+                  })}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: T.text2 }}>
@@ -182,9 +345,7 @@ const PersonalizedProgramScreen: React.FC = () => {
 
                     {ex.targetProblemLabels.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-                        {ex.targetProblemLabels.map((target) => {
-                          const tokenStyle = tagColors[target] ?? { color: T.text2, borderColor: 'rgba(63,63,70,1)', background: 'rgba(39,39,42,0.7)' };
-                          return (
+                        {ex.targetProblemLabels.map((target) => (
                             <span
                               key={target}
                               style={{
@@ -193,15 +354,14 @@ const PersonalizedProgramScreen: React.FC = () => {
                                 letterSpacing: '0.04em',
                                 padding: '3px 8px',
                                 borderRadius: 6,
-                                border: `1px solid ${tokenStyle.borderColor}`,
-                                background: tokenStyle.background,
-                                color: tokenStyle.color,
+                                border: `1px solid ${targetProblemTagStyle.borderColor}`,
+                                background: targetProblemTagStyle.background,
+                                color: targetProblemTagStyle.color,
                               }}
                             >
                               {target}
                             </span>
-                          );
-                        })}
+                        ))}
                       </div>
                     )}
                   </div>
@@ -215,7 +375,8 @@ const PersonalizedProgramScreen: React.FC = () => {
       <div style={{
         position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: 430, padding: '16px 20px 92px',
-        background: `linear-gradient(to top, ${T.bg} 72%, transparent)`,
+        background: T.bg,
+        zIndex: 10,
       }}>
         {allDone ? (
           <div style={{

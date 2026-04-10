@@ -13,6 +13,7 @@ import BodyScanScreen from './screens/BodyScanScreen';
 import PersonalizedProgramScreen from './screens/PersonalizedProgramScreen';
 import ProgramEditScreen from './screens/ProgramEditScreen';
 import DailyExerciseFlow from './screens/DailyExerciseFlow';
+import CreateProgramScreen from './screens/CreateProgramScreen';
 import { isOnboardingComplete } from './services/UserProfile';
 
 /** Redirect to /onboarding if user hasn't completed onboarding */
@@ -36,6 +37,7 @@ const AppRoutes: React.FC = () => (
     <Route path="/settings" element={<Guard><Settings /></Guard>} />
     <Route path="/scan" element={<Guard><BodyScanScreen /></Guard>} />
     <Route path="/program/edit" element={<Guard><ProgramEditScreen /></Guard>} />
+    <Route path="/program/create" element={<Guard><CreateProgramScreen /></Guard>} />
     <Route path="/scan/program" element={<Guard><PersonalizedProgramScreen /></Guard>} />
     <Route path="/daily-exercise" element={<Guard><DailyExerciseFlow /></Guard>} />
   </Routes>

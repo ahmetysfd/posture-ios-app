@@ -26,6 +26,16 @@ export interface PremiumLayout {
   };
 }
 
+/** Optional Figma-style copy for the bottom insight card (hero already shows title + image). */
+export interface ProblemInsightOverrides {
+  subtitle?: string;
+  triggers?: string;
+  impact?: string;
+  stretch?: string;
+  strengthen?: string;
+  habits?: string;
+}
+
 export interface PostureProblem {
   id: string;
   title: string;
@@ -48,6 +58,8 @@ export interface PostureProblem {
   reasonRest?: string;
   /** Optional: premium 3-card layout */
   premiumLayout?: PremiumLayout;
+  /** Optional: overrides for bottom ProblemInsightCard */
+  insightCard?: ProblemInsightOverrides;
 }
 
 export const postureProblems: PostureProblem[] = [
@@ -55,7 +67,7 @@ export const postureProblems: PostureProblem[] = [
     id: 'forward-head',
     title: 'Forward Head',
     cardImage: '/problems/forward-head.png',
-    exercises: 5,
+    exercises: 9,
     duration: '3m',
     reasonImage: '/problems/forward-head-reason.png',
     reasonLead: `Most people spend hours:
@@ -84,45 +96,36 @@ The head shifts forward from its natural position`,
     cardBorder: '#C5E3FC',
     emoji: '🦒',
     exerciseList: [
-      // ── Beginner ──────────────────────────────────────────────
+      // ── Beginner ──
       { id: 'fh-b1', name: 'Chin Tuck', difficulty: 'beginner', duration: 35, emoji: '🧘', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/hBJBx1QN3-c',
         description: 'Retrains head-over-spine alignment with minimal effort by activating the deep neck flexors.',
         instructions: ['Sit or stand tall, eyes level and relaxed', 'Imagine a string pulling the crown of your head straight up', 'Slide your chin straight back — not down toward your chest', 'Hold 5 seconds, feel a gentle stretch at the base of the skull', 'Relax fully and repeat 8–10 reps'] },
       { id: 'fh-b2', name: 'Supine Chin Tuck', difficulty: 'beginner', duration: 35, emoji: '🛌', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/mIQ_CyPnv6c',
         description: 'Gravity-assisted deep neck flexor activation with full head support.',
         instructions: ['Lie flat on your back, knees bent, feet flat on the floor', 'Press the back of your head gently into the floor', 'Draw your chin back and down — create a double-chin against gravity', 'Hold 5 seconds, feel the front of the neck activate', 'Relax completely and repeat 10–12 reps'] },
-      { id: 'fh-b3', name: 'Suboccipital Massage', difficulty: 'beginner', duration: 40, emoji: '🤲', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/tNoTUTJpzDE',
-        description: 'Releases tight sub-skull muscles pulling the head forward.',
-        instructions: ['Sit tall, interlace fingers behind your head near the base of the skull', 'Apply gentle circular pressure along the ridge with both thumbs', 'Move slowly across the suboccipital muscles for 30–40 seconds', 'If you find a tender spot, hold light steady pressure for 8–10 seconds', 'Breathe slowly — never press hard into bone'] },
-      { id: 'fh-b4', name: 'Weight Assisted Neck Stretch', difficulty: 'beginner', duration: 40, emoji: '🙆', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/wWukY9E5T_w',
-        description: 'Gentle traction on tight cervical extensors with arm weight only.',
-        instructions: ['Sit tall, anchor one hand under the edge of your seat', 'Rest the opposite hand lightly on top of your head', 'Let the weight of your arm slowly tilt your ear toward your shoulder', 'Hold 20–25 seconds — the arm weight is enough, do not pull', 'Slowly return to neutral and switch sides'] },
-      { id: 'fh-b5', name: 'Side Lying Chin Tuck', difficulty: 'beginner', duration: 35, emoji: '🛌', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/p-ok89KNPCk',
-        description: 'Supported position that builds neck retraction awareness without gravity challenge.',
-        instructions: ['Lie on your side with a pillow supporting your head', 'Align your body in a straight line from head to hips', 'Slide your chin straight back horizontally — no tilting', 'Hold 3–5 seconds, feel the back of the neck lengthen', 'Repeat 10–12 reps then switch sides'] },
-      // ── Medium ────────────────────────────────────────────────
-      { id: 'fh-m1', name: 'Wall Lean Chin Tuck', difficulty: 'medium', duration: 45, emoji: '🧱', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/uSTnwYMsZ7A',
-        description: 'Wall feedback increases deep neck flexor load for a more demanding retraction.',
-        instructions: ['Stand with your back, head, and heels touching the wall', 'Step feet 3 inches away from the baseboard', 'Press your head into the wall and draw the chin back simultaneously', 'Hold 8 seconds maintaining full wall contact', 'Release slightly, reset posture, and repeat 10 reps'] },
-      { id: 'fh-m2', name: 'Chin Tuck Rotations', difficulty: 'medium', duration: 45, emoji: '🔄', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/cU0RMzfj0dY',
-        description: 'Adds rotational control to the retraction pattern for full cervical stability.',
-        instructions: ['Begin with a full chin tuck — hold the retraction throughout', 'Keeping the tuck, slowly rotate your head to one side', 'Stop at a comfortable end range, hold 3 seconds', 'Return to center, then rotate to the other side', 'Perform 8–10 reps per direction without losing the retraction'] },
-      { id: 'fh-m3', name: 'Chin Tuck Floor Angels', difficulty: 'medium', duration: 45, emoji: '🪄', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/tmZ6ufhHeNA',
-        description: 'Combines neck retraction with full-arm overhead pattern for whole-chain correction.',
-        instructions: ['Lie on your back, arms by your sides, lower back flat', 'Perform a full chin tuck — maintain it for the entire set', 'Slowly sweep both arms up the floor toward overhead like a snow angel', 'Keep your lower back flat — no arch should develop', 'Return arms to sides slowly, reset chin tuck if needed, 8–10 reps'] },
-      // ── Hard ──────────────────────────────────────────────────
-      { id: 'fh-h1', name: 'Prone Chin Tuck', difficulty: 'hard', duration: 50, emoji: '🤸', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/UsNvYtfTGHY',
-        description: 'Gravity-resisted neck retraction in the prone position builds deep flexor endurance.',
-        instructions: ['Lie face down with a small rolled towel under your forehead', 'Keep your gaze toward the floor — do not lift your head', 'Draw your chin back against gravity, creating retraction', 'Hold 5–8 seconds, feel effort in the front of your neck', 'Relax and repeat 10–12 reps at a slow, controlled pace'] },
       { id: 'fh-b6', name: 'Upper Trapezius Stretch', difficulty: 'beginner', duration: 35, emoji: '🙆', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/3h0jsXcRT94',
         description: 'Releases the upper trapezius — a primary driver of forward head tension.',
         instructions: ['Sit tall with one hand anchored under your seat to stabilise the shoulder', 'Let your opposite ear drop toward your shoulder slowly and gently', 'Add a light hand weight on top of your head — do not pull', 'Hold 20–25 seconds feeling the lateral neck lengthen', 'Slowly return to neutral and switch sides'] },
-      { id: 'fh-h2', name: 'Banded Chin Tucks', difficulty: 'hard', duration: 55, emoji: '💫', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/LthybLqjstI', requiresEquipment: true,
-        description: 'External resistance strengthens deep neck flexors against a forward-pulling load.',
-        instructions: ['Loop a light resistance band around the back of your head at the occiput', 'Face the anchor point with the band creating forward tension', 'Against the band pull, perform a full chin retraction', 'Hold 5 seconds at maximum retraction — resist any forward drift', 'Return with control and repeat 10–12 reps, progressively increasing resistance'] },
+      // ── Medium ──
+      { id: 'fh-m3', name: 'Chin Tuck Floor Angels', difficulty: 'medium', duration: 45, emoji: '🪄', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/tmZ6ufhHeNA',
+        description: 'Combines neck retraction with full-arm overhead pattern for whole-chain correction.',
+        instructions: ['Lie on your back, arms by your sides, lower back flat', 'Perform a full chin tuck — maintain it for the entire set', 'Slowly sweep both arms up the floor toward overhead like a snow angel', 'Keep your lower back flat — no arch should develop', 'Return arms to sides slowly, reset chin tuck if needed, 8–10 reps'] },
+      { id: 'fh-m2', name: 'Chin Tuck Rotations', difficulty: 'medium', duration: 45, emoji: '🔄', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/cU0RMzfj0dY',
+        description: 'Adds rotational control to the retraction pattern for full cervical stability.',
+        instructions: ['Begin with a full chin tuck — hold the retraction throughout', 'Keeping the tuck, slowly rotate your head to one side', 'Stop at a comfortable end range, hold 3 seconds', 'Return to center, then rotate to the other side', 'Perform 8–10 reps per direction without losing the retraction'] },
+      { id: 'fh-m1', name: 'Wall Lean Chin Tuck', difficulty: 'medium', duration: 45, emoji: '🧱', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/uSTnwYMsZ7A',
+        description: 'Wall feedback increases deep neck flexor load for a more demanding retraction.',
+        instructions: ['Stand with your back, head, and heels touching the wall', 'Step feet 3 inches away from the baseboard', 'Press your head into the wall and draw the chin back simultaneously', 'Hold 8 seconds maintaining full wall contact', 'Release slightly, reset posture, and repeat 10 reps'] },
+      // ── Hard ──
+      { id: 'fh-h1', name: 'Prone Chin Tuck', difficulty: 'hard', duration: 50, emoji: '🤸', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/UsNvYtfTGHY',
+        description: 'Gravity-resisted neck retraction in the prone position builds deep flexor endurance.',
+        instructions: ['Lie face down with a small rolled towel under your forehead', 'Keep your gaze toward the floor — do not lift your head', 'Draw your chin back against gravity, creating retraction', 'Hold 5–8 seconds, feel effort in the front of your neck', 'Relax and repeat 10–12 reps at a slow, controlled pace'] },
       { id: 'fh-h3', name: 'Chin Tuck Neck Bridge', difficulty: 'hard', duration: 55, emoji: '🌉', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/M0Dg9ncnoao',
         description: 'High-load cervical stability exercise using bodyweight against the floor.',
         instructions: ['Lie on your back, knees bent, feet flat', 'Perform a full chin tuck and hold it throughout the movement', 'Press through your feet and slowly lift your head off the floor', 'Hold 8–10 seconds using only your deep neck flexors — no momentum', 'Lower with full control and repeat 8 reps'] },
+      { id: 'fh-h2', name: 'Banded Chin Tucks', difficulty: 'hard', duration: 55, emoji: '💫', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/LthybLqjstI', requiresEquipment: true,
+        description: 'External resistance strengthens deep neck flexors against a forward-pulling load.',
+        instructions: ['Loop a light resistance band around the back of your head at the occiput', 'Face the anchor point with the band creating forward tension', 'Against the band pull, perform a full chin retraction', 'Hold 5 seconds at maximum retraction — resist any forward drift', 'Return with control and repeat 10–12 reps, progressively increasing resistance'] },
     ],
     tips: ['Position screen at eye level', 'Break every 30 minutes', 'Use supportive pillow', 'Strengthen deep neck flexors'],
     premiumLayout: {
@@ -149,9 +152,8 @@ The head shifts forward from its natural position`,
     id: 'winging-scapula',
     title: 'Winging Scapula',
     cardImage: '/problems/winging-scapula.png',
-    exercises: 5,
+    exercises: 9,
     duration: '3m',
-    reasonImage: '/problems/desk-work-upper.png',
     reasonLead: `Most people spend hours:
 
 Sitting
@@ -182,57 +184,27 @@ This creates functional winging (not nerve damage, but poor control).`,
     cardBorder: '#C5D9FC',
     emoji: '🪽',
     exerciseList: [
-      // ── Beginner ──────────────────────────────────────────────
-      { id: 'ws-b1', name: 'Air Angel', difficulty: 'beginner', duration: 35, emoji: '🪄', iconType: 'shoulder', youtubeUrl: 'https://www.youtube.com/shorts/g1YnTIYRAxo',
-        description: 'Activates serratus anterior through an overhead reaching pattern in open space.',
-        instructions: ['Stand tall with arms relaxed at your sides', 'Sweep both arms out and up overhead in a wide arc like a snow angel', 'Keep shoulder blades retracted and depressed throughout the movement', 'Pause briefly overhead, then lower slowly back to the start', 'Complete 10–12 reps at a deliberate, controlled pace'] },
-      { id: 'ws-b2', name: 'Shoulder Rockets', difficulty: 'beginner', duration: 35, emoji: '🚀', iconType: 'shoulder', youtubeUrl: 'https://www.youtube.com/shorts/Yi3VqHQd8VY',
-        description: 'Light scapular protraction-retraction rhythm trains the serratus-rhomboid balance.',
-        instructions: ['Stand or sit tall, arms relaxed at your sides', 'Raise both shoulders in small quick pulses — 2–3 cm per pulse', 'Complete 20 quick alternating shoulder lifts', 'Keep your neck long — do not let the head nod forward', 'Finish with one slow full shrug and controlled release, 3 sets'] },
-      { id: 'ws-b3', name: 'Thoracic Foam Roll', difficulty: 'beginner', duration: 40, emoji: '🫧', iconType: 'back', youtubeUrl: 'https://www.youtube.com/shorts/SAvPkMKTgwI',
-        description: 'Releases periscapular tightness, allowing the scapula to track freely against the ribcage.',
-        instructions: ['Place a foam roller perpendicular to your spine at mid-back level', 'Support your head with hands interlaced behind it', 'Let your thoracic spine gently extend over the roller', 'Move 2–3 inches up or down and repeat at each segment', 'Spend 35–45 seconds breathing into each position'] },
+      // ── Beginner ──
       { id: 'ws-b5', name: 'Quadruped Scapular Push', difficulty: 'beginner', duration: 35, emoji: '🐈', iconType: 'back', youtubeUrl: 'https://www.youtube.com/shorts/bujO-PR9Zpo',
         description: 'Serratus anterior activation on all fours — the foundational winging-scapula corrector.',
         instructions: ['Start on all fours — wrists under shoulders, knees under hips', 'Let your upper back sag between your shoulder blades (protraction)', 'Then push your shoulder blades apart and away from each other', 'Hold the protracted position for 3 seconds, then slowly release', '10–12 reps, feel the serratus activate along the side of your ribcage'] },
+      { id: 'ws-b1', name: 'Air Angel', difficulty: 'beginner', duration: 35, emoji: '🪄', iconType: 'shoulder', youtubeUrl: 'https://www.youtube.com/shorts/g1YnTIYRAxo',
+        description: 'Activates serratus anterior through an overhead reaching pattern in open space.',
+        instructions: ['Stand tall with arms relaxed at your sides', 'Sweep both arms out and up overhead in a wide arc like a snow angel', 'Keep shoulder blades retracted and depressed throughout the movement', 'Pause briefly overhead, then lower slowly back to the start', 'Complete 10–12 reps at a deliberate, controlled pace'] },
       { id: 'ws-m1', name: 'Floor Angel', difficulty: 'beginner', duration: 40, emoji: '🪄', iconType: 'back', youtubeUrl: 'https://www.youtube.com/shorts/1Qy9ZazKYWg',
         description: 'Floor contact increases serratus anterior demand in the full overhead pattern.',
         instructions: ['Lie on your back, arms at 90° goalpost with elbows bent', 'Press the backs of your hands and forearms completely flat on the floor', 'Slowly slide arms overhead while maintaining floor contact throughout', 'Stop before you lose contact — return under full control', '10 slow reps, feeling the thoracic and scapular demand increase'] },
-      // ── Medium ────────────────────────────────────────────────
-      { id: 'ws-b4', name: 'Wall Angel', difficulty: 'medium', duration: 40, emoji: '🧱', iconType: 'back', youtubeUrl: 'https://www.youtube.com/shorts/AVFrTWQKHJA',
-        description: 'Scapular upward rotation against the wall targets serratus and lower trapezius together.',
-        instructions: ['Stand with your back flat against the wall, feet 6 inches from the base', 'Press head, upper back, and hips firmly into the wall', 'Raise arms to a 90° goalpost position, backs of hands on wall', 'Slowly slide arms overhead while keeping all contact points on the wall', 'Lower with full control — 10 reps, keep ribs down throughout'] },
+      // ── Medium ──
       { id: 'ws-m4', name: 'Side Lean Wall Slide', difficulty: 'medium', duration: 45, emoji: '🧱', iconType: 'shoulder', youtubeUrl: 'https://www.youtube.com/shorts/vTy_vg5nLs0',
         description: 'Unilateral wall slide trains each scapula independently for asymmetric winging correction.',
         instructions: ['Stand sideways to a wall, inside arm raised to 90° with the forearm against the wall', 'Slide your forearm upward along the wall while keeping the shoulder blade flat', 'Feel the serratus drive the blade into the ribcage at the top of each rep', 'Slide back down with control — do not let the scapula lift away from the wall', '10–12 reps each side at a slow, deliberate pace'] },
+      { id: 'ws-b4', name: 'Wall Angel', difficulty: 'medium', duration: 40, emoji: '🧱', iconType: 'back', youtubeUrl: 'https://www.youtube.com/shorts/AVFrTWQKHJA',
+        description: 'Scapular upward rotation against the wall targets serratus and lower trapezius together.',
+        instructions: ['Stand with your back flat against the wall, feet 6 inches from the base', 'Press head, upper back, and hips firmly into the wall', 'Raise arms to a 90° goalpost position, backs of hands on wall', 'Slowly slide arms overhead while keeping all contact points on the wall', 'Lower with full control — 10 reps, keep ribs down throughout'] },
       { id: 'ws-m5', name: 'Scapular Flutters', difficulty: 'medium', duration: 40, emoji: '🦋', iconType: 'shoulder', youtubeUrl: 'https://www.youtube.com/shorts/g1YnTIYRAxo',
         description: 'Rapid alternating scapular protraction-retraction builds serratus endurance for dynamic stability.',
         instructions: ['Stand tall with arms relaxed at your sides, shoulders relaxed', 'Alternately protract and retract each shoulder blade in a flutter rhythm', 'Keep your chest open and neck long throughout — no head bobbing', 'Perform 20–30 alternating flutter movements per set', 'Slow the flutter to a controlled retraction hold on the last rep each side'] },
-      { id: 'ws-m2', name: 'Face Pulls', difficulty: 'medium', duration: 45, emoji: '🎯', iconType: 'shoulder', youtubeUrl: 'https://www.youtube.com/shorts/e8APCEYbpVY', requiresEquipment: true,
-        description: 'Scapular retraction strengthens mid-traps to pin and stabilize the scapula against the ribcage.',
-        instructions: ['Anchor a resistance band at face height', 'Hold both ends with an overhand grip, arms extended forward', 'Pull the band toward your face, driving elbows back and wide', 'Externally rotate at the end so hands end beside your ears', 'Squeeze 2 seconds at maximum retraction, then return — 12–15 reps'] },
-      { id: 'ws-m3', name: 'Reverse Fly', difficulty: 'medium', duration: 45, emoji: '💪', iconType: 'shoulder', youtubeUrl: 'https://www.youtube.com/shorts/OUn0pOyxqwE', requiresEquipment: true,
-        description: 'Rhomboid and mid-trap strengthening pins the scapula to the ribcage under load.',
-        instructions: ['Hinge forward 45° from hips, soft knees, back flat', 'Hold light weights or a band, arms hanging below chest', 'Raise both arms out to the sides in a wide arc, squeezing shoulder blades', 'Hold 1 second at the top — elbows slightly soft', 'Lower with full control, 12–15 reps'] },
-      // ── Hard ──────────────────────────────────────────────────
-      { id: 'ws-h1', name: 'Cuffed Angels', difficulty: 'hard', duration: 50, emoji: '💫', iconType: 'shoulder', youtubeUrl: 'https://www.youtube.com/shorts/0RtxcS9F_Hk',
-        description: 'Rotator cuff plus scapular stabilizer co-contraction for integrated serratus activation under resistance.',
-        instructions: ['Apply a light resistance band around both wrists', 'Perform the floor angel movement while keeping the band taut', 'Externally rotate against the band throughout the arc', 'The cuff forces rotator cuff activation alongside scapular movement', '10–12 reps maintaining constant rotational tension in the band'] },
-      { id: 'ws-h2', name: 'Banded Rainbows', difficulty: 'hard', duration: 55, emoji: '🌈', iconType: 'shoulder', youtubeUrl: 'https://www.youtube.com/shorts/uUFnCndr5JU', requiresEquipment: true,
-        description: 'Full-arc overhead resistance demands continuous scapular stabilization through the entire range.',
-        instructions: ['Stand tall with a resistance band anchored below your feet', 'Hold the band in both hands, arms extended above your head', 'Arc both arms in a wide rainbow from one side down through center to the other', 'Control the deceleration — resist the pull on the return arc', '10–12 full arcs, maintaining upright posture throughout'] },
-      { id: 'ws-h3', name: 'Archer Rows', difficulty: 'hard', duration: 55, emoji: '🏹', iconType: 'back', youtubeUrl: 'https://www.youtube.com/shorts/YCjnjRQY3cU', requiresEquipment: true,
-        description: 'Unilateral row forces independent scapular control on the pulling side.',
-        instructions: ['Face a resistance band or cable anchored at shoulder height', 'Pull with one arm toward your hip while the other arm extends forward', 'Keep the pulling elbow close to your body like drawing a bowstring', 'Hold 1–2 seconds at full retraction on the pulling side', 'Extend and return with control — 10–12 reps per arm'] },
-      { id: 'ws-h4', name: 'Bent Over Y Raise', difficulty: 'hard', duration: 55, emoji: '💪', iconType: 'shoulder', youtubeUrl: 'https://www.youtube.com/watch?v=ULD3ff4TW4w',
-        description: 'Lower trap isolation is critical for scapular depression and stable winging correction.',
-        instructions: ['Hinge forward to nearly horizontal, back flat, soft knees', 'Start with arms hanging straight down in a neutral grip', 'Raise both arms in a Y shape — 30° above the shoulder line', 'Drive from the lower trapezius — no momentum or jerking', 'Hold 2 seconds at the top, lower for 3 seconds — 10–12 reps'] },
-      { id: 'ws-h5', name: 'Eccentric Reverse Fly', difficulty: 'hard', duration: 60, emoji: '🔄', iconType: 'shoulder', youtubeUrl: 'https://www.youtube.com/shorts/74wyKVYgETU', requiresEquipment: true,
-        description: 'Slow eccentric loading builds scapular retractor endurance to counter chronic winging.',
-        instructions: ['Perform the reverse fly using both arms to raise (1 second concentric)', 'At the top, remove one hand and lower on ONE arm only over 4–5 seconds', 'Feel the rhomboid and mid-trap eccentrically loading through the lowering', 'Alternate the lowering arm each rep', '8–10 reps per arm — use moderate weight'] },
-      { id: 'ws-h6', name: 'Chin Tuck Floor Angels', difficulty: 'hard', duration: 60, emoji: '🧘', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/tmZ6ufhHeNA',
-        description: 'Full chain pattern demands coordinated scapular movement under cervical control.',
-        instructions: ['Lie on your back, arms by your sides, lower back flat on the floor', 'Perform a full chin tuck and maintain it for the entire set', 'Slowly sweep both arms up the floor toward overhead', 'Keep your lower back flat — no arch should develop at any point', 'Return arms to sides slowly, reset chin tuck if needed — 8–10 reps'] },
+      // ── Hard ──
       { id: 'ws-h7', name: 'Quadruped Scapular Circles', difficulty: 'hard', duration: 55, emoji: '🔄', iconType: 'back', youtubeUrl: 'https://www.youtube.com/shorts/bujO-PR9Zpo',
         description: 'Circles the scapula through its full range in a loaded position, building serratus stamina.',
         instructions: ['Start on all fours — wrists under shoulders, knees under hips', 'Fully protract both shoulder blades (push floor away)', 'Slowly draw large circles with each shoulder blade — forward, up, back, down', 'Keep the core engaged and avoid letting the lower back sag', '8–10 circles in each direction per side at a slow, deliberate pace'] },
@@ -244,6 +216,14 @@ This creates functional winging (not nerve damage, but poor control).`,
         instructions: ['Place hands on an elevated surface (bench or step) in a push-up position', 'Without bending your elbows, let your shoulder blades squeeze together (retract)', 'Then push your shoulder blades apart as far as possible (protract)', 'Hold 2 seconds at full protraction — feel the serratus fire along your ribs', '12–15 reps at full range, keeping the core braced throughout'] },
     ],
     tips: ['Avoid prolonged elbow-plank shrugging', 'Strengthen serratus gradually', 'Check desk elbow height', 'See a clinician if pain or numbness'],
+    insightCard: {
+      subtitle: 'Understanding shoulder blade control and serratus strength',
+      triggers: 'Rounded desk posture and a weak serratus let the scapula lose solid contact with the ribcage.',
+      impact: 'Poor upward rotation and stability can increase impingement risk and load the neck and upper back.',
+      stretch: 'Pec minor doorway stretch — 3 × 30s',
+      strengthen: 'Wall push-up plus — 3 × 10–12 reps',
+      habits: 'Avoid resting elbows on desk for long periods',
+    },
     premiumLayout: {
       whyItHappens: [
         { bold: 'Serratus anterior weakness', text: 'This often-neglected muscle is the primary stabilizer that pins the scapula flat against the ribcage.' },
@@ -268,7 +248,8 @@ This creates functional winging (not nerve damage, but poor control).`,
     id: 'anterior-pelvic',
     title: 'Anterior Pelvic Tilt',
     cardImage: '/problems/anterior-pelvic.png',
-    exercises: 5,
+    cardImageObjectPosition: 'center 100%',
+    exercises: 9,
     duration: '4m',
     reasonImage: '/problems/anterior-pelvic-reason.png',
     reasonLead: `Most people spend hours:
@@ -297,20 +278,17 @@ The pelvis tilts forward from its neutral position`,
     cardBorder: '#DDD9FC',
     emoji: '🦴',
     exerciseList: [
-      // ── Beginner ──────────────────────────────────────────────
-      { id: 'apt-b1', name: 'Supine Pelvic Tilt', difficulty: 'beginner', duration: 35, emoji: '🔄', iconType: 'core', youtubeUrl: 'https://www.youtube.com/shorts/DqqUIfMuDX4',
-        description: 'Teaches posterior tilt awareness in a supported position with gravity removed.',
-        instructions: ['Lie on your back, knees bent, feet flat, arms by your sides', 'Breathe out and gently flatten your lower back into the floor', 'Engage your abs lightly — feel the pelvis rotate backward', 'Hold 5 seconds, feel the lumbar spine contact the floor', 'Release completely and repeat 12–15 reps'] },
+      // ── Beginner ──
       { id: 'apt-b2', name: 'Standing Pelvic Tilt', difficulty: 'beginner', duration: 35, emoji: '🧍', iconType: 'core', youtubeUrl: 'https://www.youtube.com/shorts/MnvcnjCf710',
         description: 'Transfers pelvic tilt control to a functional standing position.',
         instructions: ['Stand with your back against a wall, feet 4–6 inches forward', 'Notice the gap between your lower back and the wall', 'Gently tuck your pelvis — engage your abs and glutes to flatten that gap', 'Hold 5 seconds, feel the lower back press toward the wall', 'Release and repeat 10–12 reps to build functional awareness'] },
-      { id: 'apt-b3', name: 'Pelvic Twist', difficulty: 'beginner', duration: 40, emoji: '🌀', iconType: 'hip', youtubeUrl: 'https://www.youtube.com/shorts/DqqUIfMuDX4',
-        description: 'Mobilises the lumbar-pelvic junction to reduce lordotic stiffness.',
-        instructions: ['Stand with feet hip-width apart, hands resting on your hips', 'Gently rotate your pelvis in small circles — 8–10 circles clockwise', 'Reverse for 8–10 circles counter-clockwise', 'Keep the movement slow and exploratory — find any stiff spots', 'Finish with slow side-to-side shifts to mobilise the lumbar-pelvic junction'] },
+      { id: 'apt-b1', name: 'Supine Pelvic Tilt', difficulty: 'beginner', duration: 35, emoji: '🔄', iconType: 'core', youtubeUrl: 'https://www.youtube.com/shorts/DqqUIfMuDX4',
+        description: 'Teaches posterior tilt awareness in a supported position with gravity removed.',
+        instructions: ['Lie on your back, knees bent, feet flat, arms by your sides', 'Breathe out and gently flatten your lower back into the floor', 'Engage your abs lightly — feel the pelvis rotate backward', 'Hold 5 seconds, feel the lumbar spine contact the floor', 'Release completely and repeat 12–15 reps'] },
       { id: 'apt-b4', name: 'Pelvic Rocks', difficulty: 'beginner', duration: 35, emoji: '🔄', iconType: 'hip', youtubeUrl: 'https://www.youtube.com/shorts/MnvcnjCf710',
         description: 'Gentle oscillating pelvic movement restores awareness of neutral pelvic position.',
         instructions: ['Lie on your back, knees bent, feet flat, arms resting by your sides', 'Rock your pelvis slowly forward — arch your lower back away from the floor', 'Then rock it backward — flatten your lower back into the floor', 'Find the midpoint between both extremes — that is your neutral pelvis', '15–20 slow rocks, pausing at neutral for 2 seconds each pass'] },
-      // ── Medium ────────────────────────────────────────────────
+      // ── Medium ──
       { id: 'apt-m3', name: 'TVA Frog Leg', difficulty: 'medium', duration: 45, emoji: '🐸', iconType: 'core', youtubeUrl: 'https://www.youtube.com/shorts/DqqUIfMuDX4',
         description: 'Transverse abdominis isolation in a hip-open position challenges deep core without hip flexor dominance.',
         instructions: ['Lie on your back with soles of feet together and knees open to the sides', 'Place one hand on your lower abdomen to feel the TVA engage', 'Exhale fully and draw your navel toward your spine — no glute squeeze', 'Hold the TVA engagement for 8–10 seconds while breathing normally', '10–12 reps, keeping the lower back neutral against the floor throughout'] },
@@ -320,7 +298,7 @@ The pelvis tilts forward from its neutral position`,
       { id: 'apt-h1', name: 'Swimmers', difficulty: 'medium', duration: 50, emoji: '🏊', iconType: 'back', youtubeUrl: 'https://www.youtube.com/shorts/oOaXVYntkfA',
         description: 'Prone extension with glute activation rebalances hip extensors that oppose the tilt.',
         instructions: ['Lie face down on a mat, arms extended overhead', 'Simultaneously lift your right arm and left leg off the floor', 'Hold 2 seconds then switch to left arm and right leg', 'Move in a controlled flutter pattern — 10 reps each side', 'Keep your neck neutral and squeeze glutes throughout'] },
-      // ── Hard ──────────────────────────────────────────────────
+      // ── Hard ──
       { id: 'apt-m1', name: 'Split Squat Pelvic Tilts', difficulty: 'hard', duration: 50, emoji: '🦵', iconType: 'hip', youtubeUrl: 'https://www.youtube.com/shorts/DBDwIVPWZms',
         description: 'Hip flexor lengthening combined with tilt control in a functional split stance.',
         instructions: ['Stand in a split stance — right foot forward, left foot back, both feet flat', 'Lower your back knee toward the floor into a split squat', 'At the bottom, perform a posterior pelvic tilt — tuck and engage', 'Hold the tilt for 5 seconds, feeling the hip flexor stretch deepen', 'Rise and repeat 10 reps per side, alternating legs'] },
@@ -330,12 +308,6 @@ The pelvis tilts forward from its neutral position`,
       { id: 'apt-h5', name: 'Crossed Leg Forward Stretch', difficulty: 'hard', duration: 50, emoji: '🧘', iconType: 'hip', youtubeUrl: 'https://www.youtube.com/shorts/DBDwIVPWZms',
         description: 'Seated hip flexor and piriformis stretch in a crossed-leg position targets deep anterior tilt drivers.',
         instructions: ['Sit on the floor, cross one ankle over the opposite knee in a figure-4 shape', 'Sit tall and hinge forward from the hips — keep your back flat, not rounded', 'Feel the deep stretch in the outer hip and hip flexor of the crossed leg', 'Hold 25–30 seconds while breathing slowly into the stretch', 'Slowly return upright and switch sides — 2–3 rounds per side'] },
-      { id: 'apt-h2', name: 'Archer Rows', difficulty: 'hard', duration: 55, emoji: '🏹', iconType: 'back', youtubeUrl: 'https://www.youtube.com/shorts/YCjnjRQY3cU', requiresEquipment: true,
-        description: 'Posterior chain strengthening reduces the anterior pull pattern through heavy unilateral loading.',
-        instructions: ['Face a resistance band or cable anchored at shoulder height', 'Pull with one arm toward your hip while the other arm extends forward', 'Keep the pulling elbow close like drawing a bowstring — maintain hip stability', 'Hold 1–2 seconds at full retraction on the pulling side', 'Extend and return with control — 10–12 reps per arm'] },
-      { id: 'apt-h3', name: 'Banded Rainbows', difficulty: 'hard', duration: 60, emoji: '🌈', iconType: 'shoulder', youtubeUrl: 'https://www.youtube.com/shorts/uUFnCndr5JU', requiresEquipment: true,
-        description: 'Overhead resistance demands continuous core bracing against the anterior tilt pattern.',
-        instructions: ['Stand tall with a resistance band anchored below your feet', 'Hold the band in both hands, arms extended above your head', 'Arc both arms in a wide rainbow from one side down through center to the other', 'Control the deceleration — resist the pull on the return arc', '10–12 full arcs, keeping core braced and pelvis neutral throughout'] },
     ],
     tips: ['Avoid prolonged sitting', 'Strengthen core and glutes', 'Stretch hip flexors daily', 'Practice neutral pelvis standing'],
     premiumLayout: {

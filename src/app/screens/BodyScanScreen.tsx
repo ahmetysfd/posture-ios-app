@@ -23,7 +23,7 @@ import {
   buildLocalScanEntry,
   tryCloudPersistScan,
 } from '../services/scanPersistence';
-import { generateAndStoreDailyProgram } from '../services/DailyProgram';
+import { generateAndStoreDailyProgram, initLevelSystem } from '../services/DailyProgram';
 import { loadUserProfile, saveUserProfile, levelToDefaultDifficulty } from '../services/UserProfile';
 
 const STEPS: { key: IntendedView; title: string; subtitle: string }[] = [
@@ -379,7 +379,9 @@ const BodyScanScreen: React.FC = () => {
       });
       generateAndStoreDailyProgram(savedProfile);
 
-      appendLocalScanLog(buildLocalScanEntry(scan));
+      const scanEntry = buildLocalScanEntry(scan);
+      appendLocalScanLog(scanEntry);
+      initLevelSystem(scanEntry.riskSummary);
       void tryCloudPersistScan(scan);
 
       setPreviewUrl(photos.side || photos.front || photos.back || null);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import YoutubeModal from '../components/YoutubeModal';
-import { getOrRefreshDailyProgram, loadDailyProgram, markExerciseComplete, type DailyExercise } from '../services/DailyProgram';
+import { toYouTubeEmbed } from '../lib/youtubeEmbed';
+import { loadActiveProgramForSession, markExerciseComplete, type DailyExercise } from '../services/DailyProgram';
 import { loadUserProfile } from '../services/UserProfile';
 
 const T = {
@@ -31,8 +32,7 @@ const DailyExerciseFlow: React.FC = () => {
 
   // Only work on exercises that aren't done yet
   const [exercises] = useState<DailyExercise[]>(() => {
-    const profile = loadUserProfile();
-    const p = profile?.scanTimestamp ? getOrRefreshDailyProgram(profile) : loadDailyProgram();
+    const p = loadActiveProgramForSession(loadUserProfile());
     return p?.exercises.filter(e => !e.completed) ?? [];
   });
 
@@ -41,6 +41,7 @@ const DailyExerciseFlow: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
   const [paused, setPaused] = useState(false);
+  const [waitingToStart, setWaitingToStart] = useState(false);
   const [setRestSec, setSetRestSec] = useState(() => loadSetRestSec());
   const [ytModal, setYtModal] = useState<{ url: string; title: string } | null>(null);
 
@@ -55,7 +56,7 @@ const DailyExerciseFlow: React.FC = () => {
   }, [exercises, navigate]);
 
   const beginEx = useCallback(() => {
-    if (ex) { setCurrentSet(1); setPhase('active'); setTimeLeft(ex.duration); setPaused(false); }
+    if (ex) { setCurrentSet(1); setPhase('active'); setTimeLeft(ex.duration); setPaused(false); setWaitingToStart(!!ex.youtubeUrl); }
   }, [ex]);
 
   const finishEx = useCallback(() => {
@@ -90,6 +91,7 @@ const DailyExerciseFlow: React.FC = () => {
     setPhase('active');
     setTimeLeft(ex.duration);
     setPaused(false);
+    setWaitingToStart(false);
   }, [ex]);
 
   // Skip = move on WITHOUT marking as completed
@@ -107,7 +109,7 @@ const DailyExerciseFlow: React.FC = () => {
 
   // Active timer (per set)
   useEffect(() => {
-    if (phase !== 'active' || paused || timeLeft <= 0) return;
+    if (phase !== 'active' || paused || waitingToStart || timeLeft <= 0) return;
     const t = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) { clearInterval(t); completeSet(); return 0; }
@@ -115,7 +117,7 @@ const DailyExerciseFlow: React.FC = () => {
       });
     }, 1000);
     return () => clearInterval(t);
-  }, [phase, paused, timeLeft, completeSet]);
+  }, [phase, paused, waitingToStart, timeLeft, completeSet]);
 
   // Set-rest timer
   useEffect(() => {
@@ -463,76 +465,120 @@ const DailyExerciseFlow: React.FC = () => {
         {phase === 'active' && (
           <div style={{
             flex: 1, display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
+            alignItems: 'center',
             textAlign: 'center', gap: 0, animation: 'scaleIn 0.35s ease',
+            paddingTop: 8,
           }}>
-            {/* Breathing emoji */}
-            <div style={{
-              width: 72, height: 72, borderRadius: 22,
-              background: 'rgba(217,184,76,0.1)', border: `1.5px solid rgba(217,184,76,0.25)`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 32, marginBottom: 20,
-              animation: 'breathe 3s ease infinite',
-            }}>
-              {ex.emoji}
-            </div>
+            {/* Video player or fallback emoji */}
+            {ex.youtubeUrl ? (
+              <div style={{
+                width: '100%', padding: '0 16px', marginBottom: 16,
+              }}>
+                <div style={{
+                  width: '100%', aspectRatio: '9 / 16', maxHeight: 'min(52vh, 420px)',
+                  borderRadius: 16, overflow: 'hidden',
+                  border: '1.5px solid rgba(217,184,76,0.15)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                  background: '#000',
+                }}>
+                  <iframe
+                    title={ex.name}
+                    src={`${toYouTubeEmbed(ex.youtubeUrl)}?playsinline=1&rel=0&autoplay=1&mute=1&loop=1`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                width: 72, height: 72, borderRadius: 22,
+                background: 'rgba(217,184,76,0.1)', border: `1.5px solid rgba(217,184,76,0.25)`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 32, marginBottom: 20,
+                animation: 'breathe 3s ease infinite',
+              }}>
+                {ex.emoji}
+              </div>
+            )}
 
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: T.text, marginBottom: 6 }}>{ex.name}</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 4 }}>{ex.name}</h2>
             {ex.sets > 1 && (
-              <div style={{ fontSize: 13, color: T.gold, fontWeight: 600, marginBottom: 22 }}>
+              <div style={{ fontSize: 13, color: T.gold, fontWeight: 600, marginBottom: 8 }}>
                 Set {currentSet} of {ex.sets}
               </div>
             )}
 
-            {/* Timer ring */}
-            <div style={{ position: 'relative', width: 170, height: 170, marginBottom: 36 }}>
-              <svg width="170" height="170" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="4.5" />
-                <circle cx="50" cy="50" r="45" fill="none" stroke={T.gold} strokeWidth="4.5" strokeLinecap="round"
-                  strokeDasharray={circ} strokeDashoffset={ringOffset}
-                  style={{ transition: 'stroke-dashoffset 1s linear' }} />
-              </svg>
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ fontSize: 38, fontWeight: 800, color: T.text, letterSpacing: '-0.03em' }}>{timeLeft}</div>
-                <div style={{ fontSize: 11, color: T.text3, fontWeight: 500, marginTop: 2 }}>seconds</div>
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div style={{ display: 'flex', gap: 16 }}>
-              {/* Pause / Resume */}
+            {/* Waiting to start — user watches video first, then taps to begin timer */}
+            {waitingToStart ? (
               <button
                 type="button"
-                onClick={() => setPaused(p => !p)}
+                onClick={() => setWaitingToStart(false)}
                 style={{
-                  width: 58, height: 58, borderRadius: '50%', cursor: 'pointer',
-                  border: paused ? 'none' : `2px solid ${T.gold}`,
-                  background: paused ? T.gold : T.surface,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                  marginTop: 16, padding: '14px 40px', borderRadius: 14,
+                  background: T.gold, color: '#0A0A0A',
+                  fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em',
+                  border: 'none', cursor: 'pointer', fontFamily: T.font,
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  boxShadow: '0 8px 24px rgba(217,184,76,0.25)',
                 }}
               >
-                {paused
-                  ? <svg width="20" height="20" viewBox="0 0 24 24" fill="#0A0A0A"><polygon points="5 3 19 12 5 21" /></svg>
-                  : <svg width="20" height="20" viewBox="0 0 24 24" fill={T.gold}><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>}
+                Start when ready
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#0A0A0A"><polygon points="5 3 19 12 5 21" /></svg>
               </button>
-              {/* Skip */}
-              <button
-                type="button"
-                onClick={skipEx}
-                style={{
-                  width: 58, height: 58, borderRadius: '50%',
-                  background: T.surface, border: `2px solid ${T.border2}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-                }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill={T.text3}><polygon points="5 4 15 12 5 20" /><line x1="19" y1="5" x2="19" y2="19" stroke={T.text3} strokeWidth="2" /></svg>
-              </button>
-            </div>
+            ) : (
+              <>
+                {/* Timer ring */}
+                <div style={{ position: 'relative', width: 120, height: 120, marginTop: 8, marginBottom: 16 }}>
+                  <svg width="120" height="120" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+                    <circle cx="50" cy="50" r="45" fill="none" stroke={T.gold} strokeWidth="5" strokeLinecap="round"
+                      strokeDasharray={circ} strokeDashoffset={ringOffset}
+                      style={{ transition: 'stroke-dashoffset 1s linear' }} />
+                  </svg>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontSize: 30, fontWeight: 800, color: T.text, letterSpacing: '-0.03em' }}>{timeLeft}</div>
+                    <div style={{ fontSize: 10, color: T.text3, fontWeight: 500, marginTop: 2 }}>seconds</div>
+                  </div>
+                </div>
 
-            {paused && (
-              <p style={{ marginTop: 16, fontSize: 12, fontWeight: 600, color: T.gold }}>Paused</p>
+                {/* Controls */}
+                <div style={{ display: 'flex', gap: 16 }}>
+                  {/* Pause / Resume */}
+                  <button
+                    type="button"
+                    onClick={() => setPaused(p => !p)}
+                    style={{
+                      width: 52, height: 52, borderRadius: '50%', cursor: 'pointer',
+                      border: paused ? 'none' : `2px solid ${T.gold}`,
+                      background: paused ? T.gold : T.surface,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                    }}
+                  >
+                    {paused
+                      ? <svg width="18" height="18" viewBox="0 0 24 24" fill="#0A0A0A"><polygon points="5 3 19 12 5 21" /></svg>
+                      : <svg width="18" height="18" viewBox="0 0 24 24" fill={T.gold}><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>}
+                  </button>
+                  {/* Skip */}
+                  <button
+                    type="button"
+                    onClick={skipEx}
+                    style={{
+                      width: 52, height: 52, borderRadius: '50%',
+                      background: T.surface, border: `2px solid ${T.border2}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill={T.text3}><polygon points="5 4 15 12 5 20" /><line x1="19" y1="5" x2="19" y2="19" stroke={T.text3} strokeWidth="2" /></svg>
+                  </button>
+                </div>
+
+                {paused && (
+                  <p style={{ marginTop: 12, fontSize: 12, fontWeight: 600, color: T.gold }}>Paused</p>
+                )}
+              </>
             )}
           </div>
         )}

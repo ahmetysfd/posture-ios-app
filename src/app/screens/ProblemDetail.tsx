@@ -4,8 +4,9 @@ import Layout from '../components/Layout';
 import YoutubeModal from '../components/YoutubeModal';
 import DifficultySelector from '../components/DifficultySelector';
 import BandBadge, { displayName, hasBandBadge } from '../components/BandBadge';
+import ProblemInsightCard from '../components/ProblemInsightCard';
 import { loadUserProfile, saveUserProfile, type ExerciseDifficulty } from '../services/UserProfile';
-import { postureProblems, type Exercise } from '../data/postureData';
+import { postureProblems, type Exercise, type PostureProblem, type PremiumLayout } from '../data/postureData';
 
 /* ── Exercise icon system ─────────────────────────────────────── */
 const ExerciseIcon: React.FC<{ type?: string; size?: number; color?: string }> = ({ type, size = 20, color = 'var(--color-primary)' }) => {
@@ -123,77 +124,41 @@ const VideoModal: React.FC<{ ex: Exercise; onClose: () => void }> = ({ ex, onClo
   </div>
 );
 
-/* ── Tip-section cards ────────────────────────────────────────── */
-const Card: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({ children, style }) => (
-  <div style={{
-    background: 'var(--color-surface)', borderRadius: 16, overflow: 'hidden',
-    boxShadow: 'var(--shadow-card)', border: '1px solid var(--color-border)',
-    marginTop: 14, ...style,
-  }}>
-    {children}
-  </div>
-);
+function insightSubtitle(problem: PostureProblem): string {
+  return `Understanding and correcting ${problem.title}`;
+}
 
-const CardHeader: React.FC<{ dot: string; label: string; bg: string }> = ({ dot, label, bg }) => (
-  <div style={{ background: bg, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 9 }}>
-    <div style={{ width: 9, height: 9, borderRadius: '50%', background: dot, flexShrink: 0 }} />
-    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)', letterSpacing: '0.01em' }}>{label}</span>
-  </div>
-);
-
-const BoldRow: React.FC<{ bold: string; text: string; color: string; last?: boolean }> = ({ bold, text, color, last }) => (
-  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: last ? 0 : 10 }}>
-    <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0, marginTop: 7 }} />
-    <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--color-text-sec)', margin: 0 }}>
-      <strong style={{ color: 'var(--color-text)', fontWeight: 650 }}>{bold}</strong>
-      <span style={{ color: 'var(--color-text-tert)', margin: '0 4px' }}>→</span>
-      {text}
-    </p>
-  </div>
-);
-
-const IconStretch = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2a5 5 0 1 0 0 10A5 5 0 0 0 12 2z"/><path d="M12 12v10"/><path d="M8 18l4 4 4-4"/>
-  </svg>
-);
-const IconStrength = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6 4v16"/><path d="M18 4v16"/><path d="M6 12h12"/><circle cx="3" cy="4" r="1"/><circle cx="21" cy="4" r="1"/><circle cx="3" cy="20" r="1"/><circle cx="21" cy="20" r="1"/>
-  </svg>
-);
-const IconHabits = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-  </svg>
-);
-
-const FixGroup: React.FC<{ icon: React.ReactNode; label: string; items: string[]; last?: boolean }> = ({ icon, label, items, last }) => (
-  <div style={{ marginBottom: last ? 0 : 18 }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8, color: 'var(--color-accent)' }}>
-      {icon}
-      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-accent)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{label}</span>
-    </div>
-    {items.map((item, i) => (
-      <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: i < items.length - 1 ? 8 : 0 }}>
-        <div style={{
-          width: 18, height: 18, borderRadius: '50%',
-          background: 'rgba(52,211,153,0.12)', border: '1.5px solid var(--color-accent)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0, marginTop: 1,
-        }}>
-          <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><polyline points="2 6 5 9 10 3" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </div>
-        <span style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--color-text-sec)' }}>{item}</span>
-      </div>
-    ))}
-  </div>
-);
+function insightContent(problem: PostureProblem, pl: PremiumLayout | undefined) {
+  const o = problem.insightCard;
+  if (pl) {
+    return {
+      subtitle: o?.subtitle ?? insightSubtitle(problem),
+      triggers: o?.triggers ?? pl.whyItHappens[0]?.text ?? '',
+      impact: o?.impact ?? pl.whatChanges[0]?.text ?? '',
+      stretch: o?.stretch ?? pl.howToFix.stretch[0] ?? '—',
+      strengthen: o?.strengthen ?? pl.howToFix.strength[0] ?? '—',
+      habits: o?.habits ?? pl.howToFix.habits[0] ?? '—',
+    };
+  }
+  return {
+    subtitle: o?.subtitle ?? insightSubtitle(problem),
+    triggers: o?.triggers ?? (problem.description.split('\n').filter(Boolean).slice(0, 2).join(' ') || '—'),
+    impact: o?.impact ?? problem.tips[0] ?? '—',
+    stretch: o?.stretch ?? problem.tips[0] ?? '—',
+    strengthen: o?.strengthen ?? problem.tips[1] ?? problem.tips[0] ?? '—',
+    habits: o?.habits ?? problem.tips[2] ?? problem.tips[0] ?? '—',
+  };
+}
 
 /* ── Main component ───────────────────────────────────────────── */
-const GOLD = '#D9B84C';
-const GOLD_BG = 'rgba(217,184,76,0.1)';
-const GOLD_BORDER = 'rgba(217,184,76,0.25)';
+const DIFF_COLORS: Record<string, { main: string; bg: string; border: string }> = {
+  beginner: { main: '#D9B84C', bg: 'rgba(217,184,76,0.1)', border: 'rgba(217,184,76,0.25)' },
+  medium:   { main: '#F97316', bg: 'rgba(249,115,22,0.1)', border: 'rgba(249,115,22,0.25)' },
+  hard:     { main: '#EF4444', bg: 'rgba(239,68,68,0.1)',  border: 'rgba(239,68,68,0.25)' },
+};
+function getDiffColor(difficulty?: string) {
+  return DIFF_COLORS[difficulty ?? 'beginner'] ?? DIFF_COLORS.beginner;
+}
 
 const ProblemDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -202,7 +167,6 @@ const ProblemDetail: React.FC = () => {
   const [youtube, setYoutube] = useState<{ url: string; title: string } | null>(null);
   const [exerciseDifficulty, setExerciseDifficulty] = useState<ExerciseDifficulty>('beginner');
   const [bandTooltip, setBandTooltip] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const profile = loadUserProfile();
@@ -227,7 +191,7 @@ const ProblemDetail: React.FC = () => {
   return (
     <Layout hideNav>
       <div>
-        {/* Hero */}
+        {/* Hero — problem card image + title */}
         <div style={{
           background: `linear-gradient(165deg, ${problem.cardBg}33 0%, var(--color-surface) 42%, var(--color-bg) 100%)`,
           padding: '48px 20px 28px',
@@ -260,7 +224,19 @@ const ProblemDetail: React.FC = () => {
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-              <img src={problem.cardImage} alt="" style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }} />
+              <img
+                src={problem.cardImage}
+                alt=""
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  width: 'auto',
+                  height: 'auto',
+                  objectFit: 'contain',
+                  display: 'block',
+                  objectPosition: problem.cardImageObjectPosition ?? 'center',
+                }}
+              />
             </div>
             <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--color-text)', marginTop: 4, marginBottom: 0, letterSpacing: '-0.02em' }}>{problem.title}</h1>
           </div>
@@ -283,6 +259,7 @@ const ProblemDetail: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, animation: 'slideUp 0.4s ease 0.14s both' }}>
             {exercisesForDifficulty.map((ex, i) => {
               const videoUrl = ex.youtubeUrl || (ex.videoId ? `https://www.youtube.com/watch?v=${ex.videoId}` : null);
+              const dc = getDiffColor(ex.difficulty);
               return (
                 <div
                   key={ex.id}
@@ -298,8 +275,8 @@ const ProblemDetail: React.FC = () => {
                   onMouseDown={e => { if (videoUrl) (e.currentTarget as HTMLDivElement).style.transform = 'scale(0.985)'; }}
                   onMouseUp={e => { (e.currentTarget as HTMLDivElement).style.transform = 'scale(1)'; }}
                 >
-                  <div style={{ width: 46, height: 46, borderRadius: 14, background: GOLD_BG, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <ExerciseIcon type={ex.iconType} size={22} color={GOLD} />
+                  <div style={{ width: 46, height: 46, borderRadius: 14, background: dc.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <ExerciseIcon type={ex.iconType} size={22} color={dc.main} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
@@ -314,7 +291,7 @@ const ProblemDetail: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                     {videoUrl && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: GOLD, background: GOLD_BG, padding: '4px 9px', borderRadius: 8, border: `1px solid ${GOLD_BORDER}` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: dc.main, background: dc.bg, padding: '4px 9px', borderRadius: 8, border: `1px solid ${dc.border}` }}>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg>
                         Video
                       </div>
@@ -326,110 +303,12 @@ const ProblemDetail: React.FC = () => {
             })}
           </div>
 
-          {/* ── PREMIUM 3-CARD LAYOUT ── */}
-          {pl ? (
-            <div style={{ animation: 'slideUp 0.4s ease 0.18s both' }}>
-
-              {/* Card 1 — Why it happens */}
-              <Card>
-                {problem.reasonImage && !expanded['why'] && (
-                  <div style={{ background: '#0A0A0A', borderBottom: '1px solid var(--color-border)' }}>
-                    <img src={problem.reasonImage} alt="" style={{ width: '100%', maxHeight: 200, objectFit: 'contain', display: 'block' }} />
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setExpanded(e => ({ ...e, why: !e['why'] }))}
-                  style={{ width: '100%', background: 'rgba(239,68,68,0.12)', padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: 'none', cursor: 'pointer' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                    <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>Why it happens</span>
-                  </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth={2.5} strokeLinecap="round" style={{ transform: expanded['why'] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
-                {expanded['why'] && (
-                  <div style={{ padding: '16px 18px' }}>
-                    {pl.whyItHappens.map((item, i) => (
-                      <BoldRow key={i} bold={item.bold} text={item.text} color="#EF4444" last={i === pl.whyItHappens.length - 1} />
-                    ))}
-                  </div>
-                )}
-              </Card>
-
-              {/* Card 2 — What changes over time */}
-              <Card>
-                <button
-                  type="button"
-                  onClick={() => setExpanded(e => ({ ...e, what: !e['what'] }))}
-                  style={{ width: '100%', background: 'rgba(249,115,22,0.12)', padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: 'none', cursor: 'pointer' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                    <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#F97316', flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>What changes over time</span>
-                  </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth={2.5} strokeLinecap="round" style={{ transform: expanded['what'] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
-                {expanded['what'] && (
-                  <div style={{ padding: '16px 18px' }}>
-                    {pl.whatChanges.map((item, i) => (
-                      <BoldRow key={i} bold={item.bold} text={item.text} color="#F97316" last={i === pl.whatChanges.length - 1} />
-                    ))}
-                  </div>
-                )}
-              </Card>
-
-              {/* Card 3 — How to fix it */}
-              <Card>
-                <button
-                  type="button"
-                  onClick={() => setExpanded(e => ({ ...e, fix: !e['fix'] }))}
-                  style={{ width: '100%', background: 'rgba(52,211,153,0.1)', padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: 'none', cursor: 'pointer' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                    <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#34D399', flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>How to fix it</span>
-                  </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth={2.5} strokeLinecap="round" style={{ transform: expanded['fix'] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
-                {expanded['fix'] && (
-                  <div style={{ padding: '18px 18px 16px' }}>
-                    <FixGroup icon={<IconStretch />} label="Stretch" items={pl.howToFix.stretch} />
-                    <FixGroup icon={<IconStrength />} label="Strength" items={pl.howToFix.strength} />
-                    <FixGroup icon={<IconHabits />} label="Habits" items={pl.howToFix.habits} last />
-                  </div>
-                )}
-              </Card>
-
-            </div>
-          ) : (
-            /* ── Legacy layout for other screens ── */
-            <>
-              <div style={{ background: 'var(--color-surface)', borderRadius: 18, padding: 18, marginTop: 16, border: '1px solid var(--color-border-light)', animation: 'slideUp 0.4s ease 0.18s both' }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 8 }}>Reason</h3>
-                {problem.reasonImage && problem.reasonLead != null && problem.reasonRest != null ? (
-                  <>
-                    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                      <p style={{ flex: '1 1 160px', minWidth: 0, margin: 0, fontSize: 13.5, lineHeight: 1.65, color: 'var(--color-text-sec)', whiteSpace: 'pre-line' }}>{problem.reasonLead}</p>
-                      <img src={problem.reasonImage} alt="" draggable={false} style={{ width: 347, maxWidth: '100%', flexShrink: 0, borderRadius: 12, objectFit: 'contain', alignSelf: 'flex-start', background: '#0A0A0A' }} />
-                    </div>
-                    <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--color-text-sec)', whiteSpace: 'pre-line', margin: '14px 0 0' }}>{problem.reasonRest}</p>
-                  </>
-                ) : (
-                  <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--color-text-sec)', whiteSpace: 'pre-line', margin: 0 }}>{problem.description}</p>
-                )}
-              </div>
-              <div style={{ background: 'var(--color-surface)', borderRadius: 18, padding: 18, marginTop: 16, border: '1px solid var(--color-border-light)', animation: 'slideUp 0.4s ease 0.22s both' }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 10 }}>💡 Tips</h3>
-                {problem.tips.map((t, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: i < problem.tips.length - 1 ? 8 : 0 }}>
-                    <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--color-accent)', color: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0, marginTop: 1 }}>✓</div>
-                    <span style={{ fontSize: 13, color: 'var(--color-text-sec)', lineHeight: 1.5 }}>{t}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          <div style={{ marginTop: 28, animation: 'slideUp 0.4s ease 0.18s both' }}>
+            <ProblemInsightCard
+              showHeader={false}
+              {...insightContent(problem, pl)}
+            />
+          </div>
 
           {/* Sticky CTA */}
           <div style={{
@@ -443,7 +322,7 @@ const ProblemDetail: React.FC = () => {
               onClick={() => navigate(`/exercise/${problem.id}`)}
               style={{
                 width: '100%', padding: 16, borderRadius: 14,
-                background: GOLD, color: '#0A0A0A', fontSize: 15, fontWeight: 700,
+                background: '#D9B84C', color: '#0A0A0A', fontSize: 15, fontWeight: 700,
                 boxShadow: '0 8px 24px rgba(217,184,76,0.25)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 cursor: 'pointer', border: 'none', fontFamily: 'var(--font-body)',

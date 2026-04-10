@@ -9,7 +9,25 @@ import type { PersonalizedProgram } from './PostureAnalysisEngine';
 
 const STORAGE_KEY = 'posturefix_daily_program';
 const PROGRESS_KEY = 'posturefix_progress_log';
+const PROGRAM_LIBRARY_KEY = 'posturefix_program_library';
 const SCHEMA_VERSION = 8; // bump when generation logic changes to force regeneration
+
+/** Marker so scan-based refresh never replaces hand-built playlists in storage. */
+export const CUSTOM_PROGRAM_PROFILE_VERSION = -1;
+
+export type ProgramLibraryKind = 'daily' | 'custom';
+
+export interface ProgramLibraryEntry {
+  id: string;
+  name: string;
+  kind: ProgramLibraryKind;
+  program: StoredDailyProgram;
+}
+
+export interface ProgramLibrary {
+  activeProgramId: string;
+  entries: ProgramLibraryEntry[];
+}
 
 // Map profile / scan problem IDs → postureData problem IDs (some scan IDs differ)
 const TO_APP_PROBLEM: Record<string, string> = {
@@ -229,17 +247,12 @@ const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   // ── Mobility: release, elongate, restore range of motion ─────────────────
   'Doorway Chest Stretch':                          'mobility',
   'Foam Roller Thoracic Extension':                 'mobility',
-  'Suboccipital Massage':                           'mobility',
-  'Thoracic Foam Roll':                             'mobility',
   'Levator Scapulae Stretch':                       'mobility',
   'Upper Trapezius Stretch':                        'mobility',
   'Pelvic Rocks':                                   'mobility',
   'Crossed Leg Forward Stretch':                    'mobility',
-  'Weight Assisted Neck Stretch':                   'mobility',
-  'Pelvic Twist':                                   'mobility',
   'Baby Cobra':                                     'mobility',
   'Quadruped Thoracic Rotation (Hand Behind Head)': 'mobility',
-  'Side Lying Chin Tuck':                           'mobility',
   'Sphinx Cat Camels':                              'mobility',
   // ── Activation: motor control, postural retraining, endurance ────────────
   'Chin Tuck':                                      'activation',
@@ -687,28 +700,237 @@ export function generateDailyProgram(profile: UserProfile): StoredDailyProgram {
 
 // ── Persistence ───────────────────────────────────────────────────────────────
 
+function applyNewDayResetIfNeeded(program: StoredDailyProgram): StoredDailyProgram {
+  const programDate = new Date(program.generatedAt).toLocaleDateString('en-CA');
+  const today = new Date().toLocaleDateString('en-CA');
+  if (programDate === today) return program;
+  return {
+    ...program,
+    generatedAt: Date.now(),
+    completedAt: undefined,
+    exercises: program.exercises.map(ex => ({ ...ex, completed: false })),
+  };
+}
+
+export function loadProgramLibrary(): ProgramLibrary | null {
+  try {
+    const raw = localStorage.getItem(PROGRAM_LIBRARY_KEY);
+    if (raw) return JSON.parse(raw) as ProgramLibrary;
+    const legacy = localStorage.getItem(STORAGE_KEY);
+    if (!legacy) return null;
+    const program = JSON.parse(legacy) as StoredDailyProgram;
+    const lib: ProgramLibrary = {
+      activeProgramId: 'daily',
+      entries: [{ id: 'daily', name: 'Daily Program', kind: 'daily', program }],
+    };
+    localStorage.setItem(PROGRAM_LIBRARY_KEY, JSON.stringify(lib));
+    return lib;
+  } catch {
+    return null;
+  }
+}
+
+export function saveProgramLibrary(lib: ProgramLibrary): void {
+  localStorage.setItem(PROGRAM_LIBRARY_KEY, JSON.stringify(lib));
+}
+
+/** Active list id, or `daily` when no library yet. */
+export function getActiveProgramId(): string {
+  return loadProgramLibrary()?.activeProgramId ?? 'daily';
+}
+
+/** Program currently in session storage / active for Program + Home + flow screens. */
+export function loadActiveProgramForSession(profile: UserProfile | null): StoredDailyProgram | null {
+  const activeId = getActiveProgramId();
+  if (activeId === 'daily' && profile?.scanTimestamp) {
+    return getOrRefreshDailyProgram(profile);
+  }
+  return loadDailyProgram();
+}
+
+function syncActiveEntryProgram(program: StoredDailyProgram): void {
+  const lib = loadProgramLibrary();
+  if (!lib) return;
+  const i = lib.entries.findIndex(e => e.id === lib.activeProgramId);
+  if (i < 0) return;
+  lib.entries[i] = { ...lib.entries[i], program: JSON.parse(JSON.stringify(program)) };
+  saveProgramLibrary(lib);
+}
+
+function upsertDailyLibraryEntry(program: StoredDailyProgram): void {
+  let lib = loadProgramLibrary();
+  const snap = JSON.parse(JSON.stringify(program)) as StoredDailyProgram;
+  if (!lib) {
+    lib = {
+      activeProgramId: 'daily',
+      entries: [{ id: 'daily', name: 'Daily Program', kind: 'daily', program: snap }],
+    };
+    saveProgramLibrary(lib);
+    return;
+  }
+  const idx = lib.entries.findIndex(e => e.kind === 'daily');
+  if (idx >= 0) {
+    lib.entries[idx] = { ...lib.entries[idx], program: snap };
+  } else {
+    lib.entries.unshift({ id: 'daily', name: 'Daily Program', kind: 'daily', program: snap });
+  }
+  saveProgramLibrary(lib);
+}
+
+/**
+ * Switch the active program. Updates `posturefix_daily_program` for the session runner.
+ */
+export function setActiveProgramId(id: string, profile: UserProfile | null): StoredDailyProgram | null {
+  let lib = loadProgramLibrary();
+  if (!lib) {
+    const cur = loadDailyProgramRaw();
+    if (!cur) return null;
+    lib = {
+      activeProgramId: 'daily',
+      entries: [{ id: 'daily', name: 'Daily Program', kind: 'daily', program: cur }],
+    };
+    saveProgramLibrary(lib);
+  }
+
+  const entry = lib.entries.find(e => e.id === id);
+  if (!entry) return null;
+
+  lib.activeProgramId = id;
+  saveProgramLibrary(lib);
+
+  if (entry.kind === 'daily' && profile?.scanTimestamp) {
+    return getOrRefreshDailyProgram(profile);
+  }
+
+  let program = JSON.parse(JSON.stringify(entry.program)) as StoredDailyProgram;
+  program = applyNewDayResetIfNeeded(program);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(program));
+  syncLibraryAfterStorageWrite(id, program);
+  try {
+    sessionStorage.setItem('personalizedProgram', JSON.stringify(toProgramScreenFormat(program)));
+  } catch { /* ignore */ }
+  return program;
+}
+
+function syncLibraryAfterStorageWrite(activeId: string, program: StoredDailyProgram): void {
+  const lib = loadProgramLibrary();
+  if (!lib) return;
+  const i = lib.entries.findIndex(e => e.id === activeId);
+  if (i >= 0) {
+    lib.entries[i] = { ...lib.entries[i], program: JSON.parse(JSON.stringify(program)) };
+    saveProgramLibrary(lib);
+  }
+}
+
+/** Append a hand-built program, set it active, persist. */
+export function addCustomProgramToLibrary(displayName: string, program: StoredDailyProgram): void {
+  let lib = loadProgramLibrary();
+  const name = displayName.trim().slice(0, 80) || 'My program';
+  const customProgram: StoredDailyProgram = {
+    ...program,
+    profileVersion: CUSTOM_PROGRAM_PROFILE_VERSION,
+    completedAt: undefined,
+    exercises: program.exercises.map(ex => ({ ...ex, completed: false })),
+  };
+
+  if (!lib) {
+    const cur = loadDailyProgramRaw();
+    lib = {
+      activeProgramId: 'daily',
+      entries: cur
+        ? [{ id: 'daily', name: 'Daily Program', kind: 'daily', program: cur }]
+        : [],
+    };
+  }
+
+  if (!lib.entries.some(e => e.kind === 'daily') && loadDailyProgramRaw()) {
+    lib.entries.unshift({
+      id: 'daily',
+      name: 'Daily Program',
+      kind: 'daily',
+      program: JSON.parse(JSON.stringify(loadDailyProgramRaw()!)),
+    });
+  }
+
+  const id = `custom-${Date.now()}`;
+  lib.entries.push({
+    id,
+    name,
+    kind: 'custom',
+    program: JSON.parse(JSON.stringify(customProgram)),
+  });
+  lib.activeProgramId = id;
+  saveProgramLibrary(lib);
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(customProgram));
+  syncLibraryAfterStorageWrite(id, customProgram);
+  try {
+    sessionStorage.setItem('personalizedProgram', JSON.stringify(toProgramScreenFormat(customProgram)));
+  } catch { /* ignore */ }
+}
+
+/** Build a stored program from ordered picks (same catalogue as swap). */
+export function buildProgramFromPickedExercises(
+  picks: { exercise: Exercise; appId: string; title: string }[],
+): StoredDailyProgram {
+  const selected: DailyExercise[] = [];
+  let accSec = 0;
+  const focusTitles = [...new Set(picks.map(p => p.title))];
+
+  for (const { exercise: ex, appId, title } of picks) {
+    const diff = (ex.difficulty as ExerciseDifficulty) ?? 'medium';
+    const entry = makeEntry(ex, appId, title, diff);
+    const staticIds = EXERCISE_PROBLEMS[ex.name];
+    if (staticIds) {
+      const relevant = staticIds.filter(id => id === appId);
+      if (relevant.length > 0) {
+        entry.targetProblemIds = relevant;
+        entry.targetProblemLabels = relevant.map(
+          id => postureProblems.find(p => p.id === id)?.title ?? id,
+        );
+        entry.postureTypes = entry.targetProblemLabels;
+      }
+    }
+    selected.push(entry);
+    accSec += ex.duration + REST_BETWEEN_SEC;
+  }
+
+  const phaseOrder: Record<ExercisePhase, number> = { mobility: 0, activation: 1, strength: 2 };
+  selected.sort((a, b) => phaseOrder[getPhase(a.name)] - phaseOrder[getPhase(b.name)]);
+
+  return {
+    generatedAt: Date.now(),
+    profileVersion: CUSTOM_PROGRAM_PROFILE_VERSION,
+    schemaVersion: SCHEMA_VERSION,
+    exercises: selected,
+    totalDurationMin: Math.max(1, Math.round(accSec / 60)),
+    focusAreas: focusTitles,
+    completedAt: undefined,
+  };
+}
+
+function loadDailyProgramRaw(): StoredDailyProgram | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as StoredDailyProgram;
+  } catch {
+    return null;
+  }
+}
+
 export function loadDailyProgram(): StoredDailyProgram | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const program = JSON.parse(raw) as StoredDailyProgram;
-
-    // Auto-reset on new day: if the program was generated on a previous calendar
-    // day (device local time), clear all completion flags so the user starts fresh.
-    const programDate = new Date(program.generatedAt).toLocaleDateString('en-CA'); // YYYY-MM-DD local
-    const today = new Date().toLocaleDateString('en-CA');
-    if (programDate !== today) {
-      const reset: StoredDailyProgram = {
-        ...program,
-        generatedAt: Date.now(),
-        completedAt: undefined,
-        exercises: program.exercises.map(ex => ({ ...ex, completed: false })),
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(reset));
-      return reset;
+    const before = JSON.parse(raw) as StoredDailyProgram;
+    const after = applyNewDayResetIfNeeded(before);
+    if (JSON.stringify(after) !== JSON.stringify(before)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(after));
+      syncActiveEntryProgram(after);
+      return after;
     }
-
-    return program;
+    return before;
   } catch {
     return null;
   }
@@ -716,6 +938,7 @@ export function loadDailyProgram(): StoredDailyProgram | null {
 
 export function saveDailyProgram(program: StoredDailyProgram): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(program));
+  syncActiveEntryProgram(program);
 }
 
 // ── Exercise streak tracking ──────────────────────────────────────────────────
@@ -831,6 +1054,7 @@ export function markExerciseComplete(exerciseId: string): StoredDailyProgram | n
       exerciseCount: updated.exercises.length,
       fullyCompleted: true,
     });
+    syncLevelProgress();
   }
 
   saveDailyProgram(updated);
@@ -892,6 +1116,135 @@ export function getMonthlyCompletionCount(): number {
   return log.filter(e => e.fullyCompleted && e.date.startsWith(prefix)).length;
 }
 
+// ── Level system ──────────────────────────────────────────────────────────────
+
+const LEVEL_KEY = 'posturefix_level_system';
+const LEVEL_DAYS_REQUIRED = 21;
+
+export type UserLevel = 'beginner' | 'intermediate' | 'advanced';
+
+export interface LevelState {
+  startingLevel: UserLevel;
+  currentLevel: UserLevel;
+  daysCompletedInLevel: number;
+  levelCompletedDates: string[];   // dates counted towards current level
+  completedLevels: UserLevel[];    // levels already finished
+}
+
+const LEVEL_ORDER: UserLevel[] = ['beginner', 'intermediate', 'advanced'];
+
+/**
+ * Determine starting level from scan risk summary.
+ * - Beginner:     1+ high risk  OR  3+ medium risk
+ * - Intermediate: 2 medium risk, 0 high risk
+ * - Advanced:     0–1 medium risk, 0 high risk
+ */
+export function calculateStartingLevel(riskSummary: { high: number; medium: number; low: number }): UserLevel {
+  if (riskSummary.high >= 1 || riskSummary.medium >= 3) return 'beginner';
+  if (riskSummary.medium === 2) return 'intermediate';
+  return 'advanced';
+}
+
+export function loadLevelState(): LevelState | null {
+  try {
+    const raw = localStorage.getItem(LEVEL_KEY);
+    return raw ? JSON.parse(raw) as LevelState : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveLevelState(state: LevelState): void {
+  localStorage.setItem(LEVEL_KEY, JSON.stringify(state));
+}
+
+/** Initialise (or re-initialise after a new scan) the level state. */
+export function initLevelSystem(riskSummary: { high: number; medium: number; low: number }): LevelState {
+  const existing = loadLevelState();
+  const startingLevel = calculateStartingLevel(riskSummary);
+
+  // If already initialised with the same starting level, keep progress
+  if (existing && existing.startingLevel === startingLevel) return existing;
+
+  const state: LevelState = {
+    startingLevel,
+    currentLevel: startingLevel,
+    daysCompletedInLevel: 0,
+    levelCompletedDates: [],
+    completedLevels: [],
+  };
+  saveLevelState(state);
+  return state;
+}
+
+/** Sync level progress from the progress log. Call after each completion. */
+export function syncLevelProgress(): LevelState | null {
+  let state = loadLevelState();
+  if (!state) return null;
+
+  const log = loadProgressLog();
+  const completedDates = log
+    .filter(e => e.fullyCompleted)
+    .map(e => e.date)
+    .sort();
+
+  // Count all completed dates that aren't already attributed to finished levels
+  const usedDates = new Set<string>();
+
+  // Replay from starting level forward
+  let levelIdx = LEVEL_ORDER.indexOf(state.startingLevel);
+  const completedLevels: UserLevel[] = [];
+  let currentDates: string[] = [];
+
+  for (const date of completedDates) {
+    if (levelIdx >= LEVEL_ORDER.length) break;
+    currentDates.push(date);
+    if (currentDates.length >= LEVEL_DAYS_REQUIRED) {
+      completedLevels.push(LEVEL_ORDER[levelIdx]);
+      levelIdx++;
+      currentDates = [];
+    }
+  }
+
+  const currentLevel = levelIdx < LEVEL_ORDER.length ? LEVEL_ORDER[levelIdx] : 'advanced';
+  state = {
+    ...state,
+    currentLevel,
+    daysCompletedInLevel: currentDates.length,
+    levelCompletedDates: currentDates,
+    completedLevels,
+  };
+  saveLevelState(state);
+  return state;
+}
+
+/** Get the full level info for display. */
+export function getLevelInfo(): {
+  state: LevelState | null;
+  nextLevel: UserLevel | null;
+  isMaxLevel: boolean;
+  daysRemaining: number;
+  progressPercent: number;
+  totalDaysCompleted: number;
+} {
+  const state = syncLevelProgress();
+  if (!state) {
+    return { state: null, nextLevel: null, isMaxLevel: false, daysRemaining: LEVEL_DAYS_REQUIRED, progressPercent: 0, totalDaysCompleted: 0 };
+  }
+
+  const currentIdx = LEVEL_ORDER.indexOf(state.currentLevel);
+  const allDone = state.completedLevels.includes('advanced');
+  const nextLevel = !allDone && currentIdx < LEVEL_ORDER.length - 1 ? LEVEL_ORDER[currentIdx + 1] : null;
+  const isMaxLevel = allDone;
+  const daysRemaining = LEVEL_DAYS_REQUIRED - state.daysCompletedInLevel;
+  const progressPercent = Math.round((state.daysCompletedInLevel / LEVEL_DAYS_REQUIRED) * 100);
+
+  const log = loadProgressLog();
+  const totalDaysCompleted = log.filter(e => e.fullyCompleted).length;
+
+  return { state, nextLevel, isMaxLevel, daysRemaining, progressPercent, totalDaysCompleted };
+}
+
 // ── Session bridge ────────────────────────────────────────────────────────────
 
 /** Convert stored program to the PersonalizedProgram shape for PersonalizedProgramScreen. */
@@ -919,21 +1272,45 @@ export function toProgramScreenFormat(program: StoredDailyProgram): Personalized
   };
 }
 
-/** Generate, save to localStorage, and write sessionStorage for PersonalizedProgramScreen. */
+/** Generate, persist scan-based daily snapshot to the library and to storage when Daily is active. */
 export function generateAndStoreDailyProgram(profile: UserProfile): StoredDailyProgram {
   const program = generateDailyProgram(profile);
-  saveDailyProgram(program);
-  try {
-    sessionStorage.setItem('personalizedProgram', JSON.stringify(toProgramScreenFormat(program)));
-  } catch { /* ignore private-mode quota errors */ }
+  upsertDailyLibraryEntry(program);
+  const lib = loadProgramLibrary();
+  const active = lib?.entries.find(e => e.id === lib.activeProgramId);
+  const writeStorage = !lib || active?.kind === 'daily';
+  if (writeStorage) {
+    saveDailyProgram(program);
+    try {
+      sessionStorage.setItem('personalizedProgram', JSON.stringify(toProgramScreenFormat(program)));
+    } catch { /* ignore private-mode quota errors */ }
+  }
   return program;
 }
 
 /**
  * Load the existing program if the profile hasn't changed (same scanTimestamp),
- * otherwise regenerate. Always refreshes sessionStorage.
+ * otherwise regenerate. Respects active custom playlists (does not overwrite storage).
  */
 export function getOrRefreshDailyProgram(profile: UserProfile): StoredDailyProgram {
+  const lib = loadProgramLibrary();
+  const active = lib?.entries.find(e => e.id === lib.activeProgramId);
+  if (active?.kind === 'custom') {
+    let existing = loadDailyProgram();
+    if (!existing) {
+      let restored = applyNewDayResetIfNeeded(
+        JSON.parse(JSON.stringify(active.program)) as StoredDailyProgram,
+      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(restored));
+      syncLibraryAfterStorageWrite(active.id, restored);
+      existing = restored;
+    }
+    try {
+      sessionStorage.setItem('personalizedProgram', JSON.stringify(toProgramScreenFormat(existing)));
+    } catch { /* ignore */ }
+    return existing;
+  }
+
   const existing = loadDailyProgram();
   if (
     existing &&
@@ -1061,4 +1438,96 @@ export function updateExerciseParams(
   updated.totalDurationMin = Math.round(totalSec / 60);
   saveDailyProgram(updated);
   return updated;
+}
+
+/**
+ * Generate a custom program from manually chosen focus areas,
+ * a single difficulty level, and a target duration in minutes.
+ * Uses `CUSTOM_PROGRAM_PROFILE_VERSION` so scan refresh never replaces this program in storage.
+ */
+export function generateCustomProgram(
+  focusAreaIds: string[],
+  difficulty: ExerciseDifficulty,
+  targetMinutes: number,
+  _profileVersion?: number,
+): StoredDailyProgram {
+  const tierOrderMap: Record<ExerciseDifficulty, ExerciseDifficulty[]> = {
+    beginner: ['beginner', 'medium'],
+    medium:   ['medium', 'beginner', 'hard'],
+    hard:     ['hard', 'medium'],
+  };
+  const tierOrder = tierOrderMap[difficulty];
+  const targetSec = targetMinutes * 60;
+
+  const focusAreas: string[] = [];
+  const allCandidates: { exercise: Exercise; appId: string; title: string }[] = [];
+  const seen = new Set<string>();
+
+  const perArea: { exercise: Exercise; appId: string; title: string }[][] = [];
+
+  for (const areaId of focusAreaIds) {
+    const problem = postureProblems.find(p => p.id === areaId);
+    if (!problem) continue;
+    focusAreas.push(problem.title);
+    const candidates = getPriorityCandidates(problem, areaId, tierOrder);
+    perArea.push(candidates.map(ex => ({ exercise: ex, appId: areaId, title: problem.title })));
+  }
+
+  // Round-robin: one new unique exercise per area per sweep until no area can add more.
+  const pointers = perArea.map(() => 0);
+  let madeProgress = true;
+  while (madeProgress) {
+    madeProgress = false;
+    for (let areaIdx = 0; areaIdx < perArea.length; areaIdx++) {
+      const list = perArea[areaIdx];
+      while (pointers[areaIdx] < list.length) {
+        const entry = list[pointers[areaIdx]!]++;
+        if (!seen.has(entry.exercise.name)) {
+          seen.add(entry.exercise.name);
+          allCandidates.push(entry);
+          madeProgress = true;
+          break;
+        }
+      }
+    }
+  }
+
+  const selected: DailyExercise[] = [];
+  let accSec = 0;
+  for (const { exercise: ex, appId, title } of allCandidates) {
+    const slot = ex.duration + REST_BETWEEN_SEC;
+    if (accSec >= targetSec) break;
+    const entry = makeEntry(ex, appId, title, difficulty);
+    const staticIds = EXERCISE_PROBLEMS[ex.name];
+    if (staticIds) {
+      const relevant = staticIds.filter(id => focusAreaIds.includes(id));
+      if (relevant.length > 0) {
+        const primaryId = entry.targetProblemIds[0];
+        const ordered = [
+          ...(primaryId && relevant.includes(primaryId) ? [primaryId] : []),
+          ...relevant.filter(id => id !== primaryId),
+        ];
+        entry.targetProblemIds = ordered;
+        entry.targetProblemLabels = ordered.map(
+          id => postureProblems.find(p => p.id === id)?.title ?? id,
+        );
+        entry.postureTypes = entry.targetProblemLabels;
+      }
+    }
+    selected.push(entry);
+    accSec += slot;
+  }
+
+  const phaseOrder: Record<ExercisePhase, number> = { mobility: 0, activation: 1, strength: 2 };
+  selected.sort((a, b) => phaseOrder[getPhase(a.name)] - phaseOrder[getPhase(b.name)]);
+
+  return {
+    generatedAt: Date.now(),
+    profileVersion: CUSTOM_PROGRAM_PROFILE_VERSION,
+    schemaVersion: SCHEMA_VERSION,
+    exercises: selected,
+    totalDurationMin: Math.max(1, Math.round(accSec / 60)),
+    focusAreas: [...new Set(focusAreas)],
+    completedAt: undefined,
+  };
 }
