@@ -8,6 +8,45 @@ import ProblemInsightCard from '../components/ProblemInsightCard';
 import { loadUserProfile, saveUserProfile, type ExerciseDifficulty } from '../services/UserProfile';
 import { postureProblems, type Exercise, type PostureProblem, type PremiumLayout } from '../data/postureData';
 
+/* ── Exercise image system (mirrors PersonalizedProgramScreen) ── */
+interface ExerciseImage {
+  src: string;
+  offsetX?: number;
+}
+const DEFAULT_IMAGE_OFFSET_X = 15;
+const EXERCISE_IMAGES: Record<string, ExerciseImage> = {
+  'Chin Tuck Neck Bridge':   { src: '/exercises/chin-tuck-neck-bridge.jpg',   offsetX: 0 },
+  'Quadruped Scapular Push': { src: '/exercises/quadruped-scapular-push.jpg', offsetX: 0 },
+  'Air Angel':               { src: '/exercises/air-angel.jpg', offsetX: 9 },
+  'Floor Angel':             { src: '/exercises/floor-angel.jpg', offsetX: 11 },
+  'Chin Tuck Floor Angels':  { src: '/exercises/floor-angel.jpg', offsetX: 10 },
+  'Chin Tuck Rotations':     { src: '/exercises/chin-tuck-rotations.jpg', offsetX: 5 },
+  'Prone Chin Tuck':         { src: '/exercises/prone-chin-tuck.jpg' },
+  'Banded Chin Tucks':       { src: '/exercises/banded-chin-tucks.jpg' },
+  'Wall Lean Chin Tuck':     { src: '/exercises/wall-lean-chin-tuck.jpg' },
+  'Chin Tuck':               { src: '/exercises/chin-tuck.jpg' },
+  'Supine Chin Tuck':        { src: '/exercises/supine-chin-tuck.jpg' },
+  'Upper Trapezius Stretch': { src: '/exercises/upper-trapezius-stretch.jpg' },
+  'Bird Dog':                { src: '/exercises/bird-dog.jpg' },
+  'Side Plank':              { src: '/exercises/side-plank.jpg' },
+  'Archer Push-Up':          { src: '/exercises/archer-push-up.jpg' },
+  'Push-Up Plus':            { src: '/exercises/push-up-plus.jpg' },
+  'Prone Y-Raise':           { src: '/exercises/prone-y-raise.jpg' },
+  'Split Squat Pelvic Tilts':{ src: '/exercises/split-squat-pelvic-tilts.jpg' },
+};
+
+const DIFFICULTY_LABEL_COLOR: Record<string, string> = {
+  beginner: '#34D399',
+  medium:   '#FBBF24',
+  hard:     '#FB7185',
+};
+
+const CARD_T = {
+  text: '#FFFFFF',
+  text3: 'rgba(113,113,122,1)',
+  text4: 'rgba(82,82,91,1)',
+};
+
 /* ── Exercise icon system ─────────────────────────────────────── */
 const ExerciseIcon: React.FC<{ type?: string; size?: number; color?: string }> = ({ type, size = 20, color = 'var(--color-primary)' }) => {
   const s = { width: size, height: size };
@@ -151,15 +190,6 @@ function insightContent(problem: PostureProblem, pl: PremiumLayout | undefined) 
 }
 
 /* ── Main component ───────────────────────────────────────────── */
-const DIFF_COLORS: Record<string, { main: string; bg: string; border: string }> = {
-  beginner: { main: '#D9B84C', bg: 'rgba(217,184,76,0.1)', border: 'rgba(217,184,76,0.25)' },
-  medium:   { main: '#F97316', bg: 'rgba(249,115,22,0.1)', border: 'rgba(249,115,22,0.25)' },
-  hard:     { main: '#EF4444', bg: 'rgba(239,68,68,0.1)',  border: 'rgba(239,68,68,0.25)' },
-};
-function getDiffColor(difficulty?: string) {
-  return DIFF_COLORS[difficulty ?? 'beginner'] ?? DIFF_COLORS.beginner;
-}
-
 const ProblemDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -256,47 +286,81 @@ const ProblemDetail: React.FC = () => {
             Exercises
             <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-tert)', marginLeft: 8 }}>{exercisesForDifficulty.length} movements</span>
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, animation: 'slideUp 0.4s ease 0.14s both' }}>
-            {exercisesForDifficulty.map((ex, i) => {
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, animation: 'slideUp 0.4s ease 0.14s both' }}>
+            {exercisesForDifficulty.map((ex) => {
               const videoUrl = ex.youtubeUrl || (ex.videoId ? `https://www.youtube.com/watch?v=${ex.videoId}` : null);
-              const dc = getDiffColor(ex.difficulty);
+              const levelLabel = ex.difficulty === 'beginner' ? 'Beginner' : ex.difficulty === 'medium' ? 'Medium' : ex.difficulty === 'hard' ? 'Hard' : '';
+              const levelColor = DIFFICULTY_LABEL_COLOR[ex.difficulty ?? 'beginner'] ?? CARD_T.text3;
+              const imageCfg = EXERCISE_IMAGES[ex.name];
+              const imageOffsetX = imageCfg?.offsetX ?? DEFAULT_IMAGE_OFFSET_X;
               return (
                 <div
                   key={ex.id}
                   onClick={() => videoUrl ? setYoutube({ url: videoUrl, title: ex.name }) : undefined}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    background: 'var(--color-surface)', borderRadius: 16, padding: '14px 16px',
-                    border: '1px solid var(--color-border)',
-                    boxShadow: 'var(--shadow-sm)',
+                    position: 'relative',
+                    borderRadius: 16,
+                    overflow: 'hidden',
                     cursor: videoUrl ? 'pointer' : 'default',
-                    transition: 'transform 0.15s ease',
                   }}
-                  onMouseDown={e => { if (videoUrl) (e.currentTarget as HTMLDivElement).style.transform = 'scale(0.985)'; }}
-                  onMouseUp={e => { (e.currentTarget as HTMLDivElement).style.transform = 'scale(1)'; }}
                 >
-                  <div style={{ width: 46, height: 46, borderRadius: 14, background: dc.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <ExerciseIcon type={ex.iconType} size={22} color={dc.main} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
-                      <span style={{ fontSize: 14, fontWeight: 650, color: 'var(--color-text)', lineHeight: 1.3 }}>
-                        {displayName(ex.name)}
-                      </span>
-                      {hasBandBadge(ex) && (
-                        <BandBadge exId={ex.id} activeId={bandTooltip} onToggle={setBandTooltip} />
+                  <div style={{ position: 'absolute', inset: 0, background: '#131316', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16 }} />
+                  <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
+                    {/* Image — square top */}
+                    <div
+                      style={{
+                        width: '100%',
+                        aspectRatio: '1 / 1',
+                        overflow: 'hidden',
+                        borderTopLeftRadius: 16,
+                        borderTopRightRadius: 16,
+                        background: '#18181B',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {imageCfg ? (
+                        <img
+                          src={imageCfg.src}
+                          alt={ex.name}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            display: 'block',
+                            transform: `translateX(${imageOffsetX}px) scale(1.15)`,
+                            transformOrigin: 'center',
+                          }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: 48 }} aria-hidden>{ex.emoji}</span>
                       )}
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-tert)', fontWeight: 500 }}>{ex.duration}s</div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                    {videoUrl && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: dc.main, background: dc.bg, padding: '4px 9px', borderRadius: 8, border: `1px solid ${dc.border}` }}>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg>
-                        Video
+
+                    {/* Info */}
+                    <div style={{ padding: '10px 12px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <h3 style={{
+                          fontSize: 13, fontWeight: 600, color: CARD_T.text, lineHeight: 1.2, margin: 0,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0,
+                        }}>
+                          {displayName(ex.name)}
+                        </h3>
+                        {hasBandBadge(ex) && (
+                          <BandBadge exId={ex.id} activeId={bandTooltip} onToggle={setBandTooltip} />
+                        )}
                       </div>
-                    )}
-                    <div style={{ width: 26, height: 26, borderRadius: 8, background: 'var(--color-surface-elevated)', color: 'var(--color-text-tert)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{i + 1}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 10 }}>
+                        <span style={{ color: CARD_T.text3 }}>{ex.duration}s</span>
+                        {levelLabel && (
+                          <>
+                            <span style={{ color: CARD_T.text4 }}>·</span>
+                            <span style={{ color: levelColor }}>{levelLabel}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
