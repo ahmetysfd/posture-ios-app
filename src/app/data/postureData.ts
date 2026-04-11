@@ -34,6 +34,12 @@ export interface ProblemInsightOverrides {
   stretch?: string;
   strengthen?: string;
   habits?: string;
+  /** Short tagline shown at the top of the insight card */
+  heroSubtitle?: string;
+  /** "Does this sound familiar?" bullet points */
+  familiarSymptoms?: string[];
+  /** "Why it happens" paragraph */
+  whyItHappensText?: string;
 }
 
 export interface PostureProblem {
@@ -128,6 +134,15 @@ The head shifts forward from its natural position`,
         instructions: ['Loop a light resistance band around the back of your head at the occiput', 'Face the anchor point with the band creating forward tension', 'Against the band pull, perform a full chin retraction', 'Hold 5 seconds at maximum retraction — resist any forward drift', 'Return with control and repeat 10–12 reps, progressively increasing resistance'] },
     ],
     tips: ['Position screen at eye level', 'Break every 30 minutes', 'Use supportive pillow', 'Strengthen deep neck flexors'],
+    insightCard: {
+      heroSubtitle: 'Your head sits in front of your shoulders, not above them.',
+      familiarSymptoms: [
+        'Your neck feels heavy by the end of the day',
+        'Tension headaches show up behind your eyes or temples',
+        'You catch yourself looking down at your phone right now',
+      ],
+      whyItHappensText: 'Your head weighs about as much as a bowling ball. When screens sit below eye level, the muscles at the back of your neck hold that weight all day instead of letting your skeleton do the work. Over time, holding becomes their default — and resting feels foreign.',
+    },
     premiumLayout: {
       whyItHappens: [
         { bold: 'Sedentary habits', text: 'Hours of sitting with rounded shoulders pull the head forward from its neutral balanced position.' },
@@ -223,6 +238,13 @@ This creates functional winging (not nerve damage, but poor control).`,
       stretch: 'Pec minor doorway stretch — 3 × 30s',
       strengthen: 'Wall push-up plus — 3 × 10–12 reps',
       habits: 'Avoid resting elbows on desk for long periods',
+      heroSubtitle: 'Your shoulder blade lifts off your back instead of lying flat.',
+      familiarSymptoms: [
+        'Push-ups feel wobbly or unstable in a way you can\'t explain',
+        'Your shoulder clicks or pops when you move your arm',
+        'Someone has mentioned your shoulder blades stick out',
+      ],
+      whyItHappensText: 'There\'s a muscle that wraps around your ribs and acts like a strap, holding your shoulder blade flat against your back. When this muscle goes quiet, your shoulder blade loses its anchor and starts drifting — and every other shoulder muscle has to scramble to cover for it. Shoulders don\'t love covering for missing teammates.',
     },
     premiumLayout: {
       whyItHappens: [
@@ -310,6 +332,15 @@ The pelvis tilts forward from its neutral position`,
         instructions: ['Sit on the floor, cross one ankle over the opposite knee in a figure-4 shape', 'Sit tall and hinge forward from the hips — keep your back flat, not rounded', 'Feel the deep stretch in the outer hip and hip flexor of the crossed leg', 'Hold 25–30 seconds while breathing slowly into the stretch', 'Slowly return upright and switch sides — 2–3 rounds per side'] },
     ],
     tips: ['Avoid prolonged sitting', 'Strengthen core and glutes', 'Stretch hip flexors daily', 'Practice neutral pelvis standing'],
+    insightCard: {
+      heroSubtitle: 'Your pelvis tips forward, pulling your lower back into a deep arch.',
+      familiarSymptoms: [
+        'Your lower back aches after standing in one place for a while',
+        'Your belly sticks out even when you\'re not bloated or heavy',
+        'Standing tall feels like work, not rest',
+      ],
+      whyItHappensText: 'Sitting is the modern body\'s most repeated activity, and sitting puts the muscles at the front of your hips into a shortened position for hours every day. Eventually they decide short is their new normal. When you stand up, they keep pulling — and they pull your pelvis forward with them, dragging your lower back into an arch.',
+    },
     premiumLayout: {
       whyItHappens: [
         { bold: 'Prolonged sitting', text: 'shortens the hip flexors and trains the pelvis to tilt forward' },
@@ -386,6 +417,15 @@ The pelvis tilts forward from its neutral position`,
         instructions: ['Anchor a resistance band at low height or hold under your feet', 'Hold the band in both hands and hinge slightly forward', 'Pull both arms up and out in a Y shape — 45° above the shoulder line', 'Squeeze the lower traps at the top — hold 2 seconds', 'Lower with full control for 3 seconds — complete 10–12 reps'] },
     ],
     tips: ['Set up ergonomic workstation', 'Strengthen upper back', 'Stretch chest daily', 'Watch shoulder position'],
+    insightCard: {
+      heroSubtitle: 'Your shoulders have rolled forward and forgotten how to sit back.',
+      familiarSymptoms: [
+        'Reaching overhead feels stiff or blocked',
+        'Your chest feels tight no matter how much you stretch it',
+        'Look down right now — are your knuckles facing forward?',
+      ],
+      whyItHappensText: 'Almost everything you do happens in front of you: typing, driving, eating, scrolling. The muscles across your chest slowly shorten from all that forward reaching, while the muscles between your shoulder blades stretch out and go quiet. Your shoulders simply follow where your hands spend their time.',
+    },
     premiumLayout: {
       whyItHappens: [
         { bold: 'Prolonged sitting', text: 'keeps shoulders locked in a forward, protracted position for hours' },
@@ -465,6 +505,15 @@ The pelvis tilts forward from its neutral position`,
         instructions: ['Hold a resistance band in both hands, arms extended at chest height', 'Hinge forward 45° from hips, soft knees, back flat', 'Raise both arms out to the sides in a wide arc, squeezing shoulder blades', 'Hold 1 second at the top — elbows slightly soft throughout', 'Lower with full control — complete 12–15 reps'] },
     ],
     tips: ['Bring screen to eye height', 'Take movement breaks hourly', 'Pair stretching with upper-back strength', 'Seek evaluation for severe or painful curve'],
+    insightCard: {
+      heroSubtitle: 'Your upper back has rounded forward and gotten stuck there.',
+      familiarSymptoms: [
+        'Standing fully upright feels like effort, not rest',
+        'Taking a really deep breath feels restricted',
+        'You see yourself in photos and feel older than you are',
+      ],
+      whyItHappensText: 'Your upper back is meant to have a gentle curve — but years of leaning over desks, books, phones, and steering wheels deepen that curve until the spine forgets how to extend. This is the kindest truth in posture work: if you\'ve been failing to "stand up straight" by willpower, it\'s not discipline you\'re missing. It\'s mobility. You can\'t muscle into a position your spine can\'t reach yet.',
+    },
     premiumLayout: {
       whyItHappens: [
         { bold: 'Prolonged sitting', text: 'keeps the spine locked in a flexed position for hours' },
@@ -556,6 +605,15 @@ Spine may slightly compensate (side bending)`,
         instructions: ['Anchor a resistance band at shoulder height and kneel on the side closest to it', 'Hold the band with both hands at your chest — feel the rotational pull', 'Press both hands straight out in front, resisting the rotation throughout', 'Hold 2–3 seconds fully extended — do not let your torso twist', 'Return hands to chest and repeat — complete 10–12 reps per side'] },
     ],
     tips: ['Stretch the tight side (elevated shoulder)', 'Strengthen the weak side (lower trap & serratus)', 'Keep shoulders level during daily activities', 'Adjust desk setup (screen centered!)', 'Train both sides equally'],
+    insightCard: {
+      heroSubtitle: 'One shoulder sits higher than the other — and your body has gotten used to it.',
+      familiarSymptoms: [
+        'One bra strap or shirt collar always slips off the same side',
+        'The neck tightness is worse on one specific side',
+        'You always carry your bag on the same shoulder without thinking',
+      ],
+      whyItHappensText: 'Your body is brilliantly adaptive, and that\'s the problem. Whatever you do every day, it builds itself around. Years of carrying a bag on one side, sleeping curled toward one direction, or leaning into one hip teach your body that crooked is the new normal. It\'s not damage — it\'s a habit written into muscle.',
+    },
     premiumLayout: {
       whyItHappens: [
         { bold: 'Leaning to one side', text: 'shifts pelvis and raises one shoulder' },

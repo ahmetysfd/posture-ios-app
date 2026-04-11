@@ -1,34 +1,31 @@
 import React from 'react';
-import { Dumbbell, MonitorUp, StretchHorizontal } from 'lucide-react';
 
 export interface ProblemInsightCardProps {
-  /** When false (default), only the grid + action plan show — hero already has title. */
   showHeader?: boolean;
   title?: string;
   subtitle?: string;
-  triggers: string;
-  impact: string;
-  stretch: string;
-  strengthen: string;
-  habits: string;
+  triggers?: string;
+  impact?: string;
+  stretch?: string;
+  strengthen?: string;
+  habits?: string;
+  /** Short tagline shown at the top of the card */
+  heroSubtitle?: string;
+  /** "Does this sound familiar?" bullet points */
+  familiarSymptoms?: string[];
+  /** "Why it happens" paragraph */
+  whyItHappensText?: string;
 }
 
-/** Minimal posture insight card — matches Figma Make “Create-Minimalistic-Card” layout. */
 const ProblemInsightCard: React.FC<ProblemInsightCardProps> = ({
   showHeader = false,
   title,
   subtitle,
-  triggers,
-  impact,
-  stretch,
-  strengthen,
-  habits,
+  heroSubtitle,
+  familiarSymptoms,
+  whyItHappensText,
 }) => {
-  const planRows: { icon: React.ReactNode; label: string; detail: string }[] = [
-    { icon: <StretchHorizontal style={{ width: 18, height: 18 }} strokeWidth={2.5} />, label: 'Stretch', detail: stretch },
-    { icon: <Dumbbell style={{ width: 18, height: 18 }} strokeWidth={2.5} />, label: 'Strengthen', detail: strengthen },
-    { icon: <MonitorUp style={{ width: 18, height: 18 }} strokeWidth={2.5} />, label: 'Habits', detail: habits },
-  ];
+  const hasNewContent = heroSubtitle || (familiarSymptoms && familiarSymptoms.length > 0) || whyItHappensText;
 
   return (
     <div
@@ -37,17 +34,14 @@ const ProblemInsightCard: React.FC<ProblemInsightCardProps> = ({
         maxWidth: 360,
         marginLeft: 'auto',
         marginRight: 'auto',
-        background: '#1C1C1E',
-        borderRadius: 24,
-        padding: 20,
-        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-        overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
         fontFamily: 'var(--font-body), system-ui, sans-serif',
       }}
     >
       {showHeader && (title || subtitle) && (
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 4 }}>
           {title && (
             <h2 style={{ fontSize: 22, fontWeight: 600, color: '#fff', letterSpacing: '-0.02em', margin: 0, lineHeight: 1.2 }}>
               {title}
@@ -61,94 +55,117 @@ const ProblemInsightCard: React.FC<ProblemInsightCardProps> = ({
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div
-            style={{
-              background: 'rgba(42,42,44,0.8)',
-              borderRadius: 18,
-              padding: 16,
-              border: '1px solid rgba(244,63,94,0.1)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  background: '#f43f5e',
-                  boxShadow: '0 0 8px rgba(244,63,94,0.5)',
-                }}
-              />
-              <h3 style={{ fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.9)', margin: 0 }}>Triggers</h3>
-            </div>
-            <p style={{ fontSize: 13, color: '#a3a3a3', lineHeight: 1.45, margin: 0 }}>{triggers}</p>
-          </div>
-
-          <div
-            style={{
-              background: 'rgba(42,42,44,0.8)',
-              borderRadius: 18,
-              padding: 16,
-              border: '1px solid rgba(245,158,11,0.1)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  background: '#f59e0b',
-                  boxShadow: '0 0 8px rgba(245,158,11,0.5)',
-                }}
-              />
-              <h3 style={{ fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.9)', margin: 0 }}>Impact</h3>
-            </div>
-            <p style={{ fontSize: 13, color: '#a3a3a3', lineHeight: 1.45, margin: 0 }}>{impact}</p>
-          </div>
-        </div>
-
+      {hasNewContent && (
         <div
           style={{
-            background: 'rgba(42,42,44,0.8)',
-            borderRadius: 18,
-            padding: 16,
-            border: '1px solid rgba(16,185,129,0.1)',
+            background: '#1C1C1E',
+            borderRadius: 24,
+            overflow: 'hidden',
+            border: '1px solid rgba(255,255,255,0.05)',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          {/* Hero subtitle */}
+          {heroSubtitle && (
             <div
               style={{
-                width: 10,
-                height: 10,
-                borderRadius: '50%',
-                background: '#10b981',
-                boxShadow: '0 0 8px rgba(16,185,129,0.5)',
+                padding: '20px 20px 16px',
+                borderBottom: familiarSymptoms || whyItHappensText ? '1px solid rgba(255,255,255,0.05)' : undefined,
               }}
-            />
-            <h3 style={{ fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.9)', margin: 0 }}>Action Plan</h3>
-          </div>
+            >
+              <p
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: 'rgba(255,255,255,0.92)',
+                  lineHeight: 1.45,
+                  margin: 0,
+                  fontStyle: 'italic',
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                "{heroSubtitle}"
+              </p>
+            </div>
+          )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {planRows.map((r, i) => (
-              <React.Fragment key={r.label}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                  <div style={{ marginTop: 2, color: 'rgba(16,185,129,0.85)', flexShrink: 0 }}>{r.icon}</div>
-                  <div>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.9)', display: 'block' }}>{r.label}</span>
-                    <span style={{ fontSize: 13, color: '#a3a3a3', lineHeight: 1.45 }}>{r.detail}</span>
+          {/* Does this sound familiar? */}
+          {familiarSymptoms && familiarSymptoms.length > 0 && (
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: whyItHappensText ? '1px solid rgba(255,255,255,0.05)' : undefined,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <div
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    background: '#f43f5e',
+                    boxShadow: '0 0 8px rgba(244,63,94,0.5)',
+                    flexShrink: 0,
+                  }}
+                />
+                <h3 style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Does this sound familiar?
+                </h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {familiarSymptoms.map((symptom, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <div
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 6,
+                        background: 'rgba(244,63,94,0.12)',
+                        border: '1px solid rgba(244,63,94,0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginTop: 1,
+                      }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 5.5L4 7.5L8 3" stroke="#f43f5e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                    <span style={{ fontSize: 14, color: '#a3a3a3', lineHeight: 1.5 }}>{symptom}</span>
                   </div>
-                </div>
-                {i < planRows.length - 1 && (
-                  <div style={{ height: 1, width: '100%', background: 'rgba(255,255,255,0.04)', marginLeft: 30 }} />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Why it happens */}
+          {whyItHappensText && (
+            <div style={{ padding: '16px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    background: '#f59e0b',
+                    boxShadow: '0 0 8px rgba(245,158,11,0.5)',
+                    flexShrink: 0,
+                  }}
+                />
+                <h3 style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Why it happens
+                </h3>
+              </div>
+              <p style={{ fontSize: 14, color: '#a3a3a3', lineHeight: 1.65, margin: 0 }}>
+                {whyItHappensText}
+              </p>
+            </div>
+          )}
         </div>
-      </div>
+      )}
+
     </div>
   );
 };
