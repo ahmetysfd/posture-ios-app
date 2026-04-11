@@ -206,7 +206,7 @@ const Home: React.FC = () => {
                     <div style={{ position: 'absolute', top: '-40%', right: '-15%', width: 176, height: 176, borderRadius: '50%', background: 'rgba(249,115,22,0.10)', filter: 'blur(50px)', pointerEvents: 'none' }} />
 
                     <div style={{ position: 'relative', zIndex: 1, padding: 20 }}>
-                      {/* Top row: Title left, Streak right */}
+                      {/* Top row: Title left, Play + Streak right */}
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
                         <div>
                           <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
@@ -219,23 +219,50 @@ const Home: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Streak box */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0, marginLeft: 12 }}>
-                          <div style={{
-                            position: 'relative',
-                            width: 48, height: 48, borderRadius: 16,
-                            background: 'rgba(249,115,22,0.08)',
-                            border: '1px solid rgba(249,115,22,0.20)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}>
-                            <div style={{ position: 'absolute', inset: 0, borderRadius: 16, background: 'rgba(249,115,22,0.05)', filter: 'blur(2px)' }} />
-                            {/* Flame SVG */}
-                            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ position: 'relative', zIndex: 1 }}>
-                              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-                            </svg>
+                        {/* Play button + Streak */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexShrink: 0, marginLeft: 12 }}>
+                          <button
+                            type="button"
+                            onClick={() => navigate(hasProgram ? '/program' : '/scan')}
+                            aria-label={ctaLabel}
+                            style={{
+                              width: 42, height: 42, borderRadius: '50%',
+                              background: 'linear-gradient(to top right, #ea580c, #fb923c)',
+                              border: 'none', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              boxShadow: '0 0 20px rgba(249,115,22,0.3)',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {allDone ? (
+                              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            ) : (
+                              <svg width={16} height={16} viewBox="0 0 24 24" fill="#FFFFFF" style={{ marginLeft: 2 }}>
+                                <path d="M8 5.5v13l10-6.5-10-6.5Z" />
+                              </svg>
+                            )}
+                          </button>
+
+                          {/* Streak box */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                            <div style={{
+                              position: 'relative',
+                              width: 48, height: 48, borderRadius: 16,
+                              background: 'rgba(249,115,22,0.08)',
+                              border: '1px solid rgba(249,115,22,0.20)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                              <div style={{ position: 'absolute', inset: 0, borderRadius: 16, background: 'rgba(249,115,22,0.05)', filter: 'blur(2px)' }} />
+                              {/* Flame SVG */}
+                              <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ position: 'relative', zIndex: 1 }}>
+                                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                              </svg>
+                            </div>
+                            <span style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', lineHeight: 1, marginTop: 4 }}>{streak}</span>
+                            <span style={{ fontSize: 9, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700 }}>Streak</span>
                           </div>
-                          <span style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', lineHeight: 1, marginTop: 4 }}>{streak}</span>
-                          <span style={{ fontSize: 9, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700 }}>Streak</span>
                         </div>
                       </div>
 
@@ -337,42 +364,14 @@ const Home: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Divider */}
-                      <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', marginBottom: 16 }} />
-
-                      {/* Play row */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: (hasProgram && !allDone) ? 'flex-end' : 'space-between',
-                      }}>
-                        {(!hasProgram || allDone) && (
-                          <span style={{ fontSize: 13, color: '#71717a' }}>
+                      {(!hasProgram || allDone) && (
+                        <>
+                          <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', marginBottom: 16 }} />
+                          <div style={{ fontSize: 13, color: '#71717a' }}>
                             {hasProgram ? 'All done for today' : 'Take a scan to begin'}
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => navigate(hasProgram ? '/program' : '/scan')}
-                          style={{
-                            width: 42, height: 42, borderRadius: '50%',
-                            background: 'linear-gradient(to top right, #ea580c, #fb923c)',
-                            border: 'none', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: '0 0 20px rgba(249,115,22,0.3)',
-                          }}
-                        >
-                          {allDone ? (
-                            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          ) : (
-                            <svg width={16} height={16} viewBox="0 0 24 24" fill="#FFFFFF" style={{ marginLeft: 2 }}>
-                              <path d="M8 5.5v13l10-6.5-10-6.5Z" />
-                            </svg>
-                          )}
-                        </button>
-                      </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
