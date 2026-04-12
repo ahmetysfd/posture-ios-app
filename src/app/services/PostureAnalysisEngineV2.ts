@@ -106,6 +106,9 @@ interface ProblemDef {
   bestView: IntendedView;
   showOnViews: IntendedView[];
   buildHits: (metrics: ViewMetrics) => RawHit[];
+  // Always surface at least as low-risk even when measurements sit below mild
+  // thresholds. Used for problems whose 2D signal is unreliable (e.g. APT).
+  forceVisible?: boolean;
 }
 
 function clamp(n: number, min = 0, max = 1): number {
@@ -360,8 +363,11 @@ function mergeProblem(def: ProblemDef, hits: RawHit[]): PostureProblem | null {
   const supportAvg = weighted.reduce((sum, hit) => sum + hit.rawScore * Math.max(0.2, hit.confidence), 0) / supportWeight;
   const avgConfidence = weighted.reduce((sum, hit) => sum + hit.confidence, 0) / weighted.length;
   const blendedRaw = anchor.rawScore * 0.62 + supportAvg * 0.38;
-  const score = visibleScore(blendedRaw, avgConfidence);
-  if (score === 0) return null;
+  let score = visibleScore(blendedRaw, avgConfidence);
+  if (score === 0) {
+    if (!def.forceVisible) return null;
+    score = 10;
+  }
 
   const detectedInViews = [...new Set(weighted.filter(hit => hit.rawScore >= 20).map(hit => hit.view))];
   const metrics = weighted.reduce<MetricMap>((acc, hit) => ({ ...acc, ...hit.metrics }), {});
@@ -726,6 +732,9 @@ const PROBLEMS: ProblemDef[] = [
     bestView: 'side',
     showOnViews: ['side', 'front'],
     buildHits: anteriorPelvicHits,
+    // 2D keypoints can't see the lumbar curve, so APT often scores 0 even
+    // when present. Keep it visible as low-risk so users still get the card.
+    forceVisible: true,
   },
   {
     id: 'rounded-shoulders',

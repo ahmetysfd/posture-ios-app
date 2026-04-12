@@ -1045,17 +1045,26 @@ export function markExerciseComplete(exerciseId: string): StoredDailyProgram | n
     ),
   };
 
-  const allDone = updated.exercises.every(ex => ex.completed);
+  // A day counts toward the streak as soon as the user finishes a single
+  // exercise. We still update cumulative minutes/count so the progress entry
+  // stays accurate as more exercises get completed.
+  const totalExCount = updated.exercises.length;
+  const completedCount = updated.exercises.filter(ex => ex.completed).length;
+  const minutes = totalExCount > 0
+    ? Math.round((updated.totalDurationMin * completedCount) / totalExCount)
+    : 0;
+  logProgress({
+    date: todayStr(),
+    minutesCompleted: minutes,
+    exerciseCount: completedCount,
+    fullyCompleted: true,
+  });
+
+  const allDone = completedCount === totalExCount;
   if (allDone && !updated.completedAt) {
     updated.completedAt = Date.now();
-    logProgress({
-      date: todayStr(),
-      minutesCompleted: updated.totalDurationMin,
-      exerciseCount: updated.exercises.length,
-      fullyCompleted: true,
-    });
-    syncLevelProgress();
   }
+  syncLevelProgress();
 
   saveDailyProgram(updated);
   return updated;
@@ -1177,32 +1186,64 @@ export function initLevelSystem(riskSummary: { high: number; medium: number; low
   return state;
 }
 
-/** Sync level progress from the progress log. Call after each completion. */
+/**
+ * Sync level progress from the progress log. Call after each completion.
+ *
+ * Level progression is driven by a rolling day-streak. A day counts toward
+ * the streak when the user finishes at least one exercise that day. Every
+ * 21 consecutive days promotes the user to the next level and resets the
+ * streak counter back to 0. If the user misses a day, the in-level counter
+ * resets to the current live streak (0 if no recent activity).
+ */
 export function syncLevelProgress(): LevelState | null {
   let state = loadLevelState();
   if (!state) return null;
 
   const log = loadProgressLog();
-  const completedDates = log
-    .filter(e => e.fullyCompleted)
-    .map(e => e.date)
-    .sort();
+  const completedDates = [...new Set(
+    log.filter(e => e.fullyCompleted).map(e => e.date),
+  )].sort();
 
-  // Count all completed dates that aren't already attributed to finished levels
-  const usedDates = new Set<string>();
+  const dayDelta = (a: string, b: string): number =>
+    Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
 
-  // Replay from starting level forward
+  // Replay every completed date in order, tracking consecutive-day streaks.
+  // Whenever the streak-within-level hits 21 we promote and restart counting.
   let levelIdx = LEVEL_ORDER.indexOf(state.startingLevel);
   const completedLevels: UserLevel[] = [];
-  let currentDates: string[] = [];
+  let streakInLevel = 0;
+  let streakDates: string[] = [];
+  let prevDate: string | null = null;
 
   for (const date of completedDates) {
     if (levelIdx >= LEVEL_ORDER.length) break;
-    currentDates.push(date);
-    if (currentDates.length >= LEVEL_DAYS_REQUIRED) {
+    if (prevDate && dayDelta(prevDate, date) !== 1) {
+      streakInLevel = 0;
+      streakDates = [];
+    }
+    streakInLevel++;
+    streakDates.push(date);
+    prevDate = date;
+
+    if (streakInLevel >= LEVEL_DAYS_REQUIRED) {
       completedLevels.push(LEVEL_ORDER[levelIdx]);
       levelIdx++;
-      currentDates = [];
+      streakInLevel = 0;
+      streakDates = [];
+      prevDate = null;
+    }
+  }
+
+  // If the last counted date isn't today or yesterday, the streak is broken
+  // right now, so the in-level progress should display as 0.
+  if (prevDate) {
+    const today = todayStr();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const ydayStr = yesterday.toISOString().slice(0, 10);
+    if (prevDate !== today && prevDate !== ydayStr) {
+      streakInLevel = 0;
+      streakDates = [];
     }
   }
 
@@ -1210,8 +1251,8 @@ export function syncLevelProgress(): LevelState | null {
   state = {
     ...state,
     currentLevel,
-    daysCompletedInLevel: currentDates.length,
-    levelCompletedDates: currentDates,
+    daysCompletedInLevel: streakInLevel,
+    levelCompletedDates: streakDates,
     completedLevels,
   };
   saveLevelState(state);

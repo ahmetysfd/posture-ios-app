@@ -5,13 +5,6 @@ import { postureProblems } from '../data/postureData';
 import { loadActiveProgramForSession, getDailyStats, getLevelInfo, type UserLevel } from '../services/DailyProgram';
 import { loadUserProfile } from '../services/UserProfile';
 
-function getTimeOfDay(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'morning';
-  if (hour < 17) return 'afternoon';
-  return 'evening';
-}
-
 const T = {
   bg: '#09090B',
   surface: '#141416',
@@ -160,9 +153,6 @@ const Home: React.FC = () => {
           <div style={{ paddingTop: 52, marginBottom: 28, animation: 'fadeIn 0.45s ease' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: T.text3, textTransform: 'uppercase', marginBottom: 4 }}>
-                  Good {getTimeOfDay()}
-                </p>
                 <h1 style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 30, fontWeight: 800, color: T.text, letterSpacing: '-0.04em', lineHeight: 1 }}>
                   <span>Posture</span>
                   <span style={{ color: T.gold }}>Fix</span>
