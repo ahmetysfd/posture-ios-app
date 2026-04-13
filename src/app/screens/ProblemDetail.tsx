@@ -210,6 +210,9 @@ function insightContent(problem: PostureProblem, pl: PremiumLayout | undefined) 
       stretch: o?.stretch ?? pl.howToFix.stretch[0] ?? '—',
       strengthen: o?.strengthen ?? pl.howToFix.strength[0] ?? '—',
       habits: o?.habits ?? pl.howToFix.habits[0] ?? '—',
+      heroSubtitle: o?.heroSubtitle,
+      familiarSymptoms: o?.familiarSymptoms,
+      whyItHappensText: o?.whyItHappensText,
     };
   }
   return {
@@ -219,6 +222,9 @@ function insightContent(problem: PostureProblem, pl: PremiumLayout | undefined) 
     stretch: o?.stretch ?? problem.tips[0] ?? '—',
     strengthen: o?.strengthen ?? problem.tips[1] ?? problem.tips[0] ?? '—',
     habits: o?.habits ?? problem.tips[2] ?? problem.tips[0] ?? '—',
+    heroSubtitle: o?.heroSubtitle,
+    familiarSymptoms: o?.familiarSymptoms,
+    whyItHappensText: o?.whyItHappensText,
   };
 }
 

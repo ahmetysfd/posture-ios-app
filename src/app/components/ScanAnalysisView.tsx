@@ -100,6 +100,48 @@ const DEFAULT_REGION: RegionDef = {
   keypoints: [KP.LEFT_SHOULDER, KP.RIGHT_SHOULDER, KP.LEFT_HIP, KP.RIGHT_HIP],
 };
 
+// Connections between keypoints to draw as colored lines for each problem.
+// Only keypoints listed in PROBLEM_REGIONS[id].keypoints are rendered as dots;
+// these pairs connect them so the card reads as a small diagnostic skeleton.
+const PROBLEM_CONNECTIONS: Record<string, [number, number][]> = {
+  'forward-head': [
+    [KP.NOSE, KP.LEFT_EAR],
+    [KP.NOSE, KP.RIGHT_EAR],
+    [KP.LEFT_EAR, KP.LEFT_SHOULDER],
+    [KP.RIGHT_EAR, KP.RIGHT_SHOULDER],
+    [KP.LEFT_SHOULDER, KP.RIGHT_SHOULDER],
+  ],
+  'rounded-shoulders': [
+    [KP.LEFT_EAR, KP.LEFT_SHOULDER],
+    [KP.RIGHT_EAR, KP.RIGHT_SHOULDER],
+    [KP.LEFT_SHOULDER, KP.LEFT_ELBOW],
+    [KP.RIGHT_SHOULDER, KP.RIGHT_ELBOW],
+  ],
+  'uneven-shoulders': [
+    [KP.LEFT_SHOULDER, KP.RIGHT_SHOULDER],
+    [KP.LEFT_SHOULDER, KP.LEFT_ELBOW],
+    [KP.RIGHT_SHOULDER, KP.RIGHT_ELBOW],
+  ],
+  'winging-scapula': [
+    [KP.LEFT_SHOULDER, KP.RIGHT_SHOULDER],
+    [KP.LEFT_SHOULDER, KP.LEFT_ELBOW],
+    [KP.RIGHT_SHOULDER, KP.RIGHT_ELBOW],
+  ],
+  kyphosis: [
+    [KP.LEFT_SHOULDER, KP.RIGHT_SHOULDER],
+    [KP.LEFT_HIP, KP.RIGHT_HIP],
+    [KP.LEFT_SHOULDER, KP.LEFT_HIP],
+    [KP.RIGHT_SHOULDER, KP.RIGHT_HIP],
+  ],
+  'anterior-pelvic': [
+    [KP.LEFT_SHOULDER, KP.LEFT_HIP],
+    [KP.RIGHT_SHOULDER, KP.RIGHT_HIP],
+    [KP.LEFT_HIP, KP.RIGHT_HIP],
+    [KP.LEFT_HIP, KP.LEFT_KNEE],
+    [KP.RIGHT_HIP, KP.RIGHT_KNEE],
+  ],
+};
+
 /** Score how well a view supports a problem's region keypoints.
  *  Returns 0 if fewer than 2 relevant keypoints are visible. */
 function scoreViewForRegion(kps: Keypoint[] | undefined, regionKps: number[]): number {
@@ -154,7 +196,9 @@ const RegionCropCanvas: React.FC<{
   keypoints: Keypoint[];
   regionKps: number[];
   reloadKey: string;
-}> = ({ photoUrl, keypoints, regionKps, reloadKey }) => {
+  color: string;
+  connections: [number, number][];
+}> = ({ photoUrl, keypoints, regionKps, reloadKey, color, connections }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -221,6 +265,58 @@ const RegionCropCanvas: React.FC<{
 
       ctx.clearRect(0, 0, CW, CH);
       ctx.drawImage(img, sx, sy, side, side, 0, 0, CW, CH);
+
+      // Map a keypoint (normalized 0..1 on original image) into canvas coords
+      // after the crop. Returns null if the point falls outside the crop box.
+      const toCanvas = (kp: Keypoint | undefined) => {
+        if (!kp || kp.score <= 0.2) return null;
+        const px = kp.x * nW;
+        const py = kp.y * nH;
+        if (px < sx || px > sx + side || py < sy || py > sy + side) return null;
+        return {
+          x: ((px - sx) / side) * CW,
+          y: ((py - sy) / side) * CH,
+        };
+      };
+
+      // Connection lines first, so dots sit on top.
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 14;
+      for (const [a, b] of connections) {
+        if (!regionKps.includes(a) || !regionKps.includes(b)) continue;
+        const pa = toCanvas(keypoints[a]);
+        const pb = toCanvas(keypoints[b]);
+        if (!pa || !pb) continue;
+        ctx.beginPath();
+        ctx.moveTo(pa.x, pa.y);
+        ctx.lineTo(pb.x, pb.y);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+
+      // Dots for each region keypoint.
+      for (const idx of regionKps) {
+        const p = toCanvas(keypoints[idx]);
+        if (!p) continue;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 18;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
     };
     img.src = photoUrl;
     return () => {
@@ -300,6 +396,7 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
     const view = pickViewForProblem(problem, keypoints, photos, region);
     const viewKps = keypoints[view] ?? [];
     const photoUrl = photos[view] ?? '';
+    const connections = PROBLEM_CONNECTIONS[problem.id] ?? [];
     const tappable = Boolean(onProblemSelect);
     // Re-run the canvas draw when the chosen view or photo changes.
     const reloadKey = `${problem.id}|${view}|${photoUrl.length}`;
@@ -344,6 +441,8 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
             keypoints={viewKps}
             regionKps={region.keypoints}
             reloadKey={reloadKey}
+            color={color}
+            connections={connections}
           />
           {/* Dark vignette bottom so the label area is always readable */}
           <div

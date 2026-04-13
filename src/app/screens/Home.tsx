@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { postureProblems } from '../data/postureData';
-import { loadActiveProgramForSession, getDailyStats, getLevelInfo, type UserLevel } from '../services/DailyProgram';
+import { loadActiveProgramForSession, getDailyStats, getLevelInfo, loadProgressLog } from '../services/DailyProgram';
 import { loadUserProfile } from '../services/UserProfile';
 
 const T = {
@@ -113,12 +113,165 @@ function SettingsButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-const LEVEL_CONFIG: Record<UserLevel, { label: string; icon: string; color: string }> = {
-  beginner:     { label: 'Beginner',     icon: '🌱', color: '#22C55E' },
-  intermediate: { label: 'Intermediate', icon: '⚡', color: '#F59E0B' },
-  advanced:     { label: 'Advanced',     icon: '🔥', color: '#EF4444' },
-};
-const LEVEL_ORDER: UserLevel[] = ['beginner', 'intermediate', 'advanced'];
+// ── Weekly calendar helpers (home card) ──────────────────────────────────────
+const WEEK_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function toIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function addDays(d: Date, n: number): Date {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
+}
+
+/** Monday-start week. Returns a local-midnight Date for the Monday of the week containing d. */
+function startOfWeekMonday(d: Date): Date {
+  const r = new Date(d);
+  r.setHours(0, 0, 0, 0);
+  const dow = r.getDay(); // 0 = Sun .. 6 = Sat
+  const diff = dow === 0 ? -6 : 1 - dow;
+  r.setDate(r.getDate() + diff);
+  return r;
+}
+
+interface DayCellState {
+  iso: string;
+  date: number;
+  label: string;
+  isToday: boolean;
+  isDone: boolean;
+  isMissed: boolean;
+  isOff: boolean;
+  mins: number;
+  programId?: string;
+  programName?: string;
+  time?: string;
+}
+
+interface DayConfig {
+  off?: boolean;
+  reminders?: string[];      // legacy (Progress page calendar)
+  programId?: string;        // NEW: program chosen for this day
+  time?: string;             // NEW: reminder/scheduled time "HH:MM"
+  demoDone?: boolean;        // NEW: manual/demo override for "done" visual
+}
+const DAY_CONFIG_KEY = 'posturefix_day_config';
+
+function loadDayConfigMap(): Record<string, DayConfig> {
+  try {
+    const raw = localStorage.getItem(DAY_CONFIG_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, DayConfig>) : {};
+  } catch { return {}; }
+}
+
+function saveDayConfigMap(cfg: Record<string, DayConfig>): void {
+  try { localStorage.setItem(DAY_CONFIG_KEY, JSON.stringify(cfg)); } catch {}
+}
+
+function isConfigEmpty(cfg: DayConfig): boolean {
+  return !cfg.off
+    && !cfg.programId
+    && !cfg.time
+    && !cfg.demoDone
+    && (!cfg.reminders || cfg.reminders.length === 0);
+}
+
+interface ProgramOption { id: string; name: string }
+
+/** Prefer user's created programs; fall back to a dummy pair if the library is empty. */
+function getProgramOptions(): ProgramOption[] {
+  const lib = typeof window !== 'undefined' ? (() => {
+    try { return JSON.parse(localStorage.getItem('posturefix_program_library') ?? 'null'); }
+    catch { return null; }
+  })() : null;
+  const entries = lib?.entries as Array<{ id: string; name: string }> | undefined;
+  if (entries && entries.length) return entries.map(e => ({ id: e.id, name: e.name }));
+  return [
+    { id: 'daily', name: 'Daily Program' },
+    { id: 'winging-scapula', name: 'Winging Scapula' },
+  ];
+}
+
+/** First-visit demo seed: fill the current week with varied states so the
+ *  user can see done/missed/off/today/scheduled cells in action. Only runs
+ *  when there is no real progress log and no existing day config. */
+function seedDemoIfEmpty(): boolean {
+  if (typeof window === 'undefined') return false;
+  const existing = loadDayConfigMap();
+  if (Object.keys(existing).length > 0) return false;
+  try {
+    const logRaw = localStorage.getItem('posturefix_progress_log');
+    if (logRaw && JSON.parse(logRaw).length > 0) return false;
+  } catch { /* ignore */ }
+
+  const opts = getProgramOptions();
+  const p1 = opts[0]?.id ?? 'daily';
+  const p2 = opts[1]?.id ?? p1;
+
+  const weekStart = startOfWeekMonday(new Date());
+  const patterns: DayConfig[] = [
+    { programId: p1, time: '08:00', demoDone: true },  // Mon
+    { programId: p1, time: '08:00', demoDone: true },  // Tue
+    { off: true },                                     // Wed (off)
+    { programId: p1, time: '09:00' },                  // Thu
+    { programId: p2, time: '18:30' },                  // Fri
+    { off: true },                                     // Sat (off)
+    { programId: p1, time: '10:00' },                  // Sun
+  ];
+  const map: Record<string, DayConfig> = {};
+  for (let i = 0; i < 7; i++) {
+    map[toIsoDate(addDays(weekStart, i))] = patterns[i];
+  }
+  saveDayConfigMap(map);
+  return true;
+}
+
+function buildWeek(
+  weekStart: Date,
+  todayIso: string,
+  plannedMins: number,
+  configs: Record<string, DayConfig>,
+  programNameById: Record<string, string>,
+): DayCellState[] {
+  const log = loadProgressLog();
+  const completed = new Map<string, number>();
+  for (const e of log) {
+    if (e.fullyCompleted) completed.set(e.date, e.minutesCompleted ?? plannedMins);
+  }
+  const cells: DayCellState[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(weekStart, i);
+    const iso = toIsoDate(d);
+    const cfg = configs[iso];
+    const isDone = completed.has(iso) || cfg?.demoDone === true;
+    const isOff = cfg?.off === true;
+    const isToday = iso === todayIso;
+    const isPast = iso < todayIso;
+    const hasProgram = Boolean(cfg?.programId);
+    // Only treat past days as missed if they had a scheduled program.
+    const isMissed = isPast && !isDone && !isOff && hasProgram;
+    cells.push({
+      iso,
+      date: d.getDate(),
+      label: WEEK_LABELS[i],
+      isToday,
+      isDone,
+      isMissed,
+      isOff,
+      mins: isDone ? (completed.get(iso) ?? plannedMins) : plannedMins,
+      programId: cfg?.programId,
+      programName: cfg?.programId ? programNameById[cfg.programId] : undefined,
+      time: cfg?.time,
+    });
+  }
+  return cells;
+}
 
 function getFocusTitle(labels: string[]): string {
   if (!labels.length) return 'Daily Program';
@@ -132,6 +285,46 @@ const Home: React.FC = () => {
   const profile = loadUserProfile();
   const program = loadActiveProgramForSession(profile);
   const [expanded, setExpanded] = useState(false);
+  const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekMonday(new Date()));
+  const [configs, setConfigs] = useState<Record<string, DayConfig>>(() => {
+    seedDemoIfEmpty();
+    return loadDayConfigMap();
+  });
+  const [editingIso, setEditingIso] = useState<string | null>(null);
+
+  useEffect(() => { saveDayConfigMap(configs); }, [configs]);
+
+  const programOptions = useMemo(() => getProgramOptions(), []);
+  const programNameById = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const p of programOptions) m[p.id] = p.name;
+    return m;
+  }, [programOptions]);
+
+  const todayIso = useMemo(() => toIsoDate(new Date()), []);
+  const plannedMins = program?.totalDurationMin ?? 6;
+  const weekCells = useMemo(
+    () => buildWeek(weekStart, todayIso, plannedMins, configs, programNameById),
+    [weekStart, todayIso, plannedMins, configs, programNameById],
+  );
+  const weekRangeLabel = useMemo(() => {
+    const start = weekStart;
+    const end = addDays(weekStart, 6);
+    const sameMonth = start.getMonth() === end.getMonth();
+    return sameMonth
+      ? `${MONTH_LABELS[start.getMonth()]} ${start.getDate()} – ${end.getDate()}`
+      : `${MONTH_LABELS[start.getMonth()]} ${start.getDate()} – ${MONTH_LABELS[end.getMonth()]} ${end.getDate()}`;
+  }, [weekStart]);
+
+  const applyDayConfig = (iso: string, next: DayConfig) => {
+    setConfigs(prev => {
+      if (isConfigEmpty(next)) {
+        const { [iso]: _removed, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [iso]: next };
+    });
+  };
 
   const totalEx = program?.exercises.length ?? 0;
   const completedEx = program?.exercises.filter(e => e.completed).length ?? 0;
@@ -173,12 +366,7 @@ const Home: React.FC = () => {
                 advanced:     { label: 'Advanced' },
               };
               const lvl = levelState ? LEVEL_LABELS[levelState.currentLevel] : null;
-              const realDaysDone = levelState?.daysCompletedInLevel ?? 0;
-              const totalDays = 21;
-
-              // Dummy data for display — remove when real data flows
               const streak = realStreak || 8;
-              const daysDone = realDaysDone || 8;
 
               return (
                 <>
@@ -270,89 +458,149 @@ const Home: React.FC = () => {
                         </span>
                       </div>
 
-                      {/* 21-day progress grid */}
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 8 }}>
-                          <span style={{ fontSize: 10, color: '#52525b' }}>{daysDone}/{totalDays}</span>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(21, 1fr)', gap: 3 }}>
-                          {Array.from({ length: totalDays }).map((_, i) => (
-                            <div
-                              key={i}
-                              style={{
-                                aspectRatio: '1',
-                                borderRadius: 3,
-                                background: i < daysDone ? '#f97316' : 'rgba(255,255,255,0.04)',
-                                boxShadow: i < daysDone ? '0 0 4px rgba(249,115,22,0.3)' : 'none',
-                              }}
-                            />
-                          ))}
-                        </div>
+                      {/* Week navigation */}
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setWeekStart(prev => addDays(prev, -7)); }}
+                          aria-label="Previous week"
+                          style={{
+                            width: 28, height: 28, borderRadius: 8,
+                            background: 'rgba(255,255,255,0.04)',
+                            border: 'none', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: '#a1a1aa',
+                          }}
+                        >
+                          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="15 18 9 12 15 6" />
+                          </svg>
+                        </button>
+                        <span style={{ fontSize: 11, color: '#a1a1aa', fontWeight: 600 }}>
+                          {weekRangeLabel}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setWeekStart(prev => addDays(prev, 7)); }}
+                          aria-label="Next week"
+                          style={{
+                            width: 28, height: 28, borderRadius: 8,
+                            background: 'rgba(255,255,255,0.04)',
+                            border: 'none', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: '#a1a1aa',
+                          }}
+                        >
+                          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </button>
                       </div>
 
-                      {/* 3-level roadmap */}
-                      {levelState && (
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0,
-                          marginBottom: 16,
-                        }}>
-                          {LEVEL_ORDER.map((level, i) => {
-                            const cfg = LEVEL_CONFIG[level];
-                            const isCompleted = levelState.completedLevels.includes(level);
-                            const isCurrent = levelState.currentLevel === level;
+                      {/* Day grid */}
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6, marginBottom: 16 }}
+                      >
+                        {weekCells.map((d) => {
+                          const tone =
+                            d.isToday ? { bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.25)', labelColor: '#fb923c', dateColor: '#FFFFFF' }
+                            : d.isDone ? { bg: 'rgba(16,185,129,0.06)', border: 'rgba(16,185,129,0.15)', labelColor: '#34d399', dateColor: '#6ee7b7' }
+                            : d.isMissed ? { bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.15)', labelColor: '#f87171', dateColor: '#fca5a5' }
+                            : d.isOff ? { bg: 'rgba(255,255,255,0.01)', border: 'rgba(255,255,255,0.03)', labelColor: '#52525b', dateColor: '#3f3f46' }
+                            : { bg: 'rgba(255,255,255,0.02)', border: 'rgba(255,255,255,0.04)', labelColor: '#52525b', dateColor: '#a1a1aa' };
 
-                            return (
-                              <React.Fragment key={level}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                                  <div style={{
-                                    width: 34, height: 34, borderRadius: '50%',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    background: isCompleted
-                                      ? cfg.color
-                                      : isCurrent
-                                        ? `${cfg.color}22`
-                                        : 'rgba(255,255,255,0.04)',
-                                    border: isCurrent
-                                      ? `2px solid ${cfg.color}`
-                                      : isCompleted
-                                        ? 'none'
-                                        : '1px solid rgba(255,255,255,0.10)',
-                                    fontSize: 15,
-                                  }}>
-                                    {isCompleted ? '✓' : cfg.icon}
-                                  </div>
-                                  <span style={{
-                                    fontSize: 10,
-                                    fontWeight: isCurrent ? 700 : 500,
-                                    color: isCompleted ? cfg.color : isCurrent ? '#FFFFFF' : '#71717a',
-                                    marginTop: 5,
-                                  }}>
-                                    {cfg.label}
+                          // Subtitle: short program initial + scheduled time (hidden for done/off/missed which use icons)
+                          const programInitial = d.programName ? d.programName.trim().charAt(0).toUpperCase() : null;
+                          const showScheduled = !d.isDone && !d.isOff && !d.isMissed && (d.time || d.programId);
+
+                          return (
+                            <button
+                              key={d.iso}
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setEditingIso(d.iso); }}
+                              style={{
+                                position: 'relative',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                aspectRatio: '0.85',
+                                padding: '5px 0',
+                                borderRadius: 12,
+                                background: tone.bg,
+                                border: `1px solid ${tone.border}`,
+                                cursor: 'pointer',
+                                fontFamily: T.font,
+                                color: 'inherit',
+                              }}
+                            >
+                              <span style={{
+                                fontSize: 8, fontWeight: 700,
+                                letterSpacing: '0.06em', textTransform: 'uppercase',
+                                color: tone.labelColor,
+                              }}>
+                                {d.label}
+                              </span>
+                              <span style={{
+                                fontSize: 13, fontWeight: 700, lineHeight: 1,
+                                marginTop: 2, color: tone.dateColor,
+                              }}>
+                                {d.date}
+                              </span>
+                              <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 12, gap: 1 }}>
+                                {d.isOff ? (
+                                  <span style={{ fontSize: 7, fontWeight: 700, color: '#52525b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Off</span>
+                                ) : d.isDone ? (
+                                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                ) : d.isMissed ? (
+                                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                  </svg>
+                                ) : showScheduled ? (
+                                  <>
+                                    {programInitial && (
+                                      <span style={{
+                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                        width: 14, height: 14, borderRadius: 4,
+                                        background: d.isToday ? 'rgba(251,146,60,0.18)' : 'rgba(255,255,255,0.06)',
+                                        color: d.isToday ? '#fb923c' : '#a1a1aa',
+                                        fontSize: 8, fontWeight: 700, lineHeight: 1,
+                                      }}>
+                                        {programInitial}
+                                      </span>
+                                    )}
+                                    {d.time && (
+                                      <span style={{
+                                        fontSize: 7.5, fontWeight: 600,
+                                        color: d.isToday ? 'rgba(251,146,60,0.9)' : '#a1a1aa',
+                                        letterSpacing: '0.02em',
+                                      }}>
+                                        {d.time}
+                                      </span>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span style={{ fontSize: 8, color: d.isToday ? 'rgba(251,146,60,0.7)' : '#52525b' }}>
+                                    +
                                   </span>
-                                  {isCurrent && (
-                                    <span style={{ fontSize: 8, color: cfg.color, marginTop: 2 }}>
-                                      {levelState.daysCompletedInLevel}/21
-                                    </span>
-                                  )}
-                                </div>
-                                {i < LEVEL_ORDER.length - 1 && (
-                                  <div style={{
-                                    flex: 0.6,
-                                    height: 2,
-                                    marginTop: -14,
-                                    background: isCompleted
-                                      ? cfg.color
-                                      : 'linear-gradient(90deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05))',
-                                    borderRadius: 1,
-                                  }} />
                                 )}
-                              </React.Fragment>
-                            );
-                          })}
-                        </div>
-                      )}
+                              </div>
+                              {d.isToday && (
+                                <div style={{
+                                  position: 'absolute', bottom: -2, left: '50%',
+                                  transform: 'translateX(-50%)',
+                                  width: 4, height: 4, borderRadius: 2,
+                                  background: '#f97316',
+                                }} />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
 
                       {(!hasProgram || allDone) && (
                         <>
@@ -516,7 +764,212 @@ const Home: React.FC = () => {
           </section>
         </div>
       </div>
+
+      {editingIso && (
+        <DayPickerModal
+          iso={editingIso}
+          config={configs[editingIso] ?? {}}
+          programs={programOptions}
+          onClose={() => setEditingIso(null)}
+          onSave={(next) => {
+            applyDayConfig(editingIso, next);
+            setEditingIso(null);
+          }}
+        />
+      )}
     </Layout>
+  );
+};
+
+// ── Day picker modal ─────────────────────────────────────────────────────────
+
+interface DayPickerModalProps {
+  iso: string;
+  config: DayConfig;
+  programs: ProgramOption[];
+  onClose: () => void;
+  onSave: (next: DayConfig) => void;
+}
+
+function prettyDateFromIso(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const dow = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dt.getDay()];
+  return `${dow}, ${MONTH_LABELS[dt.getMonth()]} ${dt.getDate()}`;
+}
+
+const DayPickerModal: React.FC<DayPickerModalProps> = ({ iso, config, programs, onClose, onSave }) => {
+  const [off, setOff] = useState<boolean>(Boolean(config.off));
+  const [programId, setProgramId] = useState<string>(config.programId ?? programs[0]?.id ?? '');
+  const [time, setTime] = useState<string>(config.time ?? '08:00');
+
+  const handleSave = () => {
+    if (off) {
+      onSave({ off: true, reminders: config.reminders });
+      return;
+    }
+    onSave({
+      off: false,
+      reminders: config.reminders,
+      programId: programId || undefined,
+      time: time || undefined,
+      demoDone: config.demoDone,
+    });
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 120,
+        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 440,
+          background: 'linear-gradient(180deg, #1E1E22 0%, #141416 100%)',
+          borderTopLeftRadius: 24, borderTopRightRadius: 24,
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          padding: 20, paddingBottom: 28,
+          fontFamily: T.font, color: T.text,
+        }}
+      >
+        <div style={{
+          width: 36, height: 4, borderRadius: 2,
+          background: 'rgba(255,255,255,0.12)', margin: '0 auto 14px',
+        }} />
+
+        <div style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.text3, fontWeight: 700, marginBottom: 2 }}>
+          Plan this day
+        </div>
+        <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>
+          {prettyDateFromIso(iso)}
+        </div>
+
+        {/* Off toggle */}
+        <button
+          type="button"
+          onClick={() => setOff(v => !v)}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '12px 14px', borderRadius: 14,
+            background: off ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.03)',
+            border: `1px solid ${off ? 'rgba(239,68,68,0.45)' : 'rgba(255,255,255,0.08)'}`,
+            color: T.text, cursor: 'pointer', fontFamily: T.font, marginBottom: 18,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 16, color: off ? '#ef4444' : T.text2 }}>{off ? '✕' : '○'}</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>Off day</div>
+              <div style={{ fontSize: 11, color: T.text3 }}>
+                {off ? 'No program or reminder' : 'Mark this day as a rest day'}
+              </div>
+            </div>
+          </div>
+          <div style={{
+            width: 36, height: 22, borderRadius: 11, position: 'relative',
+            background: off ? '#ef4444' : 'rgba(255,255,255,0.1)',
+            transition: 'background 0.2s',
+          }}>
+            <div style={{
+              position: 'absolute', top: 2, left: off ? 16 : 2,
+              width: 18, height: 18, borderRadius: '50%',
+              background: '#FFF', transition: 'left 0.2s',
+            }} />
+          </div>
+        </button>
+
+        {/* Program + time — disabled when off */}
+        <div style={{ opacity: off ? 0.4 : 1, pointerEvents: off ? 'none' : 'auto' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: T.text3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
+            Program
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+            {programs.map(p => {
+              const selected = p.id === programId;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setProgramId(p.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '11px 14px', borderRadius: 12,
+                    background: selected ? 'rgba(249,115,22,0.12)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${selected ? 'rgba(249,115,22,0.45)' : 'rgba(255,255,255,0.08)'}`,
+                    color: T.text, cursor: 'pointer', fontFamily: T.font,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      width: 26, height: 26, borderRadius: 8,
+                      background: selected ? '#fb923c' : 'rgba(255,255,255,0.06)',
+                      color: selected ? '#0a0a0c' : '#a1a1aa',
+                      fontSize: 11, fontWeight: 800,
+                    }}>
+                      {p.name.trim().charAt(0).toUpperCase()}
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</span>
+                  </div>
+                  {selected && (
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fb923c" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ fontSize: 11, fontWeight: 700, color: T.text3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
+            Reminder time
+          </div>
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            style={{
+              width: '100%', padding: '10px 12px', borderRadius: 12,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: T.text, fontSize: 14, fontFamily: T.font,
+              colorScheme: 'dark',
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              flex: 1, padding: 14, borderRadius: 14,
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+              color: T.text2, fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', fontFamily: T.font,
+            }}
+          >Cancel</button>
+          <button
+            type="button"
+            onClick={handleSave}
+            style={{
+              flex: 1, padding: 14, borderRadius: 14,
+              background: 'linear-gradient(90deg, #ea580c, #fb923c)',
+              border: 'none', color: '#0a0a0c',
+              fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', fontFamily: T.font,
+            }}
+          >Save</button>
+        </div>
+      </div>
+    </div>
   );
 };
 
