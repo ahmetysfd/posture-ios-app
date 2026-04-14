@@ -821,9 +821,9 @@ export function determineLevel(report: ScanReport, user: UserContext): PostureLe
 }
 
 export const RISK_INFO: Record<RiskCategory, { label: string; color: string; bgColor: string }> = {
-  high: { label: 'High risk', color: '#E68C33', bgColor: 'rgba(230,140,51,0.1)' },
-  medium: { label: 'Medium risk', color: '#D9B84C', bgColor: 'rgba(217,184,76,0.1)' },
-  low: { label: 'Low risk', color: '#3DA878', bgColor: 'rgba(61,168,120,0.1)' },
+  high: { label: 'High risk', color: '#EF4444', bgColor: 'rgba(239,68,68,0.1)' },
+  medium: { label: 'Medium risk', color: '#F97316', bgColor: 'rgba(249,115,22,0.1)' },
+  low: { label: 'Low risk', color: '#EAB308', bgColor: 'rgba(234,179,8,0.1)' },
 };
 
 export const LEVEL_INFO: Record<

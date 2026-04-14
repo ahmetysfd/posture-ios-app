@@ -85,9 +85,9 @@ const EXERCISE_IMAGES: Record<string, ExerciseImage> = {
 };
 
 const DIFFICULTY_LABEL_COLOR: Record<string, string> = {
-  beginner: '#34D399',
-  medium:   '#FBBF24',
-  hard:     '#FB7185',
+  beginner: '#22C55E',
+  medium:   '#EAB308',
+  hard:     '#EF4444',
 };
 
 const PersonalizedProgramScreen: React.FC = () => {
@@ -279,8 +279,8 @@ const PersonalizedProgramScreen: React.FC = () => {
                     const dc = ex.difficulty === 'hard'
                       ? { color: '#EF4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)' }
                       : ex.difficulty === 'medium'
-                        ? { color: '#FB923C', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.25)' }
-                        : { color: '#D9B84C', bg: 'rgba(217,184,76,0.08)', border: 'rgba(217,184,76,0.25)' };
+                        ? { color: '#EAB308', bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.25)' }
+                        : { color: '#22C55E', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.25)' };
                     return (
                       <span
                         key={ex.id}

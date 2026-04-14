@@ -6,57 +6,156 @@ import type { Exercise } from '../data/postureData';
 import {
   DURATION_PRESETS,
   REPS_PRESETS,
-  getExerciseDaysCompleted,
   isStrengthExercise,
   loadActiveProgramForSession,
   saveDailyProgram,
   replaceExercise,
   updateExerciseParams,
-  type DailyExercise,
   type StoredDailyProgram,
 } from '../services/DailyProgram';
 import { loadUserProfile } from '../services/UserProfile';
 
 const T = {
-  bg: '#09090B',
-  surface: '#141418',
+  bg: '#0a0a0a',
+  card: '#121212',
+  pillTrack: 'rgba(0,0,0,0.4)',
+  pillInner: '#1a1a1a',
   border: 'rgba(255,255,255,0.05)',
-  border2: 'rgba(255,255,255,0.08)',
-  text: '#FFFFFF',
-  text2: 'rgba(161,161,170,1)',
-  text3: 'rgba(113,113,122,1)',
-  text4: 'rgba(82,82,91,1)',
-  gold: '#F97316',
-  gold2: '#FB923C',
-  danger: '#F87171',
+  border2: 'rgba(255,255,255,0.03)',
+  borderHover: 'rgba(249,115,22,0.20)',
+  text: '#F5F5F5',
+  text2: '#A3A3A3',
+  text3: '#737373',
+  text4: '#525252',
+  text5: 'rgba(163,163,163,0.85)',
+  orange: '#F97316',
+  orangeSoft: 'rgba(249,115,22,0.10)',
+  orangeSoft2: 'rgba(249,115,22,0.20)',
   font: "system-ui, -apple-system, 'Helvetica Neue', sans-serif",
-};
-
-const targetProblemTagStyle: React.CSSProperties = {
-  color: T.text2,
-  borderColor: T.border2,
-  background: 'rgba(255,255,255,0.03)',
 };
 
 function recomputeProgram(program: StoredDailyProgram): StoredDailyProgram {
   const totalSec = program.exercises.reduce((sum, ex) => sum + ex.duration * ex.sets + 15, 0);
-  return {
-    ...program,
-    totalDurationMin: Math.round(totalSec / 60),
-  };
+  return { ...program, totalDurationMin: Math.round(totalSec / 60) };
 }
 
-const iconButton: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 4,
-  padding: '6px 10px',
-  borderRadius: 10,
-  background: 'rgba(255,255,255,0.04)',
-  border: `1px solid ${T.border2}`,
-  cursor: 'pointer',
-  fontFamily: T.font,
-};
+function ControlPill({
+  label,
+  value,
+  isRange,
+  onDec,
+  onInc,
+  disableDec,
+  disableInc,
+}: {
+  label: string;
+  value: string | number;
+  isRange: boolean;
+  onDec: () => void;
+  onInc: () => void;
+  disableDec?: boolean;
+  disableInc?: boolean;
+}) {
+  const btn: React.CSSProperties = {
+    padding: 8,
+    background: 'transparent',
+    border: 'none',
+    color: T.text3,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: T.font,
+  };
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        background: T.pillTrack,
+        borderRadius: 12,
+        padding: 4,
+        border: '1px solid rgba(255,255,255,0.05)',
+      }}
+    >
+      <span
+        style={{
+          fontSize: 10,
+          color: T.text3,
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '0.12em',
+          paddingLeft: 12,
+          paddingRight: 8,
+          minWidth: 56,
+          fontFamily: T.font,
+        }}
+      >
+        {label}
+      </span>
+
+      <div
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          background: T.pillInner,
+          borderRadius: 8,
+          overflow: 'hidden',
+        }}
+      >
+        <button
+          type="button"
+          onClick={disableDec ? undefined : onDec}
+          disabled={disableDec}
+          style={{ ...btn, borderRadius: '8px 0 0 8px', opacity: disableDec ? 0.35 : 1 }}
+          aria-label="decrement"
+        >
+          {isRange ? (
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          ) : (
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          )}
+        </button>
+
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            width: 64,
+            textAlign: 'center',
+            color: T.text,
+            fontFamily: T.font,
+          }}
+        >
+          {value}
+        </span>
+
+        <button
+          type="button"
+          onClick={disableInc ? undefined : onInc}
+          disabled={disableInc}
+          style={{ ...btn, borderRadius: '0 8px 8px 0', opacity: disableInc ? 0.35 : 1 }}
+          aria-label="increment"
+        >
+          {isRange ? (
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          ) : (
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const ProgramEditScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -65,6 +164,7 @@ const ProgramEditScreen: React.FC = () => {
     loadActiveProgramForSession(profile),
   );
   const [swapTarget, setSwapTarget] = useState<string | null>(null);
+  const [hoverId, setHoverId] = useState<string | null>(null);
 
   const exercises = useMemo(() => program?.exercises ?? [], [program]);
 
@@ -72,9 +172,6 @@ const ProgramEditScreen: React.FC = () => {
     navigate('/program');
     return null;
   }
-
-  const totalDuration = exercises.reduce((sum, ex) => sum + ex.duration * ex.sets, 0);
-  const totalMin = Math.max(1, Math.ceil(totalDuration / 60));
 
   function handleReplace(newExercise: Exercise) {
     if (!swapTarget || !program) return;
@@ -101,6 +198,11 @@ const ProgramEditScreen: React.FC = () => {
     setProgram(updated);
   }
 
+  function handleSave() {
+    if (program) saveDailyProgram(program);
+    navigate('/program');
+  }
+
   if (swapTarget && program) {
     return (
       <Layout>
@@ -118,226 +220,317 @@ const ProgramEditScreen: React.FC = () => {
 
   return (
     <Layout>
-      <main style={{ padding: '32px 20px 112px', fontFamily: T.font }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
-          <div>
-            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: T.text3, textTransform: 'uppercase', marginBottom: 4 }}>
-              Customize
-            </p>
-            <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.04em', color: T.text, lineHeight: 1 }}>
-              Edit Program
-            </h1>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate('/program')}
+      <main
+        style={{
+          minHeight: '100%',
+          background: T.bg,
+          color: T.text,
+          fontFamily: T.font,
+          padding: '24px 20px 120px',
+        }}
+      >
+        <div style={{ maxWidth: 672, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 32 }}>
+          {/* Header */}
+          <header
             style={{
-              marginTop: 4,
-              padding: '8px 16px',
-              borderRadius: 12,
-              border: 'none',
-              cursor: 'pointer',
-              background: 'linear-gradient(90deg, #EA580C 0%, #F97316 100%)',
-              color: '#FFFFFF',
-              fontSize: 12,
-              fontWeight: 700,
-              fontFamily: T.font,
-              boxShadow: '0 0 16px rgba(249,115,22,0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingBottom: 16,
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
             }}
           >
-            Done
-          </button>
-        </div>
-
-        <div style={{ position: 'relative', marginTop: 16, borderRadius: 18, overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #1E1E22 0%, #121215 100%)', border: `1px solid ${T.border}`, borderRadius: 18 }} />
-          <div style={{ position: 'absolute', top: '-40%', right: '-15%', width: 128, height: 128, borderRadius: '50%', background: 'rgba(249,115,22,0.10)', filter: 'blur(35px)', pointerEvents: 'none' }} />
-          <div style={{ position: 'relative', zIndex: 1, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.text2 }}>
-              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={T.gold2} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="9" />
-                <path d="M12 7v5l3 2" />
-              </svg>
-              <span>~{totalMin} min</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: T.orangeSoft,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={T.orange} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+              </div>
+              <h1 style={{ fontSize: 20, fontWeight: 500, letterSpacing: '-0.02em', margin: 0, color: T.text }}>
+                Edit Routine
+              </h1>
             </div>
-            <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(63,63,70,1)' }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.text2 }}>
-              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={T.gold2} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-              </svg>
-              <span>{exercises.length} exercises</span>
-            </div>
-          </div>
-        </div>
+            <button
+              type="button"
+              onClick={handleSave}
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: T.orange,
+                background: T.orangeSoft,
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: 9999,
+                cursor: 'pointer',
+                fontFamily: T.font,
+                transition: 'background 0.2s ease, color 0.2s ease',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = T.orangeSoft2;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = T.orangeSoft;
+              }}
+            >
+              Save Changes
+            </button>
+          </header>
 
-        <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {exercises.map((ex, index) => {
-            const isStrength = isStrengthExercise(ex.name);
-            const diffLabel = ex.difficulty === 'beginner' ? 'Beginner' : ex.difficulty === 'medium' ? 'Medium' : 'Hard';
-            const progressDays = Math.min(getExerciseDaysCompleted(ex.name), 21);
-            const durIdx = DURATION_PRESETS.indexOf(ex.duration);
-            const repIdx = REPS_PRESETS.indexOf(ex.displayReps);
+          {/* Exercise list */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {exercises.map((ex) => {
+              const isStrength = isStrengthExercise(ex.name);
+              const diffLabel = ex.difficulty === 'beginner' ? 'Beginner' : ex.difficulty === 'medium' ? 'Medium' : 'Hard';
+              const isHard = ex.difficulty === 'hard';
+              const durIdx = DURATION_PRESETS.indexOf(ex.duration);
+              const repIdx = REPS_PRESETS.indexOf(ex.displayReps);
+              const isHover = hoverId === ex.id;
 
-            return (
-              <div key={ex.id} style={{ position: 'relative', borderRadius: 18, overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', inset: 0, background: T.surface, border: `1px solid ${T.border}` }} />
-                <div style={{ position: 'relative', zIndex: 1, padding: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h3 style={{ fontSize: 15, fontWeight: 600, color: T.text, lineHeight: 1.2, margin: 0 }}>
-                        {ex.name}
-                      </h3>
-                      <p style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>
-                        {isStrength ? ex.displayReps : `${ex.duration}s`} · {diffLabel}
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
-                      <button
-                        type="button"
-                        onClick={() => setSwapTarget(ex.id)}
-                        style={iconButton}
-                      >
-                        <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke={T.text2} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M7 16V4m0 0L3 8m4-4l4 4" />
-                          <path d="M17 8v12m0 0l4-4m-4 4l-4-4" />
-                        </svg>
-                        <span style={{ fontSize: 10, color: T.text2 }}>Swap</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemove(ex.id)}
-                        style={{ ...iconButton, padding: 7, color: T.text3 }}
-                      >
-                        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                          <path d="M10 11v6" />
-                          <path d="M14 11v6" />
-                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                        </svg>
-                      </button>
-                    </div>
+              return (
+                <div
+                  key={ex.id}
+                  onMouseEnter={() => setHoverId(ex.id)}
+                  onMouseLeave={() => setHoverId(null)}
+                  style={{
+                    position: 'relative',
+                    background: T.card,
+                    borderRadius: 16,
+                    padding: 20,
+                    border: `1px solid ${isHover ? T.borderHover : T.border2}`,
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                    transition: 'border-color 0.3s ease',
+                  }}
+                >
+                  {/* Drag handle (visual only on hover) */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 32,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: isHover ? 1 : 0,
+                      transition: 'opacity 0.2s ease',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={T.text4} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="9" cy="6" r="1" />
+                      <circle cx="9" cy="12" r="1" />
+                      <circle cx="9" cy="18" r="1" />
+                      <circle cx="15" cy="6" r="1" />
+                      <circle cx="15" cy="12" r="1" />
+                      <circle cx="15" cy="18" r="1" />
+                    </svg>
                   </div>
 
-                  <p style={{ fontSize: 10, color: T.text4, marginTop: 8 }}>
-                    {progressDays} / 21 days
-                  </p>
-
-                  <div style={{ marginTop: 6, height: 2, borderRadius: 999, background: 'rgba(255,255,255,0.04)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(progressDays / 21) * 100}%`, borderRadius: 999, background: 'rgba(249,115,22,0.6)' }} />
-                  </div>
-
-                  <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', margin: '14px 0 12px' }} />
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: T.text3, textTransform: 'uppercase' }}>Sets</span>
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={() => ex.sets > 1 && handleParamChange(ex.id, { sets: ex.sets - 1 })}
-                          style={{ width: 28, height: 28, borderRadius: '10px 0 0 10px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.border2}`, color: T.text2, cursor: ex.sets <= 1 ? 'default' : 'pointer', opacity: ex.sets <= 1 ? 0.3 : 1 }}
-                        >
-                          -
-                        </button>
-                        <div style={{ minWidth: 34, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)', borderTop: `1px solid ${T.border2}`, borderBottom: `1px solid ${T.border2}`, color: T.text, fontSize: 13, fontWeight: 700 }}>
-                          {ex.sets}
+                  <div style={{ paddingLeft: 8 }}>
+                    {/* Top row: info + actions */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
+                        marginBottom: 24,
+                        gap: 12,
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <h3 style={{ fontSize: 18, fontWeight: 500, letterSpacing: '-0.01em', color: '#F5F5F5', margin: 0 }}>
+                          {ex.name}
+                        </h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                          <span
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              background: isHard ? T.orange : T.text3,
+                            }}
+                          />
+                          <span
+                            style={{
+                              fontSize: 11,
+                              color: T.text3,
+                              fontWeight: 500,
+                              letterSpacing: '0.08em',
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            {diffLabel}
+                          </span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => ex.sets < 4 && handleParamChange(ex.id, { sets: ex.sets + 1 })}
-                          style={{ width: 28, height: 28, borderRadius: '0 10px 10px 0', background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.border2}`, color: T.text2, cursor: ex.sets >= 4 ? 'default' : 'pointer', opacity: ex.sets >= 4 ? 0.3 : 1 }}
-                        >
-                          +
-                        </button>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        <ActionButton
+                          onClick={() => setSwapTarget(ex.id)}
+                          icon={
+                            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="17 1 21 5 17 9" />
+                              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                              <polyline points="7 23 3 19 7 15" />
+                              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                            </svg>
+                          }
+                          label="Change Move"
+                        />
+                        <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.10)', margin: '0 4px' }} />
+                        <IconDeleteButton onClick={() => handleRemove(ex.id)} />
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: T.text3, textTransform: 'uppercase' }}>
-                        {isStrength ? 'Reps' : 'Duration'}
-                      </span>
+                    {/* Middle: controls */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+                      <ControlPill
+                        label="Sets"
+                        value={ex.sets}
+                        isRange={false}
+                        onDec={() => ex.sets > 1 && handleParamChange(ex.id, { sets: ex.sets - 1 })}
+                        onInc={() => ex.sets < 4 && handleParamChange(ex.id, { sets: ex.sets + 1 })}
+                        disableDec={ex.sets <= 1}
+                        disableInc={ex.sets >= 4}
+                      />
                       {isStrength ? (
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const prev = repIdx <= 0 ? REPS_PRESETS.length - 1 : repIdx - 1;
-                              handleParamChange(ex.id, { displayReps: REPS_PRESETS[prev] });
-                            }}
-                            style={{ width: 28, height: 28, borderRadius: '10px 0 0 10px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.border2}`, color: T.text2, cursor: 'pointer' }}
-                          >
-                            ‹
-                          </button>
-                          <div style={{ minWidth: 74, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)', borderTop: `1px solid ${T.border2}`, borderBottom: `1px solid ${T.border2}`, color: T.text, fontSize: 12, fontWeight: 600 }}>
-                            {ex.displayReps}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const next = repIdx >= REPS_PRESETS.length - 1 ? 0 : repIdx + 1;
-                              handleParamChange(ex.id, { displayReps: REPS_PRESETS[next] });
-                            }}
-                            style={{ width: 28, height: 28, borderRadius: '0 10px 10px 0', background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.border2}`, color: T.text2, cursor: 'pointer' }}
-                          >
-                            ›
-                          </button>
-                        </div>
+                        <ControlPill
+                          label="Reps"
+                          value={ex.displayReps}
+                          isRange={true}
+                          onDec={() => {
+                            const prev = repIdx <= 0 ? REPS_PRESETS.length - 1 : repIdx - 1;
+                            handleParamChange(ex.id, { displayReps: REPS_PRESETS[prev] });
+                          }}
+                          onInc={() => {
+                            const next = repIdx >= REPS_PRESETS.length - 1 ? 0 : repIdx + 1;
+                            handleParamChange(ex.id, { displayReps: REPS_PRESETS[next] });
+                          }}
+                        />
                       ) : (
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <button
-                            type="button"
-                            onClick={() => durIdx > 0 && handleParamChange(ex.id, { duration: DURATION_PRESETS[durIdx - 1] })}
-                            style={{ width: 28, height: 28, borderRadius: '10px 0 0 10px', background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.border2}`, color: T.text2, cursor: durIdx <= 0 ? 'default' : 'pointer', opacity: durIdx <= 0 ? 0.3 : 1 }}
-                          >
-                            -
-                          </button>
-                          <div style={{ minWidth: 44, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)', borderTop: `1px solid ${T.border2}`, borderBottom: `1px solid ${T.border2}`, color: T.text, fontSize: 13, fontWeight: 700 }}>
-                            {ex.duration}s
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => durIdx < DURATION_PRESETS.length - 1 && handleParamChange(ex.id, { duration: DURATION_PRESETS[durIdx + 1] })}
-                            style={{ width: 28, height: 28, borderRadius: '0 10px 10px 0', background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.border2}`, color: T.text2, cursor: durIdx >= DURATION_PRESETS.length - 1 ? 'default' : 'pointer', opacity: durIdx >= DURATION_PRESETS.length - 1 ? 0.3 : 1 }}
-                          >
-                            +
-                          </button>
-                        </div>
+                        <ControlPill
+                          label="Time"
+                          value={`${ex.duration}s`}
+                          isRange={false}
+                          onDec={() =>
+                            durIdx > 0 && handleParamChange(ex.id, { duration: DURATION_PRESETS[durIdx - 1] })
+                          }
+                          onInc={() =>
+                            durIdx < DURATION_PRESETS.length - 1 &&
+                            handleParamChange(ex.id, { duration: DURATION_PRESETS[durIdx + 1] })
+                          }
+                          disableDec={durIdx <= 0}
+                          disableInc={durIdx >= DURATION_PRESETS.length - 1}
+                        />
                       )}
                     </div>
-                  </div>
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 14, alignItems: 'center' }}>
-                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', color: T.text4, textTransform: 'uppercase', marginRight: 2 }}>
-                      Targets
-                    </span>
-                    {ex.targetProblemLabels.map((target) => (
-                        <span
-                          key={target}
-                          style={{
-                            fontSize: 9,
-                            fontWeight: 700,
-                            letterSpacing: '0.04em',
-                            padding: '3px 8px',
-                            borderRadius: 6,
-                            border: `1px solid ${targetProblemTagStyle.borderColor}`,
-                            background: targetProblemTagStyle.background,
-                            color: targetProblemTagStyle.color,
-                          }}
-                        >
-                          {target}
-                        </span>
-                    ))}
+                    {/* Bottom: tags */}
+                    {ex.targetProblemLabels.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {ex.targetProblemLabels.map((tag) => (
+                          <span
+                            key={tag}
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 500,
+                              padding: '4px 10px',
+                              borderRadius: 6,
+                              background: 'rgba(255,255,255,0.05)',
+                              color: T.text2,
+                              border: '1px solid rgba(255,255,255,0.05)',
+                            }}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-
       </main>
     </Layout>
   );
 };
+
+function ActionButton({ onClick, icon, label }: { onClick: () => void; icon: React.ReactNode; label: string }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '6px 12px',
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        color: hover ? T.orange : T.text3,
+        background: hover ? T.orangeSoft : 'transparent',
+        border: 'none',
+        borderRadius: 8,
+        cursor: 'pointer',
+        fontFamily: T.font,
+        transition: 'color 0.2s ease, background 0.2s ease',
+      }}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function IconDeleteButton({ onClick }: { onClick: () => void }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      title="Remove exercise"
+      style={{
+        padding: 6,
+        color: hover ? '#EF4444' : T.text4,
+        background: hover ? 'rgba(239,68,68,0.10)' : 'transparent',
+        border: 'none',
+        borderRadius: 8,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'color 0.2s ease, background 0.2s ease',
+      }}
+    >
+      <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="3 6 5 6 21 6" />
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+        <path d="M10 11v6" />
+        <path d="M14 11v6" />
+        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+      </svg>
+    </button>
+  );
+}
 
 export default ProgramEditScreen;

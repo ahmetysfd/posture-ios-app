@@ -284,7 +284,6 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const profile = loadUserProfile();
   const program = loadActiveProgramForSession(profile);
-  const [expanded, setExpanded] = useState(false);
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekMonday(new Date()));
   const [configs, setConfigs] = useState<Record<string, DayConfig>>(() => {
     seedDemoIfEmpty();
@@ -374,10 +373,9 @@ const Home: React.FC = () => {
                     style={{
                       position: 'relative',
                       overflow: 'hidden',
-                      borderRadius: expanded ? '24px 24px 0 0' : 24,
+                      borderRadius: 24,
                       background: 'linear-gradient(135deg, #1a1a1f 0%, #111114 100%)',
                       border: '1px solid rgba(255,255,255,0.06)',
-                      transition: 'border-radius 0.2s ease',
                     }}
                   >
                     {/* Orange glow */}
@@ -613,70 +611,6 @@ const Home: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Expandable exercise list (tap card title area) */}
-                  {hasProgram && (
-                    <button
-                      type="button"
-                      onClick={() => setExpanded(v => !v)}
-                      style={{
-                        width: '100%', padding: '10px 0 0', background: 'transparent', border: 'none',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                      }}
-                    >
-                      <span style={{ fontSize: 11, color: '#52525b', fontFamily: T.font }}>{expanded ? 'Hide exercises' : 'Show exercises'}</span>
-                      <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#52525b" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-                        style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    </button>
-                  )}
-
-                  {hasProgram && expanded && (
-                    <div style={{
-                      background: '#121215',
-                      border: '1px solid rgba(255,255,255,0.05)',
-                      borderRadius: 20,
-                      overflow: 'hidden',
-                      marginTop: 8,
-                    }}>
-                      {[...program!.exercises]
-                        .sort((a, b) => (a.targetProblemLabels[0] ?? '').localeCompare(b.targetProblemLabels[0] ?? ''))
-                        .map((ex, i, arr) => (
-                          <div key={ex.id} style={{
-                            display: 'flex', alignItems: 'center', gap: 12,
-                            padding: '12px 18px',
-                            borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                            opacity: ex.completed ? 0.45 : 1,
-                          }}>
-                            <span style={{ width: 22, textAlign: 'center', fontSize: 17, flexShrink: 0 }}>{ex.emoji}</span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: ex.completed ? 'line-through' : 'none' }}>
-                                {ex.name}
-                              </div>
-                              <div style={{ fontSize: 11, color: T.text3, marginTop: 2 }}>
-                                {ex.sets > 1 ? `${ex.sets} sets · ` : ''}{ex.displayReps}{ex.targetProblemLabels[0] ? ` · ${ex.targetProblemLabels[0]}` : ''}
-                              </div>
-                            </div>
-                            {ex.completed && (
-                              <div style={{ width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(34,197,94,0.16)', border: '1px solid rgba(34,197,94,0.22)' }}>
-                                <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      <div style={{ padding: 16 }}>
-                        <button type="button" onClick={() => navigate('/program')} style={{
-                          width: '100%', padding: '13px 16px', borderRadius: 14, border: 'none', cursor: 'pointer',
-                          background: 'linear-gradient(to top right, #ea580c, #fb923c)',
-                          color: '#FFFFFF', fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em', fontFamily: T.font,
-                        }}>
-                          {ctaLabel}
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </>
               );
             })()}
