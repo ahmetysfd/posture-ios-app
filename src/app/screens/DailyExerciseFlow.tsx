@@ -37,11 +37,11 @@ const DailyExerciseFlow: React.FC = () => {
   });
 
   const [exIdx, setExIdx] = useState(0);
-  const [phase, setPhase] = useState<'intro' | 'active' | 'set-rest' | 'rest'>('intro');
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [phase, setPhase] = useState<'active' | 'set-rest' | 'rest'>('active');
+  const [timeLeft, setTimeLeft] = useState(() => exercises[0]?.duration ?? 0);
   const [currentSet, setCurrentSet] = useState(1);
   const [paused, setPaused] = useState(false);
-  const [waitingToStart, setWaitingToStart] = useState(false);
+  const [waitingToStart, setWaitingToStart] = useState(true);
   const [setRestSec, setSetRestSec] = useState(() => loadSetRestSec());
   const [ytModal, setYtModal] = useState<{ url: string; title: string } | null>(null);
 
@@ -55,9 +55,17 @@ const DailyExerciseFlow: React.FC = () => {
     if (exercises.length === 0) navigate('/');
   }, [exercises, navigate]);
 
-  const beginEx = useCallback(() => {
-    if (ex) { setCurrentSet(1); setPhase('active'); setTimeLeft(ex.duration); setPaused(false); setWaitingToStart(!!ex.youtubeUrl); }
-  }, [ex]);
+  // Reset exercise state whenever we move to a new exercise
+  useEffect(() => {
+    const newEx = exercises[exIdx];
+    if (newEx) {
+      setTimeLeft(newEx.duration);
+      setCurrentSet(1);
+      setPhase('active');
+      setPaused(false);
+      setWaitingToStart(true);
+    }
+  }, [exIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const finishEx = useCallback(() => {
     if (!ex) return;
@@ -98,10 +106,7 @@ const DailyExerciseFlow: React.FC = () => {
   const skipEx = useCallback(() => {
     if (!ex) return;
     if (exIdx < total - 1) {
-      setExIdx(i => i + 1);
-      setCurrentSet(1);
-      setPhase('intro');
-      setPaused(false);
+      setExIdx(i => i + 1); // useEffect resets phase/timeLeft/waitingToStart
     } else {
       navigate('/');
     }
@@ -138,9 +143,7 @@ const DailyExerciseFlow: React.FC = () => {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(t);
-          setExIdx(i => i + 1);
-          setCurrentSet(1);
-          setPhase('intro');
+          setExIdx(i => i + 1); // useEffect resets phase/timeLeft/waitingToStart
           return 0;
         }
         return prev - 1;
@@ -180,7 +183,7 @@ const DailyExerciseFlow: React.FC = () => {
         <span style={{ fontSize: 13, fontWeight: 600, color: T.text3, letterSpacing: '0.02em' }}>
           {exIdx + 1} / {total}
         </span>
-        {phase === 'intro' ? (
+        {phase === 'active' && waitingToStart ? (
           <button
             type="button"
             onClick={skipEx}
@@ -358,109 +361,6 @@ const DailyExerciseFlow: React.FC = () => {
           </div>
         )}
 
-        {/* INTRO ────────────────────────────────────────────────── */}
-        {phase === 'intro' && (
-          <div style={{ display: 'flex', flexDirection: 'column', animation: 'slideUp 0.35s ease' }}>
-
-            {/* Exercise identity */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
-              <div style={{
-                width: 58, height: 58, borderRadius: 18, flexShrink: 0,
-                background: T.surfaceEl, border: `1px solid ${T.border2}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 28,
-              }}>
-                {ex.emoji}
-              </div>
-              <div>
-                <h2 style={{ fontSize: 21, fontWeight: 700, color: T.text, lineHeight: 1.2 }}>{ex.name}</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                  <span style={{ fontSize: 12, color: T.gold, fontWeight: 600 }}>
-                    {ex.sets > 1 ? `${ex.sets} sets · ` : ''}{ex.displayReps}
-                  </span>
-                  {ex.requiresEquipment && (
-                    <span style={{ fontSize: 10, color: T.text3, background: T.surface, padding: '2px 6px', borderRadius: 5, border: `1px solid ${T.border2}` }}>
-                      Band
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Target posture types */}
-            {ex.postureTypes && ex.postureTypes.length > 0 && (
-              <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-                {ex.postureTypes.map((pt, i) => (
-                  <span key={i} style={{
-                    fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 6,
-                    background: 'rgba(217,184,76,0.1)', color: T.gold,
-                    border: '1px solid rgba(217,184,76,0.18)',
-                  }}>{pt}</span>
-                ))}
-              </div>
-            )}
-
-            {/* Steps */}
-            <div style={{
-              background: T.surface, borderRadius: 16, padding: 18,
-              border: `1px solid ${T.border2}`, marginBottom: 16,
-            }}>
-              <h4 style={{ fontSize: 12, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>
-                Steps
-              </h4>
-              {ex.instructions.map((step, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: i < ex.instructions.length - 1 ? 10 : 0 }}>
-                  <div style={{
-                    width: 20, height: 20, borderRadius: 6, flexShrink: 0, marginTop: 1,
-                    background: 'rgba(217,184,76,0.1)', border: '1px solid rgba(217,184,76,0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 10, fontWeight: 700, color: T.gold,
-                  }}>
-                    {i + 1}
-                  </div>
-                  <span style={{ fontSize: 13, color: T.text2, lineHeight: 1.55 }}>{step}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Watch video */}
-            {ex.youtubeUrl && (
-              <button
-                type="button"
-                onClick={() => setYtModal({ url: ex.youtubeUrl!, title: ex.name })}
-                style={{
-                  width: '100%', padding: '13px 0', borderRadius: 12,
-                  background: T.surface, border: `1px solid ${T.border2}`,
-                  color: T.text2, fontSize: 13, fontWeight: 600,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  cursor: 'pointer', fontFamily: T.font, marginBottom: 12,
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill={T.text2}><polygon points="5 3 19 12 5 21" /></svg>
-                Watch demo
-              </button>
-            )}
-
-            {/* Start button */}
-            <button
-              type="button"
-              onClick={beginEx}
-              style={{
-                width: '100%', padding: '16px 0', borderRadius: 14,
-                background: T.gold, color: '#0A0A0A',
-                fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em',
-                border: 'none', cursor: 'pointer', fontFamily: T.font,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: '0 8px 24px rgba(217,184,76,0.25)',
-                marginTop: 24,
-              }}
-            >
-              Start exercise
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="#0A0A0A"><polygon points="5 3 19 12 5 21" /></svg>
-            </button>
-          </div>
-        )}
-
         {/* ACTIVE ───────────────────────────────────────────────── */}
         {phase === 'active' && (
           <div style={{
@@ -503,29 +403,80 @@ const DailyExerciseFlow: React.FC = () => {
             )}
 
             <h2 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 4 }}>{ex.name}</h2>
-            {ex.sets > 1 && (
+            {!waitingToStart && ex.sets > 1 && (
               <div style={{ fontSize: 13, color: T.gold, fontWeight: 600, marginBottom: 8 }}>
                 Set {currentSet} of {ex.sets}
               </div>
             )}
 
-            {/* Waiting to start — user watches video first, then taps to begin timer */}
+            {/* Waiting to start — show exercise info + video, then tap to begin timer */}
             {waitingToStart ? (
-              <button
-                type="button"
-                onClick={() => setWaitingToStart(false)}
-                style={{
-                  marginTop: 16, padding: '14px 40px', borderRadius: 14,
-                  background: T.gold, color: '#0A0A0A',
-                  fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em',
-                  border: 'none', cursor: 'pointer', fontFamily: T.font,
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  boxShadow: '0 8px 24px rgba(217,184,76,0.25)',
-                }}
-              >
-                Start when ready
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="#0A0A0A"><polygon points="5 3 19 12 5 21" /></svg>
-              </button>
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
+                {/* Duration / sets badge */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 12, color: T.gold, fontWeight: 600 }}>
+                    {ex.sets > 1 ? `${ex.sets} sets · ` : ''}{ex.displayReps}
+                  </span>
+                  {ex.requiresEquipment && (
+                    <span style={{ fontSize: 10, color: T.text3, background: T.surface, padding: '2px 6px', borderRadius: 5, border: `1px solid ${T.border2}` }}>
+                      Band
+                    </span>
+                  )}
+                </div>
+
+                {/* Posture type tags */}
+                {ex.postureTypes && ex.postureTypes.length > 0 && (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {ex.postureTypes.map((pt, i) => (
+                      <span key={i} style={{
+                        fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 6,
+                        background: 'rgba(217,184,76,0.1)', color: T.gold,
+                        border: '1px solid rgba(217,184,76,0.18)',
+                      }}>{pt}</span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Steps */}
+                <div style={{
+                  background: T.surface, borderRadius: 16, padding: 18,
+                  border: `1px solid ${T.border2}`, textAlign: 'left',
+                }}>
+                  <h4 style={{ fontSize: 12, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>
+                    Steps
+                  </h4>
+                  {ex.instructions.map((step, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 10, marginBottom: i < ex.instructions.length - 1 ? 10 : 0 }}>
+                      <div style={{
+                        width: 20, height: 20, borderRadius: 6, flexShrink: 0, marginTop: 1,
+                        background: 'rgba(217,184,76,0.1)', border: '1px solid rgba(217,184,76,0.2)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 10, fontWeight: 700, color: T.gold,
+                      }}>
+                        {i + 1}
+                      </div>
+                      <span style={{ fontSize: 13, color: T.text2, lineHeight: 1.55 }}>{step}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Start button */}
+                <button
+                  type="button"
+                  onClick={() => setWaitingToStart(false)}
+                  style={{
+                    width: '100%', padding: '16px 0', borderRadius: 14,
+                    background: T.gold, color: '#0A0A0A',
+                    fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em',
+                    border: 'none', cursor: 'pointer', fontFamily: T.font,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    boxShadow: '0 8px 24px rgba(217,184,76,0.25)',
+                  }}
+                >
+                  Start when ready
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#0A0A0A"><polygon points="5 3 19 12 5 21" /></svg>
+                </button>
+              </div>
             ) : (
               <>
                 {/* Timer ring */}

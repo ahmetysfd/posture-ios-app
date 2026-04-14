@@ -27,6 +27,7 @@ const EXERCISE_IMAGES: Record<string, ExerciseImage> = {
   'Wall Slide':              { src: '/exercises/wall-slide.jpg',              offsetX: 0 },
   'Scapular Rows':           { src: '/exercises/scapular-rows.jpg',           offsetX: 0 },
   'Sphinx Cat Camels':       { src: '/exercises/sphinx-cat-camels.jpg',       offsetX: 0 },
+  'Banded Reverse Fly':      { src: '/exercises/Banded Reverse Fly.png',      offsetX: 0 },
   'Lower Trap Activation':   { src: '/exercises/lower-trap-activation.jpg',   offsetX: 0 },
   'Levator Scapulae Stretch':{ src: '/exercises/levator-scapulae-stretch.jpg',offsetX: 0 },
   'Wall Lean':               { src: '/exercises/wall-lean.jpg',               offsetX: 0 },
