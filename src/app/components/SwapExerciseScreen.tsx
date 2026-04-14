@@ -1,6 +1,9 @@
 import React, { useMemo, useState } from 'react';
+import DifficultySelector from './DifficultySelector';
+import BandBadge, { displayName, hasBandBadge } from './BandBadge';
 import { postureProblems, type Exercise, type PostureProblem } from '../data/postureData';
 import { type StoredDailyProgram } from '../services/DailyProgram';
+import { loadUserProfile, saveUserProfile, type ExerciseDifficulty } from '../services/UserProfile';
 
 const T = {
   bg: '#09090B',
@@ -16,10 +19,74 @@ const T = {
   font: "system-ui, -apple-system, 'Helvetica Neue', sans-serif",
 };
 
-function extractVideoId(url: string): string | null {
-  const m = url.match(/(?:shorts\/|watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return m ? m[1] : null;
-}
+const CARD_T = {
+  text: '#FFFFFF',
+  text3: 'rgba(113,113,122,1)',
+  text4: 'rgba(82,82,91,1)',
+};
+
+const DIFFICULTY_LABEL_COLOR: Record<string, string> = {
+  beginner: '#22C55E',
+  medium:   '#EAB308',
+  hard:     '#EF4444',
+};
+
+interface ExerciseImage { src: string; offsetX?: number }
+const DEFAULT_IMAGE_OFFSET_X = 15;
+const EXERCISE_IMAGES: Record<string, ExerciseImage> = {
+  'Doorway Chest Stretch':   { src: '/exercises/doorway-chest-stretch.jpg',   offsetX: 0 },
+  'Bear Hold':               { src: '/exercises/bear-hold.jpg',               offsetX: 0 },
+  'Prone T-Raise':           { src: '/exercises/prone-t-raise.jpg',           offsetX: 0 },
+  'Y-Pull with Band':        { src: '/exercises/y-pull-with-band.jpg',        offsetX: 0 },
+  'Baby Cobra':              { src: '/exercises/baby-cobra.jpg',              offsetX: 0 },
+  'Foam Roller Thoracic Extension': { src: '/exercises/foam-roller-thoracic-extension.jpg', offsetX: 0 },
+  'Quadruped Thoracic Rotation (Hand Behind Head)': { src: '/exercises/quadruped-thoracic-rotation.jpg', offsetX: 0 },
+  'Thoracic Extension':      { src: '/exercises/thoracic-extension.jpg',      offsetX: 0 },
+  'Wall Assisted Shoulder Flexion': { src: '/exercises/wall-assisted-shoulder-flexion.jpg', offsetX: 0 },
+  'Wall Slide':              { src: '/exercises/wall-slide.jpg',              offsetX: 0 },
+  'Scapular Rows':           { src: '/exercises/scapular-rows.jpg',           offsetX: 0 },
+  'Sphinx Cat Camels':       { src: '/exercises/sphinx-cat-camels.jpg',       offsetX: 0 },
+  'Banded Reverse Fly':      { src: '/exercises/Banded Reverse Fly.png',      offsetX: 0 },
+  'Lower Trap Activation':   { src: '/exercises/lower-trap-activation.jpg',   offsetX: 0 },
+  'Levator Scapulae Stretch':{ src: '/exercises/levator-scapulae-stretch.jpg',offsetX: 0 },
+  'Wall Lean':               { src: '/exercises/wall-lean.jpg',               offsetX: 0 },
+  'Single-Arm Plank':        { src: '/exercises/single-arm-plank.jpg',        offsetX: 0 },
+  'Advanced Bird Dog':       { src: '/exercises/advanced-bird-dog.jpg',       offsetX: 0 },
+  'Banded Lat Pull-Down':    { src: '/exercises/banded-lat-pull-down.jpg',    offsetX: 0 },
+  'Half Kneel Pallof Press': { src: '/exercises/half-kneel-pallof-press.jpg', offsetX: 0 },
+  'Chin Tuck Neck Bridge':   { src: '/exercises/chin-tuck-neck-bridge.jpg',   offsetX: 0 },
+  'Quadruped Scapular Push': { src: '/exercises/quadruped-scapular-push.jpg', offsetX: 0 },
+  'Air Angel':               { src: '/exercises/air-angel.jpg', offsetX: 9 },
+  'Floor Angel':             { src: '/exercises/floor-angel.jpg', offsetX: 11 },
+  'Chin Tuck Floor Angels':  { src: '/exercises/floor-angel.jpg', offsetX: 10 },
+  'Chin Tuck Rotations':     { src: '/exercises/chin-tuck-rotations.jpg', offsetX: 5 },
+  'Prone Chin Tuck':         { src: '/exercises/prone-chin-tuck.jpg' },
+  'Banded Chin Tucks':       { src: '/exercises/banded-chin-tucks.jpg' },
+  'Wall Lean Chin Tuck':     { src: '/exercises/wall-lean-chin-tuck.jpg' },
+  'Chin Tuck':               { src: '/exercises/chin-tuck.jpg' },
+  'Supine Chin Tuck':        { src: '/exercises/supine-chin-tuck.jpg' },
+  'Upper Trapezius Stretch': { src: '/exercises/upper-trapezius-stretch.jpg' },
+  'Side Lean Wall Slide':    { src: '/exercises/side-lean-wall-slide.jpg' },
+  'Wall Angel':              { src: '/exercises/wall-angel.jpg' },
+  'Scapular Flutters':       { src: '/exercises/scapular-flutters.jpg' },
+  'Quadruped Scapular Circles': { src: '/exercises/quadruped-scapular-circles.jpg' },
+  'Bear Crawl Scapular Push Up': { src: '/exercises/bear-crawl-scapular-push-up.jpg' },
+  'Elevated Scapular Push Up': { src: '/exercises/elevated-scapular-push-up.jpg' },
+  'Standing Pelvic Tilt':    { src: '/exercises/standing-pelvic-tilt.jpg' },
+  'Supine Pelvic Tilt':      { src: '/exercises/supine-pelvic-tilt.jpg' },
+  'Pelvic Rocks':            { src: '/exercises/pelvic-rocks.jpg' },
+  'TVA Frog Leg':            { src: '/exercises/tva-frog-leg.jpg' },
+  'Wall Lean Plank':         { src: '/exercises/wall-lean-plank.jpg' },
+  'Swimmers':                { src: '/exercises/swimmers.jpg' },
+  'Adductor Squeeze Crunch': { src: '/exercises/adductor-squeeze-crunch.jpg' },
+  'Crossed Leg Forward Stretch': { src: '/exercises/crossed-leg-forward-stretch.jpg' },
+  'Bird Dog':                { src: '/exercises/bird-dog.jpg' },
+  'Side Plank':              { src: '/exercises/side-plank.jpg' },
+  'Archer Push-Up':          { src: '/exercises/archer-push-up.jpg' },
+  'Push-Up Plus':            { src: '/exercises/push-up-plus.jpg' },
+  'Prone Y-Raise':           { src: '/exercises/prone-y-raise.jpg' },
+  'Split Squat Pelvic Tilts':{ src: '/exercises/split-squat-pelvic-tilts.jpg' },
+};
 
 function isExerciseSelectable(
   program: StoredDailyProgram,
@@ -30,20 +97,6 @@ function isExerciseSelectable(
     program.exercises.filter(e => e.id !== excludeId).map(e => e.name),
   );
   return !otherNames.has(exercise.name);
-}
-
-function difficultyLabel(diff?: string): string {
-  if (diff === 'medium') return 'Medium';
-  if (diff === 'hard') return 'Hard';
-  return 'Beginner';
-}
-
-function matchScore(isTarget: boolean, selectable: boolean, difficulty?: string): number {
-  let score = isTarget ? 92 : 78;
-  if (difficulty === 'medium') score -= 4;
-  if (difficulty === 'hard') score -= 8;
-  if (!selectable) score -= 18;
-  return Math.max(60, Math.min(97, score));
 }
 
 interface Props {
@@ -62,35 +115,27 @@ const SwapExerciseScreen: React.FC<Props> = ({
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedProblem, setSelectedProblem] = useState<PostureProblem | null>(null);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
   const [confirmedId, setConfirmedId] = useState<string | null>(null);
-  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [bandTooltip, setBandTooltip] = useState<string | null>(null);
+  const [exerciseDifficulty, setExerciseDifficulty] = useState<ExerciseDifficulty>(() => {
+    const profile = loadUserProfile();
+    return profile?.exerciseDifficulty ?? 'beginner';
+  });
 
   const swapEx = program.exercises.find(e => e.id === swapExerciseId);
   const swapExName = swapEx?.name ?? '';
   const targetSet = new Set(swapEx?.targetProblemIds ?? []);
 
-  const categoryExercises = useMemo(() => {
+  const exercisesForDifficulty = useMemo(() => {
     if (!selectedProblem) return [];
-    return [...selectedProblem.exerciseList].sort((a, b) => {
-      const aSelectable = isExerciseSelectable(program, a, swapExerciseId);
-      const bSelectable = isExerciseSelectable(program, b, swapExerciseId);
-      if (aSelectable !== bSelectable) return aSelectable ? -1 : 1;
-      const rank = (d?: string) => d === 'hard' ? 2 : d === 'medium' ? 1 : 0;
-      return rank(a.difficulty) - rank(b.difficulty);
-    });
-  }, [program, selectedProblem, swapExerciseId]);
-
-  const filteredExercises = useMemo(() => {
-    return categoryExercises.filter(ex =>
-      ex.name.toLowerCase().includes(search.toLowerCase()),
+    return selectedProblem.exerciseList.filter(
+      e => !e.difficulty || e.difficulty === exerciseDifficulty,
     );
-  }, [categoryExercises, search]);
+  }, [selectedProblem, exerciseDifficulty]);
 
   function handleCategorySelect(problem: PostureProblem) {
     setSelectedProblem(problem);
     setSelectedExerciseId(null);
-    setSearch('');
     setStep(2);
   }
 
@@ -98,12 +143,21 @@ const SwapExerciseScreen: React.FC<Props> = ({
     setStep(1);
     setSelectedProblem(null);
     setSelectedExerciseId(null);
-    setSearch('');
+  }
+
+  function handleDifficultyChange(d: ExerciseDifficulty) {
+    setExerciseDifficulty(d);
+    saveUserProfile({ exerciseDifficulty: d });
+  }
+
+  function handleSelectExercise(exercise: Exercise) {
+    if (!isExerciseSelectable(program, exercise, swapExerciseId)) return;
+    setSelectedExerciseId(exercise.id);
   }
 
   function handleConfirm() {
-    if (!selectedExerciseId) return;
-    const exercise = categoryExercises.find(ex => ex.id === selectedExerciseId);
+    if (!selectedExerciseId || !selectedProblem) return;
+    const exercise = selectedProblem.exerciseList.find(ex => ex.id === selectedExerciseId);
     if (!exercise || !isExerciseSelectable(program, exercise, swapExerciseId)) return;
     setConfirmedId(exercise.id);
     window.setTimeout(() => {
@@ -235,139 +289,121 @@ const SwapExerciseScreen: React.FC<Props> = ({
 
         {step === 2 && selectedProblem && (
           <>
-            <div style={{ position: 'relative', marginTop: 16 }}>
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>
-                <circle cx="11" cy="11" r="7" />
-                <path d="M21 21l-4.3-4.3" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search exercises..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: T.surface,
-                  border: `1px solid ${T.border}`,
-                  borderRadius: 14,
-                  padding: '11px 14px 11px 38px',
-                  color: T.text,
-                  fontSize: 13,
-                  fontFamily: T.font,
-                  outline: 'none',
-                }}
-              />
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: T.text3, marginBottom: 8 }}>
+                Exercise difficulty
+              </div>
+              <DifficultySelector selected={exerciseDifficulty} onChange={handleDifficultyChange} />
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, marginBottom: 12 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: targetSet.has(selectedProblem.id) ? T.gold2 : T.text2 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: T.text, marginTop: 20, marginBottom: 12 }}>
+              <span style={{ color: targetSet.has(selectedProblem.id) ? T.gold2 : T.text }}>
                 {selectedProblem.title}
               </span>
-              <span style={{ fontSize: 10, color: T.text4 }}>
-                {filteredExercises.length} available
+              <span style={{ fontSize: 12, fontWeight: 500, color: T.text3, marginLeft: 8 }}>
+                {exercisesForDifficulty.length} movements
               </span>
-            </div>
+            </h3>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {filteredExercises.map((exercise) => {
-                const selectable = isExerciseSelectable(program, exercise, swapExerciseId);
-                const selected = selectedExerciseId === exercise.id;
-                const match = matchScore(targetSet.has(selectedProblem.id), selectable, exercise.difficulty);
-                const vidId = exercise.youtubeUrl ? extractVideoId(exercise.youtubeUrl) : (exercise.videoId ?? null);
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {exercisesForDifficulty.map((ex) => {
+                const selectable = isExerciseSelectable(program, ex, swapExerciseId);
+                const selected = selectedExerciseId === ex.id;
+                const levelLabel = ex.difficulty === 'beginner' ? 'Beginner' : ex.difficulty === 'medium' ? 'Medium' : ex.difficulty === 'hard' ? 'Hard' : '';
+                const levelColor = DIFFICULTY_LABEL_COLOR[ex.difficulty ?? 'beginner'] ?? CARD_T.text3;
+                const imageCfg = EXERCISE_IMAGES[ex.name];
+                const imageOffsetX = imageCfg?.offsetX ?? DEFAULT_IMAGE_OFFSET_X;
 
                 return (
                   <button
-                    key={exercise.id}
+                    key={ex.id}
                     type="button"
-                    onClick={() => selectable && setSelectedExerciseId(selected ? null : exercise.id)}
+                    onClick={() => handleSelectExercise(ex)}
+                    disabled={!selectable}
                     style={{
                       position: 'relative',
-                      width: '100%',
-                      textAlign: 'left',
-                      borderRadius: 18,
+                      borderRadius: 16,
                       overflow: 'hidden',
                       padding: 0,
-                      border: `1px solid ${selected ? 'rgba(249,115,22,0.30)' : 'rgba(255,255,255,0.04)'}`,
-                      background: selected ? 'rgba(249,115,22,0.06)' : T.surface,
+                      border: 'none',
+                      background: 'transparent',
                       cursor: selectable ? 'pointer' : 'default',
                       opacity: selectable ? 1 : 0.42,
+                      textAlign: 'left',
                     }}
                   >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: selected ? 'rgba(249,115,22,0.06)' : '#131316',
+                        border: `1px solid ${selected ? 'rgba(249,115,22,0.35)' : 'rgba(255,255,255,0.04)'}`,
+                        borderRadius: 16,
+                      }}
+                    />
                     {selected && (
-                      <div style={{ position: 'absolute', top: '-30%', right: '-10%', width: 96, height: 96, borderRadius: '50%', background: 'rgba(249,115,22,0.10)', filter: 'blur(30px)', pointerEvents: 'none' }} />
+                      <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 2, width: 22, height: 22, borderRadius: '50%', background: T.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 12px rgba(249,115,22,0.4)' }}>
+                        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </div>
                     )}
-                    <div style={{ position: 'relative', zIndex: 1, padding: '14px 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                            <h3 style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.15, color: selected ? '#FDBA74' : T.text, margin: 0 }}>
-                              {exercise.name}
-                            </h3>
-                            <span style={{
-                              fontSize: 9,
-                              fontWeight: 700,
-                              padding: '2px 6px',
-                              borderRadius: 6,
-                              border: `1px solid ${match >= 90 ? 'rgba(16,185,129,0.20)' : match >= 80 ? 'rgba(45,212,191,0.20)' : 'rgba(113,113,122,0.20)'}`,
-                              background: match >= 90 ? 'rgba(16,185,129,0.10)' : match >= 80 ? 'rgba(45,212,191,0.10)' : 'rgba(113,113,122,0.10)',
-                              color: match >= 90 ? '#34D399' : match >= 80 ? '#2DD4BF' : T.text2,
-                            }}>
-                              {match}%
-                            </span>
-                          </div>
-                          <p style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>
-                            {exercise.duration}s · {difficultyLabel(exercise.difficulty)}
-                          </p>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-                            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.04em', padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', color: targetSet.has(selectedProblem.id) ? T.gold2 : T.text2 }}>
-                              {selectedProblem.title}
-                            </span>
-                            {!selectable && (
-                              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.04em', padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', color: T.text4 }}>
-                                Already in program
-                              </span>
-                            )}
-                          </div>
-                          {selected && vidId && (
-                            <div style={{ marginTop: 12 }}>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveVideoId(vidId);
-                                }}
-                                style={{
-                                  height: 34,
-                                  padding: '0 12px',
-                                  borderRadius: 10,
-                                  background: 'rgba(255,255,255,0.04)',
-                                  border: `1px solid ${T.border2}`,
-                                  color: T.text2,
-                                  cursor: 'pointer',
-                                  fontFamily: T.font,
-                                  fontSize: 12,
-                                }}
-                              >
-                                Demo
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        <div style={{
-                          flexShrink: 0,
-                          width: 24,
-                          height: 24,
-                          borderRadius: '50%',
+                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <div
+                        style={{
+                          width: '100%',
+                          aspectRatio: '1 / 1',
+                          overflow: 'hidden',
+                          borderTopLeftRadius: 16,
+                          borderTopRightRadius: 16,
+                          background: '#18181B',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          background: selected ? T.gold : 'rgba(255,255,255,0.04)',
-                          border: selected ? 'none' : `1px solid ${T.border}`,
-                        }}>
-                          {selected && (
-                            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
+                        }}
+                      >
+                        {imageCfg ? (
+                          <img
+                            src={imageCfg.src}
+                            alt={ex.name}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'contain',
+                              display: 'block',
+                              transform: `translateX(${imageOffsetX}px) scale(1.15)`,
+                              transformOrigin: 'center',
+                            }}
+                          />
+                        ) : (
+                          <span style={{ fontSize: 48 }} aria-hidden>{ex.emoji}</span>
+                        )}
+                      </div>
+                      <div style={{ padding: '10px 12px 12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <h3 style={{
+                            fontSize: 13, fontWeight: 600, color: CARD_T.text, lineHeight: 1.2, margin: 0,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0,
+                          }}>
+                            {displayName(ex.name)}
+                          </h3>
+                          {hasBandBadge(ex) && (
+                            <BandBadge exId={ex.id} activeId={bandTooltip} onToggle={setBandTooltip} />
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 10 }}>
+                          <span style={{ color: CARD_T.text3 }}>{ex.duration}s</span>
+                          {levelLabel && (
+                            <>
+                              <span style={{ color: CARD_T.text4 }}>·</span>
+                              <span style={{ color: levelColor }}>{levelLabel}</span>
+                            </>
+                          )}
+                          {!selectable && (
+                            <>
+                              <span style={{ color: CARD_T.text4 }}>·</span>
+                              <span style={{ color: CARD_T.text4 }}>In program</span>
+                            </>
                           )}
                         </div>
                       </div>
@@ -404,62 +440,6 @@ const SwapExerciseScreen: React.FC<Props> = ({
           </>
         )}
       </main>
-
-      {activeVideoId && (
-        <>
-          <div
-            onClick={() => setActiveVideoId(null)}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0,0,0,0.92)',
-              zIndex: 300,
-            }}
-          />
-          <div style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 'min(82vw, 320px)',
-            aspectRatio: '9 / 16',
-            zIndex: 301,
-            borderRadius: 20,
-            overflow: 'hidden',
-          }}>
-            <iframe
-              src={`https://www.youtube.com/embed/${activeVideoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-              style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => setActiveVideoId(null)}
-            style={{
-              position: 'fixed',
-              zIndex: 302,
-              top: 'max(54px, calc(env(safe-area-inset-top) + 10px))',
-              right: 16,
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              background: 'rgba(60,60,67,0.6)',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </>
-      )}
     </>
   );
 };
