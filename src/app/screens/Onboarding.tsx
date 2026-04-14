@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronRight,
@@ -166,14 +166,21 @@ const EquipmentPage: React.FC<{ selected: 'band' | 'no-band' | null; onSelect: (
   );
 };
 
-// ── Page 3: Photos ──
+// ── Page 3: Photos ──────────────────────────────────
 const PhotoCapturePage: React.FC<{
+  frontPhoto: string | null;
   sidePhoto: string | null;
   backPhoto: string | null;
-  onCaptureSide: () => void;
-  onCaptureBack: () => void;
-}> = ({ sidePhoto, backPhoto, onCaptureSide, onCaptureBack }) => {
-  const Row: React.FC<{ photo: string | null; label: string; onCapture: () => void }> = ({ photo, label, onCapture }) => (
+  onCaptureCamera: (slot: 'front' | 'side' | 'back') => void;
+  onCaptureUpload: (slot: 'front' | 'side' | 'back') => void;
+}> = ({ frontPhoto, sidePhoto, backPhoto, onCaptureCamera, onCaptureUpload }) => {
+  const Row: React.FC<{
+    photo: string | null;
+    label: string;
+    slot: 'front' | 'side' | 'back';
+    onCamera: () => void;
+    onUpload: () => void;
+  }> = ({ photo, label, onCamera, onUpload }) => (
     <div className="rounded-xl overflow-hidden ring-[0.5px] ring-white/[0.06] bg-[#111114]">
       <div className="flex">
         <div className="w-[38%] aspect-[0.8] relative bg-[#0a0a0f] flex items-center justify-center">
@@ -199,25 +206,27 @@ const PhotoCapturePage: React.FC<{
         </div>
         <div className="flex-1 p-3.5 flex flex-col justify-between">
           <h3 className="text-[13px] font-semibold text-white">{label}</h3>
-          <button
-            type="button"
-            onClick={onCapture}
-            className={`mt-2 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-semibold transition-transform active:scale-95 ${
-              photo
-                ? 'bg-white/[0.04] ring-[0.5px] ring-white/[0.08] text-zinc-500'
-                : 'bg-gradient-to-r from-[#9d4edd] to-[#c77dff] text-white'
-            }`}
-          >
-            {photo ? (
-              <>
-                <RotateCcw size={10} /> Retake
-              </>
-            ) : (
-              <>
-                <Camera size={12} /> Capture
-              </>
-            )}
-          </button>
+          <div className="flex gap-1.5 mt-2">
+            <button
+              type="button"
+              onClick={onCamera}
+              className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[11px] font-semibold transition-transform active:scale-95 ${
+                photo
+                  ? 'bg-white/[0.04] ring-[0.5px] ring-white/[0.08] text-zinc-500'
+                  : 'bg-gradient-to-r from-[#9d4edd] to-[#c77dff] text-white'
+              }`}
+            >
+              {photo ? <><RotateCcw size={10} /> Retake</> : <><Camera size={12} /> Camera</>}
+            </button>
+            <button
+              type="button"
+              onClick={onUpload}
+              className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[11px] font-semibold bg-white/[0.04] ring-[0.5px] ring-white/[0.08] text-zinc-400 transition-transform active:scale-95"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Upload
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -232,8 +241,9 @@ const PhotoCapturePage: React.FC<{
         </h1>
       </div>
       <div className="flex-1 overflow-y-auto px-5 pb-4 flex flex-col gap-3">
-        <Row photo={sidePhoto} label="Side View" onCapture={onCaptureSide} />
-        <Row photo={backPhoto} label="Back View" onCapture={onCaptureBack} />
+        <Row photo={frontPhoto} label="Front View" slot="front" onCamera={() => onCaptureCamera('front')} onUpload={() => onCaptureUpload('front')} />
+        <Row photo={sidePhoto}  label="Side View"  slot="side"  onCamera={() => onCaptureCamera('side')}  onUpload={() => onCaptureUpload('side')}  />
+        <Row photo={backPhoto}  label="Back View"  slot="back"  onCamera={() => onCaptureCamera('back')}  onUpload={() => onCaptureUpload('back')}  />
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.015]">
           <Shield size={10} className="text-zinc-600 shrink-0" />
           <p className="text-[9px] text-zinc-600">Photos stay on your device.</p>
@@ -242,7 +252,6 @@ const PhotoCapturePage: React.FC<{
     </div>
   );
 };
-
 // ── Page 4: Analysis ──
 const AnalysisPage: React.FC<{ painAreas: string[] }> = ({ painAreas }) => {
   const [animDone, setAnimDone] = useState(false);
@@ -380,21 +389,67 @@ export const OnboardingFlow: React.FC<{ onFinish?: () => void }> = ({ onFinish }
   const [page, setPage] = useState(0);
   const [selectedParts, setSelectedParts] = useState<string[]>([]);
   const [equipment, setEquipment] = useState<'band' | 'no-band' | null>(null);
+  const [frontPhoto, setFrontPhoto] = useState<string | null>(null);
   const [sidePhoto, setSidePhoto] = useState<string | null>(null);
   const [backPhoto, setBackPhoto] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadSlotRef = useRef<'front' | 'side' | 'back'>('front');
+  const uploadModeRef = useRef<'camera' | 'library'>('library');
 
   const togglePart = (id: string) =>
     setSelectedParts((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
-  const simSide = () =>
-    setSidePhoto('https://images.unsplash.com/photo-1767611127093-8ed12ce7789d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3N0dXJlJTIwYW5hbHlzaXMlMjBzaWRlJTIwdmlldyUyMGJvZHl8ZW58MXx8fHwxNzc2MTAxNDU5fDA&ixlib=rb-4.1.0&q=80&w=1080');
-  const simBack = () =>
-    setBackPhoto('https://images.unsplash.com/photo-1642522280053-d5063c56a211?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxib2R5JTIwc2NhbiUyMGhlYWx0aCUyMHRlY2hub2xvZ3klMjBkYXJrfGVufDF8fHx8MTc3NjEwMTQ2MHww&ixlib=rb-4.1.0&q=80&w=1080');
+  const setSlotPhoto = useCallback((slot: 'front' | 'side' | 'back', url: string) => {
+    if (slot === 'front') setFrontPhoto(url);
+    else if (slot === 'side') setSidePhoto(url);
+    else setBackPhoto(url);
+  }, []);
+
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !file.type.startsWith('image/')) return;
+    const slot = uploadSlotRef.current;
+    const objectUrl = URL.createObjectURL(file);
+    // downscale to 720px wide for performance
+    const img = new Image();
+    img.src = objectUrl;
+    await new Promise<void>((res) => { img.onload = () => res(); img.onerror = () => res(); });
+    const maxW = 720;
+    const scale = img.naturalWidth > maxW ? maxW / img.naturalWidth : 1;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.naturalWidth * scale);
+    canvas.height = Math.round(img.naturalHeight * scale);
+    const ctx = canvas.getContext('2d');
+    if (ctx) ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(objectUrl);
+    const dataUrl = ctx ? canvas.toDataURL('image/jpeg', 0.88) : objectUrl;
+    setSlotPhoto(slot, dataUrl);
+  }, [setSlotPhoto]);
+
+  const openCamera = useCallback((slot: 'front' | 'side' | 'back') => {
+    uploadSlotRef.current = slot;
+    uploadModeRef.current = 'camera';
+    if (fileInputRef.current) {
+      fileInputRef.current.removeAttribute('capture');
+      fileInputRef.current.setAttribute('capture', 'environment');
+      fileInputRef.current.click();
+    }
+  }, []);
+
+  const openUpload = useCallback((slot: 'front' | 'side' | 'back') => {
+    uploadSlotRef.current = slot;
+    uploadModeRef.current = 'library';
+    if (fileInputRef.current) {
+      fileInputRef.current.removeAttribute('capture');
+      fileInputRef.current.click();
+    }
+  }, []);
 
   const canProceed =
     page === 0 ? selectedParts.length > 0 :
     page === 1 ? equipment !== null :
-    page === 2 ? sidePhoto !== null && backPhoto !== null :
+    page === 2 ? frontPhoto !== null && sidePhoto !== null && backPhoto !== null :
     true;
 
   const finish = () => {
@@ -421,6 +476,7 @@ export const OnboardingFlow: React.FC<{ onFinish?: () => void }> = ({ onFinish }
 
   return (
     <div className="w-full h-full bg-[#0a0a0f] flex flex-col" style={{ fontFamily: "system-ui, -apple-system, 'Helvetica Neue', sans-serif" }}>
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} style={{ display: 'none' }} />
       {/* Progress */}
       <div className="px-6 pt-4 pb-0.5">
         <div className="flex gap-1.5">
@@ -443,7 +499,7 @@ export const OnboardingFlow: React.FC<{ onFinish?: () => void }> = ({ onFinish }
         <div key={page} className="absolute inset-0 flex flex-col onboarding-page-enter">
           {page === 0 && <PainAreasPage selected={selectedParts} onToggle={togglePart} />}
           {page === 1 && <EquipmentPage selected={equipment} onSelect={setEquipment} />}
-          {page === 2 && <PhotoCapturePage sidePhoto={sidePhoto} backPhoto={backPhoto} onCaptureSide={simSide} onCaptureBack={simBack} />}
+          {page === 2 && <PhotoCapturePage frontPhoto={frontPhoto} sidePhoto={sidePhoto} backPhoto={backPhoto} onCaptureCamera={openCamera} onCaptureUpload={openUpload} />}
           {page === 3 && <AnalysisPage painAreas={selectedParts} />}
         </div>
       </div>
