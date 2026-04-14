@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { BarChart2, Home, ListChecks, Settings } from 'lucide-react';
+import { BarChart2, Home, ListChecks, Settings, Sparkles } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,12 +12,14 @@ const Layout: React.FC<LayoutProps> = ({ children, hideNav = false }) => {
   const location = useLocation();
 
   const currentScreen = location.pathname === '/' ? 'home'
+    : location.pathname === '/welcome' ? 'welcome'
     : location.pathname.startsWith('/program') || location.pathname === '/scan/program' ? 'program'
     : location.pathname === '/progress' ? 'progress'
     : location.pathname === '/settings' ? 'settings' : '';
 
   const tabs = [
     { id: 'home', path: '/', label: 'Home', Icon: HomeIcon },
+    { id: 'welcome', path: '/welcome', label: 'Welcome', Icon: WelcomeIcon },
     { id: 'program', path: '/program', label: 'Program', Icon: ProgramIcon },
     { id: 'progress', path: '/progress', label: 'Progress', Icon: ChartIcon },
     { id: 'settings', path: '/settings', label: 'Settings', Icon: GearIcon },
@@ -143,6 +145,10 @@ const ProgramIcon = ({ active }: { active: boolean }) => (
 
 const GearIcon = ({ active }: { active: boolean }) => (
   <Settings size={20} strokeWidth={active ? 2.2 : 1.6} />
+);
+
+const WelcomeIcon = ({ active }: { active: boolean }) => (
+  <Sparkles size={20} strokeWidth={active ? 2.2 : 1.6} />
 );
 
 export default Layout;

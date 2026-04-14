@@ -14,6 +14,7 @@ import PersonalizedProgramScreen from './screens/PersonalizedProgramScreen';
 import ProgramEditScreen from './screens/ProgramEditScreen';
 import DailyExerciseFlow from './screens/DailyExerciseFlow';
 import CreateProgramScreen from './screens/CreateProgramScreen';
+import Welcome from './screens/Welcome';
 import { isOnboardingComplete } from './services/UserProfile';
 
 /** Redirect to /onboarding if user hasn't completed onboarding */
@@ -24,6 +25,7 @@ const AppRoutes: React.FC = () => (
   <Routes>
     {/* ── Entry flow (ours) ─────────────────────────────────── */}
     <Route path="/onboarding" element={<Onboarding />} />
+    <Route path="/welcome" element={<Welcome />} />
     <Route path="/onboarding-demographics" element={<OnboardingScreen />} />
     <Route path="/onboarding-manual" element={<ManualSelection />} />
 

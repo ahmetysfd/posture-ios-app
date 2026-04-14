@@ -87,8 +87,11 @@ const DailyProgramLevelCard: React.FC = () => {
   const updateDay = (iso: string, patch: Partial<DayConfig>) => {
     setConfigs(prev => {
       const existing = prev[iso] ?? { off: false, reminders: [] };
-      const next = { ...existing, ...patch };
-      if (!next.off && next.reminders.length === 0) {
+      const next = { ...existing, ...patch } as DayConfig & Record<string, unknown>;
+      const hasAnyExtras = Object.keys(next).some(
+        k => k !== 'off' && k !== 'reminders' && next[k] != null,
+      );
+      if (!next.off && (!next.reminders || next.reminders.length === 0) && !hasAnyExtras) {
         const { [iso]: _removed, ...rest } = prev;
         return rest;
       }
@@ -305,8 +308,8 @@ const prettyDate = (iso: string): string => {
 };
 
 const DayEditModal: React.FC<DayEditModalProps> = ({ iso, config, accent, onClose, onSave }) => {
-  const [off, setOff] = useState<boolean>(config.off);
-  const [reminders, setReminders] = useState<string[]>(config.reminders);
+  const [off, setOff] = useState<boolean>(Boolean(config.off));
+  const [reminders, setReminders] = useState<string[]>(config.reminders ?? []);
   const [draftTime, setDraftTime] = useState<string>('08:00');
 
   const addReminder = () => {
