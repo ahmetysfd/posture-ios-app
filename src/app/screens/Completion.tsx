@@ -1,15 +1,30 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { postureProblems } from '../data/postureData';
+
+const DIFF_LABEL: Record<string, string> = {
+  beginner: 'Beginner',
+  medium: 'Medium',
+  hard: 'Hard',
+};
 
 const Completion: React.FC = () => {
   const { problemId } = useParams<{ problemId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const problem = postureProblems.find(p => p.id === problemId);
 
   if (!problem) { navigate('/'); return null; }
 
-  const totalDur = problem.exerciseList.reduce((s, e) => s + e.duration, 0);
+  // Use the actual count passed from ExerciseFlow, fall back to full list length
+  const doneCount = parseInt(searchParams.get('done') ?? '0', 10) || problem.exerciseList.length;
+  const diff = searchParams.get('diff');
+  const diffLabel = diff ? DIFF_LABEL[diff] : null;
+
+  const completedExercises = diff
+    ? problem.exerciseList.filter(e => !e.difficulty || e.difficulty === diff)
+    : problem.exerciseList;
+  const totalDur = completedExercises.reduce((s, e) => s + e.duration, 0);
   const colors = ['#8B5CF6', '#3B82F6', '#EC4899', '#F59E0B', '#10B981', '#6366F1'];
 
   return (
@@ -23,10 +38,10 @@ const Completion: React.FC = () => {
         <div style={{ width: 110, height: 110, borderRadius: 32, background: problem.cardBg, border: `1.5px solid ${problem.cardBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54, margin: '0 auto 28px', animation: 'breathe 2s ease infinite' }}>🏆</div>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--color-text)', marginBottom: 8 }}>Great Job!</h1>
         <p style={{ fontSize: 14, color: 'var(--color-text-sec)', lineHeight: 1.6, maxWidth: 260, margin: '0 auto 28px' }}>
-          You completed all {problem.exerciseList.length} exercises for {problem.title}!
+          You completed {doneCount} {diffLabel ? `${diffLabel} ` : ''}exercises for {problem.title}!
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 32, width: '100%' }}>
-          {[{ v: problem.exerciseList.length, l: 'Exercises', e: '💪' }, { v: `${Math.ceil(totalDur / 60)}m`, l: 'Duration', e: '⏱️' }, { v: '1', l: 'Streak', e: '🔥' }].map((st, i) => (
+          {[{ v: doneCount, l: 'Exercises', e: '💪' }, { v: `${Math.ceil(totalDur / 60)}m`, l: 'Duration', e: '⏱️' }, { v: '1', l: 'Streak', e: '🔥' }].map((st, i) => (
             <div key={i} style={{ background: 'var(--color-surface)', borderRadius: 16, padding: '14px 10px', border: '1px solid var(--color-border-light)', animation: `slideUp 0.4s ease ${0.15 + i * 0.08}s both` }}>
               <div style={{ fontSize: 18, marginBottom: 4 }}>{st.e}</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-primary)' }}>{st.v}</div>
