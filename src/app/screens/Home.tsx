@@ -340,7 +340,7 @@ const Home: React.FC = () => {
 
   return (
     <Layout>
-      <div style={{ minHeight: '100vh', background: T.bg }}>
+      <div style={{ minHeight: '100dvh', background: T.bg }}>
         <div style={{ padding: '0 20px 20px', fontFamily: T.font }}>
           <div style={{ paddingTop: 52, marginBottom: 28, animation: 'fadeIn 0.45s ease' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

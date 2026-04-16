@@ -30,7 +30,7 @@ const Layout: React.FC<LayoutProps> = ({ children, hideNav = false }) => {
       width: '100%',
       maxWidth: 430,
       margin: '0 auto',
-      minHeight: '100vh',
+      minHeight: '100dvh',
       background: 'var(--color-bg)',
       position: 'relative',
       display: 'flex',

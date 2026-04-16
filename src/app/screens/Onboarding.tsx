@@ -553,7 +553,7 @@ export const OnboardingFlow: React.FC<{ onFinish?: () => void }> = ({ onFinish }
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   return (
-    <div className="w-full max-w-[430px] mx-auto min-h-screen bg-[#0a0a0f] flex flex-col">
+    <div className="w-full max-w-[430px] mx-auto h-full bg-[#0a0a0f] flex flex-col">
       <OnboardingFlow onFinish={() => navigate('/')} />
     </div>
   );

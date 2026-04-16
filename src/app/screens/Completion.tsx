@@ -13,7 +13,7 @@ const Completion: React.FC = () => {
   const colors = ['#8B5CF6', '#3B82F6', '#EC4899', '#F59E0B', '#10B981', '#6366F1'];
 
   return (
-    <div style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
+    <div style={{ width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100dvh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
         {Array.from({ length: 24 }).map((_, i) => (
           <div key={i} style={{ position: 'absolute', left: `${Math.random() * 100}%`, bottom: '-10%', width: Math.random() * 10 + 5, height: Math.random() * 10 + 5, borderRadius: Math.random() > 0.5 ? '50%' : '2px', background: colors[Math.floor(Math.random() * colors.length)], animation: `confetti ${Math.random() * 1.5 + 1.5}s ease ${Math.random() * 0.5}s forwards`, opacity: 0.8 }} />
