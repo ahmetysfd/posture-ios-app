@@ -50,9 +50,11 @@ export interface DailyExercise {
   id: string;
   name: string;
   emoji: string;
-  duration: number;             // seconds per set
+  duration: number;             // seconds per set (used for time-based exercises and rest periods)
   sets: number;
-  displayReps: string;          // e.g. "10–12 reps" or "40s"
+  displayReps: string;          // e.g. "12 reps" or "40s"
+  /** Target rep count. When defined the exercise is rep-based; otherwise time-based. */
+  reps?: number;
   difficulty: ExerciseDifficulty;
   type: ExercisePhase;          // physiological classification: mobility | activation | strength
   targetProblemIds: string[];   // all app problem route IDs this exercise addresses
@@ -128,13 +130,9 @@ function severityWeight(severity: ProblemSeverity): number {
   return 1; // low
 }
 
-function getDisplayReps(ex: Exercise, diff: ExerciseDifficulty): string {
-  if (isStrength(ex.name)) {
-    if (diff === 'beginner') return '8–10 reps';
-    if (diff === 'medium') return '10–12 reps';
-    return '12–15 reps';
-  }
-  // stretch — time-based using the exercise's native duration
+function getDisplayReps(ex: Exercise, _diff: ExerciseDifficulty): string {
+  const reps = EXERCISE_REPS[ex.name];
+  if (reps != null) return `${reps} reps`;
   return `${ex.duration}s`;
 }
 
@@ -143,7 +141,7 @@ function getDisplayReps(ex: Exercise, diff: ExerciseDifficulty): string {
 // high risk → beginner tier (3 exercises); medium → medium tier (2); low → hard tier (2).
 // Each tier has exactly 3 exercises matching the official priority list.
 
-const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
+export const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
   'forward-head': {
     beginner: ['Chin Tuck', 'Supine Chin Tuck', 'Upper Trapezius Stretch'],
     medium:   ['Chin Tuck Floor Angels', 'Chin Tuck Rotations', 'Wall Lean Chin Tuck'],
@@ -243,7 +241,7 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
 // ── Static exercise type lookup ───────────────────────────────────────────────
 // Physiotherapy classification for every exercise in the PRIORITY map.
 // Replaces regex-based phase detection — no guessing from names.
-const EXERCISE_TYPE: Record<string, ExercisePhase> = {
+export const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   // ── Mobility: release, elongate, restore range of motion ─────────────────
   'Doorway Chest Stretch':                          'mobility',
   'Foam Roller Thoracic Extension':                 'mobility',
@@ -301,6 +299,165 @@ const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   'Elevated Scapular Push Up':                      'strength',
 };
 
+/**
+ * Target rep count for rep-based exercises.
+ * Exercises NOT listed here are time-based (timer counts down from `duration`).
+ * Exercises listed here show a rep counter in the session flow.
+ *
+ * Notes:
+ *   - Bilateral exercises use total reps across both sides (e.g. 10/side → 20)
+ *   - Directional exercises multiply per-direction count (e.g. 8/direction × 2 → 16)
+ */
+export const EXERCISE_REPS: Record<string, number> = {
+  // ── Forward Head ──────────────────────────────────────────────────────────
+  'Chin Tuck':                                      10,
+  'Supine Chin Tuck':                               12,
+  'Chin Tuck Floor Angels':                         10,
+  'Chin Tuck Rotations':                            20,  // 10 per side
+  'Wall Lean Chin Tuck':                            10,
+  'Prone Chin Tuck':                                12,
+  'Chin Tuck Neck Bridge':                          8,
+  'Banded Chin Tucks':                              12,
+  // ── Winging Scapula ───────────────────────────────────────────────────────
+  'Quadruped Scapular Push':                        12,
+  'Air Angel':                                      12,
+  'Floor Angel':                                    10,
+  'Side Lean Wall Slide':                           20,  // 10 per side
+  'Wall Angel':                                     10,
+  'Quadruped Scapular Circles':                     16,  // 8 per direction × 2
+  'Bear Crawl Scapular Push Up':                    10,
+  'Elevated Scapular Push Up':                      12,
+  // ── Anterior Pelvic Tilt ──────────────────────────────────────────────────
+  'Standing Pelvic Tilt':                           12,
+  'Supine Pelvic Tilt':                             15,
+  // Pelvic Rocks: time-based (oscillating joint mobility)
+  'TVA Frog Leg':                                   10,
+  // Wall Lean Plank: time-based (isometric hold)
+  'Swimmers':                                       20,  // 10 per side
+  'Split Squat Pelvic Tilts':                       20,
+  'Adductor Squeeze Crunch':                        12,
+  // Crossed Leg Forward Stretch: time-based (static stretch)
+  // ── Rounded Shoulders ─────────────────────────────────────────────────────
+  // Doorway Chest Stretch: time-based (static stretch)
+  // Bear Hold: time-based (isometric hold)
+  'Prone T-Raise':                                  12,
+  'Archer Push-Up':                                 16,  // 8 per side
+  'Push-Up Plus':                                   10,
+  'Y-Pull with Band':                               12,
+  // ── Kyphosis ──────────────────────────────────────────────────────────────
+  'Baby Cobra':                                     10,
+  // Foam Roller Thoracic Extension: time-based (mobility per segment)
+  'Quadruped Thoracic Rotation (Hand Behind Head)': 20,  // 10 per side
+  'Thoracic Extension':                             10,
+  'Wall Assisted Shoulder Flexion':                 10,
+  'Wall Slide':                                     10,
+  'Scapular Rows':                                  12,
+  'Sphinx Cat Camels':                              10,
+  'Prone Y-Raise':                                  20,  // 10 per side
+  'Banded Reverse Fly':                             12,
+  // ── Uneven Shoulders ──────────────────────────────────────────────────────
+  'Lower Trap Activation':                          24,  // 12 per side
+  // Levator Scapulae Stretch: time-based (static stretch)
+  // Wall Lean: time-based (isometric hold)
+  // Side Plank: time-based (isometric hold)
+  'Bird Dog':                                       20,  // 10 per side
+  'Banded Lat Pull-Down':                           12,
+  'Side Plank':                                     20,  // 10 per side (hip dips)
+  // Single-Arm Plank: time-based (repeated isometric holds)
+  'Advanced Bird Dog':                              20,  // 10 per side
+  'Half Kneel Pallof Press':                        24,  // 12 per side
+};
+
+/**
+ * Per-exercise movement tempo in 'Go-Hold-Back' format (seconds per phase).
+ * Guides the user's rep rhythm. Falls back to DEFAULT_TEMPO_BY_PHASE.
+ * Go = concentric/contract, Hold = peak contraction, Back = eccentric/return.
+ */
+export const EXERCISE_TEMPO: Record<string, string> = {
+  // Mobility — 3–4 s/rep
+  'Baby Cobra':                                     '1-1-2', // 4 s: lift 1, hold 1, lower 2
+  'Quadruped Thoracic Rotation (Hand Behind Head)': '3-2-0', // 5 s: slow rotation, no return pause (keep)
+  'Sphinx Cat Camels':                              '2-0-1', // 3 s: fluid oscillation, no hold
+  'Thoracic Extension':                             '1-1-2', // 4 s
+  // Activation — 4 s/rep
+  'Chin Tuck':                                      '1-2-1', // 4 s: retract 1, hold 2, release 1
+  'Chin Tuck Neck Bridge':                          '1-2-1', // 4 s
+  'Standing Pelvic Tilt':                           '1-1-2', // 4 s
+  'Supine Pelvic Tilt':                             '1-1-2', // 4 s
+  'Bird Dog':                                       '1-2-1', // 4 s: extend 1, hold 2, return 1
+  'Advanced Bird Dog':                              '1-2-1', // 4 s
+  'TVA Frog Leg':                                   '1-1-2', // 4 s
+  'Wall Slide':                                     '1-1-2', // 4 s
+  'Wall Angel':                                     '1-1-2', // 4 s
+  'Air Angel':                                      '1-1-2', // 4 s
+  'Floor Angel':                                    '1-1-2', // 4 s
+  // Strength — 5 s/rep (hold + eccentric benefit, user-approved max)
+  'Prone T-Raise':                                  '1-2-2', // 5 s
+  'Prone Y-Raise':                                  '1-2-2', // 5 s
+  'Banded Reverse Fly':                             '1-2-2', // 5 s
+  'Y-Pull with Band':                               '1-2-2', // 5 s
+  'Scapular Rows':                                  '1-2-2', // 5 s
+  'Banded Lat Pull-Down':                           '1-2-2', // 5 s
+  'Swimmers':                                       '1-0-1', // 2 s: fast alternating (keep)
+  'Archer Push-Up':                                 '2-1-2', // 5 s
+  'Push-Up Plus':                                   '2-1-2', // 5 s
+  'Half Kneel Pallof Press':                        '1-2-1', // 4 s: press 1, hold 2, return 1
+};
+
+/** Default tempo by exercise phase when EXERCISE_TEMPO has no entry. */
+export const DEFAULT_TEMPO_BY_PHASE: Record<string, string> = {
+  mobility:   '3-2-0',
+  activation: '2-1-2',
+  strength:   '1-1-2',
+};
+
+/**
+ * Alternating bilateral exercises — each rep switches side (R, L, R, L…).
+ * The side indicator flips every rep rather than at the halfway point.
+ * These are NOT in EXERCISE_BILATERAL; the two maps are mutually exclusive.
+ */
+export const EXERCISE_ALTERNATING = new Set<string>([
+  'Bird Dog',              // right arm + left leg, then left arm + right leg
+  'Advanced Bird Dog',     // same movement pattern
+  'Chin Tuck Rotations',   // rotate right, then left, alternating each rep
+  'Swimmers',              // right arm + left leg, then left arm + right leg
+]);
+
+/**
+ * Blocked bilateral exercises split reps equally between left and right side.
+ * Value = reps per side (= total reps / 2). User sees a side cue at halfway.
+ */
+export const EXERCISE_BILATERAL: Record<string, number> = {
+  // Blocked: all reps on one side, then switch
+  'Side Plank':                                     10, // 10 per side
+  'Side Lean Wall Slide':                           10,
+  'Archer Push-Up':                                  8,
+  'Quadruped Thoracic Rotation (Hand Behind Head)': 10,
+  'Prone Y-Raise':                                  10,
+  'Lower Trap Activation':                          12,
+  'Half Kneel Pallof Press':                        12,
+  'Quadruped Scapular Circles':                      8, // per direction (CW then CCW)
+  // Note: Bird Dog, Advanced Bird Dog, Chin Tuck Rotations, Swimmers
+  // are alternating (every rep) — see EXERCISE_ALTERNATING above
+};
+
+/**
+ * Time-based bilateral exercises — each set alternates sides (set 1 = Left, set 2 = Right, …).
+ * Minimum meaningful round = 2 sets (one per side).
+ */
+export const EXERCISE_TIMED_BILATERAL = new Set<string>([
+  'Single-Arm Plank',   // hold left arm, hold right arm
+]);
+
+/**
+ * Time-based oscillating exercises that benefit from a visual metronome.
+ * Value = milliseconds per beat/cycle.
+ */
+export const OSCILLATING_EXERCISES: Record<string, number> = {
+  'Pelvic Rocks':      2000,
+  'Scapular Flutters':  800,
+};
+
 // ── Generation ────────────────────────────────────────────────────────────────
 
 /**
@@ -331,6 +488,7 @@ function makeEntry(
   diff: ExerciseDifficulty,
 ): DailyExercise {
   const exDiff = (ex.difficulty as ExerciseDifficulty) ?? diff;
+  const reps = EXERCISE_REPS[ex.name];
   return {
     id: ex.id,
     name: ex.name,
@@ -338,6 +496,7 @@ function makeEntry(
     duration: ex.duration,
     sets: 1,
     displayReps: getDisplayReps(ex, exDiff),
+    reps,
     difficulty: exDiff,
     type: EXERCISE_TYPE[ex.name] ?? getPhase(ex.name), // static lookup, regex fallback
     targetProblemIds: [appId],

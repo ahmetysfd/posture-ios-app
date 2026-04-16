@@ -453,17 +453,17 @@ export const OnboardingFlow: React.FC<{ onFinish?: () => void }> = ({ onFinish }
     true;
 
   const finish = () => {
-    if (onFinish) {
-      onFinish();
-      return;
-    }
     saveUserProfile({
       painAreas: selectedParts,
       hasExistingPain: selectedParts.length > 0,
       hasEquipment: equipment === 'band',
       onboardingComplete: true,
     });
-    window.location.href = '/';
+    if (onFinish) {
+      onFinish();
+    } else {
+      window.location.href = '/';
+    }
   };
 
   const goNext = () => {

@@ -9,6 +9,15 @@ import {
   type StoredDailyProgram,
 } from '../services/DailyProgram';
 import { loadUserProfile } from '../services/UserProfile';
+import {
+  applyProgressionsToProgram,
+  getProgressionDisplay,
+  getUpgradeInfo,
+  acceptTierUpgrade,
+  dismissUpgrade,
+  loadProgressionLog,
+} from '../services/ProgressionService';
+import { saveDailyProgram } from '../services/DailyProgram';
 
 const T = {
   bg: '#09090B', surface: '#141418', border: 'rgba(255,255,255,0.05)',
@@ -95,14 +104,28 @@ const PersonalizedProgramScreen: React.FC = () => {
   const location = useLocation();
   const profile = loadUserProfile();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [program, setProgram] = useState<StoredDailyProgram | null>(() =>
-    loadActiveProgramForSession(profile),
-  );
+  const [program, setProgram] = useState<StoredDailyProgram | null>(() => {
+    const p = loadActiveProgramForSession(profile);
+    return p ? applyProgressionsToProgram(p) : null;
+  });
   const [expanded, setExpanded] = useState(true);
+
+  // Set of exercise names that have a pending tier-upgrade suggestion
+  const [pendingUpgrades, setPendingUpgrades] = useState<Set<string>>(() => {
+    const p = loadActiveProgramForSession(loadUserProfile());
+    if (!p) return new Set();
+    const log = loadProgressionLog();
+    return new Set(
+      p.exercises
+        .filter(ex => log[ex.name]?.pendingTierUpgrade && ex.difficulty !== 'hard')
+        .map(ex => ex.name),
+    );
+  });
 
   useEffect(() => {
     if (location.pathname !== '/program') return;
-    setProgram(loadActiveProgramForSession(loadUserProfile()));
+    const p = loadActiveProgramForSession(loadUserProfile());
+    setProgram(p ? applyProgressionsToProgram(p) : null);
   }, [location.pathname, location.key]);
 
   useEffect(() => {
@@ -379,6 +402,110 @@ const PersonalizedProgramScreen: React.FC = () => {
           </button>
         </div>
 
+        {/* ── Tier upgrade suggestions ─────────────────────────── */}
+        {pendingUpgrades.size > 0 && program.exercises
+          .filter(ex => pendingUpgrades.has(ex.name))
+          .map(ex => {
+            const info = getUpgradeInfo(ex);
+            if (!info) return null;
+            return (
+              <div
+                key={ex.name}
+                style={{
+                  marginBottom: 10,
+                  borderRadius: 16,
+                  border: '1px solid rgba(217,184,76,0.25)',
+                  background: 'rgba(217,184,76,0.06)',
+                  padding: '14px 16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 18 }}>⬆️</span>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#D9B84C' }}>
+                      Ready to level up
+                    </div>
+                    <div style={{ fontSize: 11, color: T.text3, marginTop: 1 }}>
+                      You've completed <span style={{ color: T.text2, fontWeight: 600 }}>{ex.name}</span> 21 times
+                    </div>
+                  </div>
+                </div>
+
+                {/* Arrow: current → next */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: 'rgba(0,0,0,0.25)', borderRadius: 10, padding: '8px 12px',
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: T.text4, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
+                      Current
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: T.text2 }}>{ex.emoji} {ex.name}</div>
+                    <div style={{ fontSize: 10, color: T.text4, marginTop: 1 }}>{ex.difficulty}</div>
+                  </div>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={T.gold} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                  </svg>
+                  <div style={{ flex: 1, textAlign: 'right' }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: '#D9B84C', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
+                      Next
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{info.nextExerciseName}</div>
+                    <div style={{ fontSize: 10, color: '#D9B84C', marginTop: 1 }}>{info.nextTier}</div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = acceptTierUpgrade(program, ex.name);
+                      saveDailyProgram(updated);
+                      setProgram(applyProgressionsToProgram(updated));
+                      setPendingUpgrades(prev => {
+                        const s = new Set(prev);
+                        s.delete(ex.name);
+                        return s;
+                      });
+                    }}
+                    style={{
+                      flex: 1, padding: '10px 0', borderRadius: 10,
+                      background: '#D9B84C', color: '#0A0A0A',
+                      fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer',
+                      fontFamily: T.font,
+                    }}
+                  >
+                    Upgrade
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dismissUpgrade(ex.name);
+                      setPendingUpgrades(prev => {
+                        const s = new Set(prev);
+                        s.delete(ex.name);
+                        return s;
+                      });
+                    }}
+                    style={{
+                      flex: 1, padding: '10px 0', borderRadius: 10,
+                      background: 'transparent', color: T.text3,
+                      fontSize: 12, fontWeight: 600,
+                      border: `1px solid ${T.border2}`, cursor: 'pointer',
+                      fontFamily: T.font,
+                    }}
+                  >
+                    Not yet
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
         {expanded && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {program.exercises.map((ex) => {
@@ -388,6 +515,7 @@ const PersonalizedProgramScreen: React.FC = () => {
               const imageOffsetX = imageCfg?.offsetX ?? DEFAULT_IMAGE_OFFSET_X;
               const firstTarget = ex.targetProblemLabels[0];
               const extraTargets = ex.targetProblemLabels.length - 1;
+              const prog = getProgressionDisplay(ex.name);
               return (
                 <div
                   key={ex.id}
@@ -441,10 +569,56 @@ const PersonalizedProgramScreen: React.FC = () => {
                         {ex.name}
                       </h3>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 10 }}>
+                        {ex.sets > 1 && (
+                          <span style={{
+                            fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
+                            padding: '1px 5px', borderRadius: 5,
+                            background: 'rgba(217,184,76,0.15)', color: '#D9B84C',
+                            border: '1px solid rgba(217,184,76,0.25)',
+                          }}>{ex.sets}×</span>
+                        )}
                         <span style={{ color: T.text3 }}>{ex.displayReps}</span>
                         <span style={{ color: T.text4 }}>·</span>
                         <span style={{ color: levelColor }}>{levelLabel}</span>
                       </div>
+                      {/* Set progression bar — only show if not maxed and has some progress */}
+                      {!prog.isMaxed && prog.percentToNext > 0 && (
+                        <div style={{ marginTop: 6 }}>
+                          <div style={{
+                            height: 2, borderRadius: 2,
+                            background: 'rgba(255,255,255,0.06)', overflow: 'hidden',
+                          }}>
+                            <div style={{
+                              height: '100%', borderRadius: 2,
+                              background: 'rgba(217,184,76,0.55)',
+                              width: `${prog.percentToNext}%`,
+                              transition: 'width 0.4s ease',
+                            }} />
+                          </div>
+                          <div style={{ fontSize: 8, color: T.text4, marginTop: 3 }}>
+                            {prog.completionsAtVolume}/{prog.threshold} → {ex.sets + 1} sets
+                          </div>
+                        </div>
+                      )}
+                      {/* Tier upgrade progress bar — show for all non-hard exercises */}
+                      {ex.difficulty !== 'hard' && !prog.pendingTierUpgrade && (
+                        <div style={{ marginTop: 5 }}>
+                          <div style={{
+                            height: 2, borderRadius: 2,
+                            background: 'rgba(255,255,255,0.06)', overflow: 'hidden',
+                          }}>
+                            <div style={{
+                              height: '100%', borderRadius: 2,
+                              background: 'rgba(249,115,22,0.55)',
+                              width: `${Math.min(100, Math.round((prog.totalCompletions / 21) * 100))}%`,
+                              transition: 'width 0.4s ease',
+                            }} />
+                          </div>
+                          <div style={{ fontSize: 8, color: T.text4, marginTop: 3 }}>
+                            {prog.totalCompletions}/21 → next exercise
+                          </div>
+                        </div>
+                      )}
                       {firstTarget && (
                         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
                           <span
