@@ -1,0 +1,133 @@
+name: Build & Upload iOS to App Store Connect
+
+on:
+  workflow_dispatch:          # run manually from GitHub Actions tab
+  push:
+    branches: [main]
+    tags:
+      - 'v*'                  # also run on version tags like v1.0.0
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Node + npm ──────────────────────────────────────────────────────────
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 3. Build web app ───────────────────────────────────────────────────────
+      - name: Build web app
+        run: npm run build
+
+      # ── 4. Capacitor sync ──────────────────────────────────────────────────────
+      - name: Capacitor sync
+        run: npx cap sync ios
+
+      # ── 5. Install CocoaPods ───────────────────────────────────────────────────
+      - name: Install CocoaPods
+        run: |
+          cd ios/App
+          pod install
+
+      # ── 6. Install Apple certificates & provisioning profile ──────────────────
+      #
+      #  You need to add these GitHub Secrets in your repo settings:
+      #    APPLE_CERTIFICATE_BASE64       — your .p12 certificate as base64
+      #    APPLE_CERTIFICATE_PASSWORD     — password for the .p12
+      #    APPLE_PROVISIONING_PROFILE     — your .mobileprovision as base64
+      #    APPLE_KEYCHAIN_PASSWORD        — any password you choose (used for temp keychain)
+      #
+      - name: Install certificate and provisioning profile
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_PROVISIONING_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+        run: |
+          # Create temp keychain
+          security create-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+
+          # Import certificate
+          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > certificate.p12
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$APPLE_KEYCHAIN_PASSWORD" build.keychain
+
+          # Install provisioning profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$APPLE_PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+
+      # ── 7. Build & archive ─────────────────────────────────────────────────────
+      - name: Build iOS archive
+        run: |
+          xcodebuild archive \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath $RUNNER_TEMP/PostureFix.xcarchive \
+            -allowProvisioningUpdates \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }}
+
+      # ── 8. Export IPA ──────────────────────────────────────────────────────────
+      - name: Export IPA
+        run: |
+          cat > $RUNNER_TEMP/ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>${{ secrets.APPLE_TEAM_ID }}</string>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>compileBitcode</key>
+            <false/>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/PostureFix.xcarchive \
+            -exportPath $RUNNER_TEMP/ipa \
+            -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist
+
+      # ── 9. Upload to App Store Connect ─────────────────────────────────────────
+      #
+      #  Add these additional secrets:
+      #    APPLE_ID                       — your Apple ID email
+      #    APPLE_APP_SPECIFIC_PASSWORD    — app-specific password from appleid.apple.com
+      #    APPLE_TEAM_ID                  — your 10-character Team ID from developer.apple.com
+      #
+      - name: Upload to App Store Connect
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: |
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$RUNNER_TEMP/ipa/App.ipa" \
+            --username "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD"
+
+      # ── 10. Save IPA as artifact (optional, for manual download) ───────────────
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PostureFix.ipa
+          path: ${{ runner.temp }}/ipa/*.ipa
+          retention-days: 30
