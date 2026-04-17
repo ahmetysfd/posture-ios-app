@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { postureProblems } from '../data/postureData';
+import { getDailyStats } from '../services/DailyProgram';
 
 const Completion: React.FC = () => {
   const { problemId } = useParams<{ problemId: string }>();
@@ -10,6 +11,7 @@ const Completion: React.FC = () => {
   if (!problem) { navigate('/'); return null; }
 
   const totalDur = problem.exerciseList.reduce((s, e) => s + e.duration, 0);
+  const { streak } = getDailyStats();
   const colors = ['#8B5CF6', '#3B82F6', '#EC4899', '#F59E0B', '#10B981', '#6366F1'];
 
   return (
@@ -26,7 +28,7 @@ const Completion: React.FC = () => {
           You completed all {problem.exerciseList.length} exercises for {problem.title}!
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 32, width: '100%' }}>
-          {[{ v: problem.exerciseList.length, l: 'Exercises', e: '💪' }, { v: `${Math.ceil(totalDur / 60)}m`, l: 'Duration', e: '⏱️' }, { v: '1', l: 'Streak', e: '🔥' }].map((st, i) => (
+          {[{ v: problem.exerciseList.length, l: 'Exercises', e: '💪' }, { v: `${Math.ceil(totalDur / 60)}m`, l: 'Duration', e: '⏱️' }, { v: streak, l: 'Streak', e: '🔥' }].map((st, i) => (
             <div key={i} style={{ background: 'var(--color-surface)', borderRadius: 16, padding: '14px 10px', border: '1px solid var(--color-border-light)', animation: `slideUp 0.4s ease ${0.15 + i * 0.08}s both` }}>
               <div style={{ fontSize: 18, marginBottom: 4 }}>{st.e}</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-primary)' }}>{st.v}</div>

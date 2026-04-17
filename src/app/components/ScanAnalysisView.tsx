@@ -31,6 +31,8 @@ interface ScanAnalysisViewProps {
   showDailyPlanButton?: boolean;
   /** Optional — when provided, Risk Analysis cards become tappable. */
   onProblemSelect?: (problemId: string) => void;
+  /** When true, only render the Risk Analysis card — no skeleton, tabs, level card, or buttons. */
+  riskAnalysisOnly?: boolean;
 }
 
 // ── Body-region crop system ──────────────────────────────────────────────────
@@ -361,6 +363,7 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
   showNewScanButton = true,
   showDailyPlanButton = true,
   onProblemSelect,
+  riskAnalysisOnly = false,
 }) => {
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
@@ -566,58 +569,62 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 24 }}>
 
-      {/* ── 21-day program level (replaces scan-only badge + thin bars) ── */}
-      <DailyProgramLevelCard />
+      {!riskAnalysisOnly && (
+        <>
+          {/* ── 21-day program level (replaces scan-only badge + thin bars) ── */}
+          <DailyProgramLevelCard />
 
-      {/* ── View tabs ─────────────────────────── */}
-      <div style={{
-        display: 'flex', background: T.surface, borderRadius: 18, padding: 4, border: `1px solid ${T.border}`,
-      }}>
-        {(['front', 'side', 'back'] as const).map(v => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => setActiveView(v)}
-            style={{
-              flex: 1, textAlign: 'center', padding: '9px 0',
-              borderRadius: 12, fontSize: 12,
-              fontWeight: activeView === v ? 600 : 400,
-              cursor: 'pointer', fontFamily: T.font, border: 'none',
-              color: activeView === v ? T.text : T.text3,
-              background: activeView === v ? 'linear-gradient(135deg, #2A2A2F 0%, #1A1A1E 100%)' : 'transparent',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            {VIEW_LABELS[v]}
-          </button>
-        ))}
-      </div>
+          {/* ── View tabs ─────────────────────────── */}
+          <div style={{
+            display: 'flex', background: T.surface, borderRadius: 18, padding: 4, border: `1px solid ${T.border}`,
+          }}>
+            {(['front', 'side', 'back'] as const).map(v => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setActiveView(v)}
+                style={{
+                  flex: 1, textAlign: 'center', padding: '9px 0',
+                  borderRadius: 12, fontSize: 12,
+                  fontWeight: activeView === v ? 600 : 400,
+                  cursor: 'pointer', fontFamily: T.font, border: 'none',
+                  color: activeView === v ? T.text : T.text3,
+                  background: activeView === v ? 'linear-gradient(135deg, #2A2A2F 0%, #1A1A1E 100%)' : 'transparent',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {VIEW_LABELS[v]}
+              </button>
+            ))}
+          </div>
 
-      {/* ── Skeleton overlay on photo ─────────── */}
-      <SkeletonOverlay
-        photoUrl={photos[activeView]}
-        keypoints={keypoints[activeView]}
-        view={activeView}
-        problems={report.problems}
-        showSkeleton={showSkeleton}
-        showLabels={showLabels}
-      />
+          {/* ── Skeleton overlay on photo ─────────── */}
+          <SkeletonOverlay
+            photoUrl={photos[activeView]}
+            keypoints={keypoints[activeView]}
+            view={activeView}
+            problems={report.problems}
+            showSkeleton={showSkeleton}
+            showLabels={showLabels}
+          />
 
-      {/* ── Toggle buttons ────────────────────── */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <ToggleButton
-          label="Skeleton"
-          icon="◉"
-          active={showSkeleton}
-          onPress={() => setShowSkeleton(!showSkeleton)}
-        />
-        <ToggleButton
-          label="Labels"
-          icon="▣"
-          active={showLabels}
-          onPress={() => setShowLabels(!showLabels)}
-        />
-      </div>
+          {/* ── Toggle buttons ────────────────────── */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <ToggleButton
+              label="Skeleton"
+              icon="◉"
+              active={showSkeleton}
+              onPress={() => setShowSkeleton(!showSkeleton)}
+            />
+            <ToggleButton
+              label="Labels"
+              icon="▣"
+              active={showLabels}
+              onPress={() => setShowLabels(!showLabels)}
+            />
+          </div>
+        </>
+      )}
 
       {/* ── Risk summary ─────────────────────── */}
       <div style={{
@@ -696,60 +703,61 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
         )}
       </div>
 
-      {/* ── Disclaimer ────────────────────────── */}
-      <div style={{
-        padding: '2px 4px',
-        borderRadius: 8,
-      }}>
-        <p style={{ fontSize: 10, color: T.text3, lineHeight: 1.5, fontFamily: T.font }}>
-          AI posture screen — not a medical diagnosis. Consult a professional for pain or clinical concerns.
-        </p>
-      </div>
+      {!riskAnalysisOnly && (
+        <>
+          {/* ── Disclaimer ────────────────────────── */}
+          <div style={{ padding: '2px 4px', borderRadius: 8 }}>
+            <p style={{ fontSize: 10, color: T.text3, lineHeight: 1.5, fontFamily: T.font }}>
+              AI posture screen — not a medical diagnosis. Consult a professional for pain or clinical concerns.
+            </p>
+          </div>
 
-      {/* ── Action buttons ────────────────────── */}
-      {showDailyPlanButton && (
-        <button
-          type="button"
-          onClick={onViewDailyPlan}
-          style={{
-            width: '100%', padding: 16, borderRadius: 18,
-            background: 'linear-gradient(90deg, #EA580C 0%, #FB923C 100%)', color: '#FFFFFF',
-            fontSize: 14, fontWeight: 600, border: 'none',
-            cursor: 'pointer', fontFamily: T.font,
-            boxShadow: '0 0 24px rgba(249,115,22,0.22)',
-          }}
-        >
-          See your daily plan
-        </button>
-      )}
-      {showFullReportButton && (
-        <button
-          type="button"
-          onClick={onViewFullReport}
-          style={{
-            width: '100%', padding: 15, borderRadius: 16,
-            background: T.surface, color: T.text,
-            fontSize: 13, fontWeight: 500,
-            cursor: 'pointer', fontFamily: T.font,
-            border: `1px solid ${T.border}`,
-          }}
-        >
-          Full report →
-        </button>
-      )}
-      {showNewScanButton && (
-        <button
-          type="button"
-          onClick={onNewScan}
-          style={{
-            width: '100%', padding: 15, borderRadius: 16,
-            background: T.surface, color: T.text2,
-            border: `1px solid ${T.border}`,
-            fontSize: 13, cursor: 'pointer', fontFamily: T.font,
-          }}
-        >
-          New scan
-        </button>
+          {/* ── Action buttons ────────────────────── */}
+          {showDailyPlanButton && (
+            <button
+              type="button"
+              onClick={onViewDailyPlan}
+              style={{
+                width: '100%', padding: 16, borderRadius: 18,
+                background: 'linear-gradient(90deg, #EA580C 0%, #FB923C 100%)', color: '#FFFFFF',
+                fontSize: 14, fontWeight: 600, border: 'none',
+                cursor: 'pointer', fontFamily: T.font,
+                boxShadow: '0 0 24px rgba(249,115,22,0.22)',
+              }}
+            >
+              See your daily plan
+            </button>
+          )}
+          {showFullReportButton && (
+            <button
+              type="button"
+              onClick={onViewFullReport}
+              style={{
+                width: '100%', padding: 15, borderRadius: 16,
+                background: T.surface, color: T.text,
+                fontSize: 13, fontWeight: 500,
+                cursor: 'pointer', fontFamily: T.font,
+                border: `1px solid ${T.border}`,
+              }}
+            >
+              Full report →
+            </button>
+          )}
+          {showNewScanButton && (
+            <button
+              type="button"
+              onClick={onNewScan}
+              style={{
+                width: '100%', padding: 15, borderRadius: 16,
+                background: T.surface, color: T.text2,
+                border: `1px solid ${T.border}`,
+                fontSize: 13, cursor: 'pointer', fontFamily: T.font,
+              }}
+            >
+              New scan
+            </button>
+          )}
+        </>
       )}
     </div>
   );

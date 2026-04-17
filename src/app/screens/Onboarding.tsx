@@ -6,15 +6,27 @@ import {
   Camera,
   RotateCcw,
   Check,
-  Sparkles,
-  AlertTriangle,
   Shield,
-  Zap,
-  Clock,
   ArrowRight,
 } from 'lucide-react';
 import ImageWithFallback from '../components/figma/ImageWithFallback';
-import { saveUserProfile } from '../services/UserProfile';
+import ScanAnalysisView from '../components/ScanAnalysisView';
+import { saveUserProfile, loadUserProfile, levelToDefaultDifficulty } from '../services/UserProfile';
+import {
+  initPoseDetector,
+  detectPose,
+  validatePoseForView,
+  type Keypoint,
+} from '../services/MoveNetPoseService';
+import { type IntendedView } from '../services/PostureAnalysisEngine';
+import {
+  analyzeThreePhotos,
+  determineLevel,
+  type ScanReport,
+} from '../services/PostureAnalysisEngineV2';
+import { scanReportToPostureReport } from '../services/scanReportAdapter';
+import { appendLocalScanLog, buildLocalScanEntry } from '../services/scanPersistence';
+import { generateAndStoreDailyProgram, initLevelSystem } from '../services/DailyProgram';
 
 const bodyParts = [
   { id: 'neck', label: 'Neck', image: '/welcome-pain/neck-pain.png', focus: '50% 32%' },
@@ -22,20 +34,6 @@ const bodyParts = [
   { id: 'lower-back', label: 'Lower Back', image: '/welcome-pain/lower-back-pain.png', focus: '50% 71%', scale: 1.25 },
   { id: 'upper-back', label: 'Upper Back', image: '/welcome-pain/upper-back-pain.png', focus: '50% 40%' },
 ];
-
-type Severity = 'mild' | 'moderate' | 'severe';
-const findings: { label: string; severity: Severity; color: string; angle: string }[] = [
-  { label: 'Forward Head',        severity: 'moderate', color: '#ff6b35', angle: '12°' },
-  { label: 'Rounded Shoulders',   severity: 'mild',     color: '#00d9ff', angle: '8°'  },
-  { label: 'Anterior Pelvic Tilt',severity: 'severe',   color: '#9d4edd', angle: '18°' },
-  { label: 'Kyphosis',            severity: 'mild',     color: '#00d9ff', angle: '6°'  },
-];
-
-const sevColors: Record<Severity, string> = {
-  mild:     'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-  moderate: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
-  severe:   'text-red-400 bg-red-500/10 border-red-500/20',
-};
 
 const C = {
   0: { accent: '#ff6b35', grad: 'from-[#ff6b35] to-[#ff8f5e]', glow: 'rgba(255,107,53,0.2)', progressGrad: 'linear-gradient(90deg,#ff6b35,#ff8f5e)' },
@@ -252,14 +250,92 @@ const PhotoCapturePage: React.FC<{
     </div>
   );
 };
-// ── Page 4: Analysis ──
-const AnalysisPage: React.FC<{ painAreas: string[] }> = ({ painAreas }) => {
-  const [animDone, setAnimDone] = useState(false);
+// ── Page 4: Analysis (runs real scan, shows risk analysis cards) ──
+const AnalysisPage: React.FC<{
+  photos: { front: string; side: string; back: string };
+}> = ({ photos }) => {
+  const [phase, setPhase] = useState<'analyzing' | 'done' | 'error'>('analyzing');
+  const [scanReport, setScanReport] = useState<ScanReport | null>(null);
+  const [kps, setKps] = useState<{ front: Keypoint[]; side: Keypoint[]; back: Keypoint[] } | null>(null);
+  const [errorMsg, setErrorMsg] = useState('');
+  const ranRef = useRef(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setAnimDone(true), 1600);
-    return () => clearTimeout(t);
-  }, []);
+    if (ranRef.current) return;
+    ranRef.current = true;
+
+    (async () => {
+      try {
+        await initPoseDetector();
+        const allKps: Record<IntendedView, Keypoint[]> = { front: [], side: [], back: [] };
+
+        for (const view of ['front', 'side', 'back'] as IntendedView[]) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = photos[view];
+          await new Promise<void>((res, rej) => {
+            img.onload = () => res();
+            img.onerror = () => rej(new Error('img'));
+          });
+          const result = await detectPose(img);
+          if (!result) {
+            setErrorMsg(`No pose detected in ${view} photo. Please retake.`);
+            setPhase('error');
+            return;
+          }
+          const validation = validatePoseForView(result, view);
+          if (!validation.valid) {
+            setErrorMsg(validation.reason ?? `Pose validation failed for ${view}.`);
+            setPhase('error');
+            return;
+          }
+          allKps[view] = result.keypoints;
+        }
+
+        const scan = analyzeThreePhotos({ front: allKps.front, side: allKps.side, back: allKps.back });
+        const profile = loadUserProfile();
+        determineLevel(scan, {
+          activityLevel: profile?.activityLevel ?? 'sedentary',
+          hasExistingPain: profile?.hasExistingPain ?? false,
+          dailyScreenHours: profile?.dailyScreenHours ?? 6,
+        });
+
+        const stableReport = scanReportToPostureReport(scan);
+        sessionStorage.setItem('postureReport', JSON.stringify(stableReport));
+        sessionStorage.setItem('postureScanV2', JSON.stringify(scan));
+        localStorage.setItem('posturefix_scan_report', JSON.stringify(stableReport));
+        sessionStorage.setItem('scanCaptures', JSON.stringify(photos));
+        try {
+          localStorage.setItem('posturefix_scan_v2', JSON.stringify(scan));
+          localStorage.setItem('posturefix_scan_captures', JSON.stringify(photos));
+        } catch { /* quota */ }
+
+        const sevMap: Record<string, 'low' | 'medium' | 'high'> = {};
+        for (const p of scan.problems) sevMap[p.id] = p.riskCategory;
+
+        const savedProfile = saveUserProfile({
+          postureLevel: scan.postureLevel,
+          detectedProblems: scan.problems.map(p => p.id),
+          detectedProblemSeverities: sevMap,
+          problemCount: scan.problems.length,
+          scanTimestamp: Date.now(),
+          exerciseDifficulty: levelToDefaultDifficulty(scan.postureLevel),
+        });
+        generateAndStoreDailyProgram(savedProfile);
+
+        const scanEntry = buildLocalScanEntry(scan);
+        appendLocalScanLog(scanEntry);
+        initLevelSystem(scanEntry.riskSummary);
+
+        setScanReport(scan);
+        setKps(allKps);
+        setPhase('done');
+      } catch {
+        setErrorMsg('Analysis failed. Please try again.');
+        setPhase('error');
+      }
+    })();
+  }, [photos]);
 
   return (
     <div className="flex flex-col h-full">
@@ -270,114 +346,40 @@ const AnalysisPage: React.FC<{ painAreas: string[] }> = ({ painAreas }) => {
         </h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-4 flex flex-col gap-2.5">
-        {!animDone ? (
-          <div className="relative rounded-xl overflow-hidden bg-[#0d0d12] ring-[0.5px] ring-white/[0.04] h-32 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-7 h-7 border-[1.5px] border-[#9d4edd]/25 border-t-[#9d4edd] rounded-full animate-spin" />
-              <span className="text-[10px] text-zinc-600">Analyzing...</span>
+      <div className="flex-1 overflow-y-auto px-5 pb-4">
+        {phase === 'analyzing' && (
+          <div className="relative rounded-xl overflow-hidden bg-[#0d0d12] ring-[0.5px] ring-white/[0.04] h-40 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-[2px] border-[#9d4edd]/25 border-t-[#9d4edd] rounded-full animate-spin" />
+              <span className="text-[11px] text-zinc-500 font-medium">Analyzing your posture...</span>
+              <span className="text-[9px] text-zinc-700">This may take a few seconds</span>
             </div>
           </div>
-        ) : (
-          <>
-            <div className="relative rounded-xl overflow-hidden bg-[#111114] ring-[0.5px] ring-white/[0.06] p-3.5">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-[#9d4edd]/[0.06] rounded-full blur-[30px]" />
-              <div className="relative z-10 flex items-center gap-3.5">
-                <div className="relative w-[56px] h-[56px] shrink-0">
-                  <svg viewBox="0 0 56 56" className="w-full h-full -rotate-90">
-                    <circle cx="28" cy="28" r="23" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="4" />
-                    <circle
-                      cx="28" cy="28" r="23" fill="none" stroke="url(#sg)" strokeWidth="4" strokeLinecap="round"
-                      strokeDasharray={`${2 * Math.PI * 23}`}
-                      strokeDashoffset={`${2 * Math.PI * 23 * 0.38}`}
-                    />
-                    <defs>
-                      <linearGradient id="sg" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#ff6b35" />
-                        <stop offset="100%" stopColor="#9d4edd" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-[18px] font-bold text-white leading-none">62</span>
-                    <span className="text-[7px] text-zinc-600 uppercase tracking-wider mt-px">Score</span>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-[13px] font-semibold text-white">Needs Improvement</h3>
-                  <p className="text-[10px] text-zinc-600 mt-0.5">{findings.length} issues detected</p>
-                </div>
-              </div>
-            </div>
+        )}
 
-            {findings.map((f) => (
-              <div
-                key={f.label}
-                className="rounded-xl bg-[#111114] ring-[0.5px] ring-white/[0.06] p-3 flex items-center gap-2.5"
-              >
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: `${f.color}0a`, border: `0.5px solid ${f.color}18` }}
-                >
-                  <AlertTriangle size={13} style={{ color: f.color }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-[12px] font-semibold text-white">{f.label}</h4>
-                  <span className={`text-[8px] font-bold uppercase tracking-wider px-1.5 py-px rounded border ${sevColors[f.severity]}`}>
-                    {f.severity}
-                  </span>
-                </div>
-                <span className="text-[11px] font-bold tabular-nums" style={{ color: f.color }}>
-                  {f.angle}
-                </span>
-              </div>
-            ))}
-
-            <div className="relative rounded-xl overflow-hidden mt-0.5">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#16111c] to-[#111114] rounded-xl ring-[0.5px] ring-[#9d4edd]/10" />
-              <div className="absolute top-[-25%] right-[-8%] w-28 h-28 bg-[#9d4edd]/8 rounded-full blur-[35px]" />
-              <div className="relative z-10 p-3.5">
-                <div className="flex items-center gap-2 mb-2.5">
-                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#ff6b35] to-[#9d4edd] flex items-center justify-center">
-                    <Sparkles size={11} className="text-white" />
-                  </div>
-                  <h3 className="text-[13px] font-semibold text-white">Your Program</h3>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5 mb-2.5">
-                  {[
-                    { icon: <Zap size={12} className="text-[#ff6b35]" />,    val: '12', unit: 'Exercises' },
-                    { icon: <Clock size={12} className="text-[#00d9ff]" />,  val: '6',  unit: 'Min/Day'   },
-                    { icon: <Shield size={12} className="text-[#9d4edd]" />, val: '21', unit: 'Days'      },
-                  ].map((s) => (
-                    <div key={s.unit} className="rounded-lg bg-white/[0.02] ring-[0.5px] ring-white/[0.04] p-2 flex flex-col items-center">
-                      {s.icon}
-                      <span className="text-[14px] font-bold text-white mt-0.5">{s.val}</span>
-                      <span className="text-[7px] text-zinc-600 uppercase tracking-wider">{s.unit}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {findings.map((f) => (
-                    <span
-                      key={f.label}
-                      className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md"
-                      style={{ color: f.color, backgroundColor: `${f.color}0a`, border: `0.5px solid ${f.color}18` }}
-                    >
-                      {f.label}
-                    </span>
-                  ))}
-                </div>
-                {painAreas.length > 0 && (
-                  <div className="flex items-center gap-1.5 mt-2">
-                    <Check size={8} className="text-emerald-400" strokeWidth={3} />
-                    <span className="text-[9px] text-zinc-600">
-                      Targeting {painAreas.map((id) => bodyParts.find((b) => b.id === id)?.label).filter(Boolean).join(', ')}
-                    </span>
-                  </div>
-                )}
-              </div>
+        {phase === 'error' && (
+          <div className="relative rounded-xl overflow-hidden bg-[#0d0d12] ring-[0.5px] ring-red-500/20 p-5 flex flex-col items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+              <span className="text-red-400 text-lg">!</span>
             </div>
-          </>
+            <p className="text-[12px] text-zinc-400 text-center leading-relaxed">{errorMsg}</p>
+            <p className="text-[10px] text-zinc-600 text-center">Go back and retake your photos.</p>
+          </div>
+        )}
+
+        {phase === 'done' && scanReport && kps && (
+          <ScanAnalysisView
+            report={scanReport}
+            photos={photos}
+            keypoints={kps}
+            onViewDailyPlan={() => {}}
+            onViewFullReport={() => {}}
+            onNewScan={() => {}}
+            showFullReportButton={false}
+            showDailyPlanButton={false}
+            showNewScanButton={false}
+            riskAnalysisOnly={true}
+          />
         )}
       </div>
     </div>
@@ -500,7 +502,9 @@ export const OnboardingFlow: React.FC<{ onFinish?: () => void }> = ({ onFinish }
           {page === 0 && <PainAreasPage selected={selectedParts} onToggle={togglePart} />}
           {page === 1 && <EquipmentPage selected={equipment} onSelect={setEquipment} />}
           {page === 2 && <PhotoCapturePage frontPhoto={frontPhoto} sidePhoto={sidePhoto} backPhoto={backPhoto} onCaptureCamera={openCamera} onCaptureUpload={openUpload} />}
-          {page === 3 && <AnalysisPage painAreas={selectedParts} />}
+          {page === 3 && frontPhoto && sidePhoto && backPhoto && (
+            <AnalysisPage photos={{ front: frontPhoto, side: sidePhoto, back: backPhoto }} />
+          )}
         </div>
       </div>
 

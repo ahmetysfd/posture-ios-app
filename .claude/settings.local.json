@@ -10,7 +10,8 @@
       "mcp__figma__get_design_context",
       "mcp__figma__get_screenshot",
       "Bash(curl:*)",
-      "Bash(cat C:/Users/Ahmet/Desktop/posturefix/tailwind.config.*)"
+      "Bash(cat C:/Users/Ahmet/Desktop/posturefix/tailwind.config.*)",
+      "Bash(npx vite *)"
     ]
   }
 }

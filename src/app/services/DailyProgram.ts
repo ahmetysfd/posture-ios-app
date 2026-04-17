@@ -1681,7 +1681,7 @@ export function generateCustomProgram(
     for (let areaIdx = 0; areaIdx < perArea.length; areaIdx++) {
       const list = perArea[areaIdx];
       while (pointers[areaIdx] < list.length) {
-        const entry = list[pointers[areaIdx]!]++;
+        const entry = list[pointers[areaIdx]++];
         if (!seen.has(entry.exercise.name)) {
           seen.add(entry.exercise.name);
           allCandidates.push(entry);

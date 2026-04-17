@@ -1,7 +1,7 @@
 /**
- * Local scan log + optional Supabase cloud save (requires Auth + user_profiles row).
+ * Local scan log — persists a compact history of scans to localStorage.
+ * All scan data lives on-device; there is no cloud component.
  */
-import { supabase, saveScanResults, getUserProfile, isSupabaseConfigured } from './supabaseClient';
 import type { ScanReport } from './PostureAnalysisEngineV2';
 
 const LOCAL_LOG_KEY = 'posturefix_local_scan_log';
@@ -23,44 +23,6 @@ export function appendLocalScanLog(entry: LocalScanEntry): void {
   } catch {
     /* ignore */
   }
-}
-
-/**
- * If the user is signed in with Supabase and has a profile row, persist scan + problems.
- * Photo paths are omitted unless you upload blobs separately via uploadScanPhoto.
- */
-export async function tryCloudPersistScan(scan: ScanReport): Promise<void> {
-  if (!isSupabaseConfigured() || !supabase) return;
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-
-  const profile = await getUserProfile(user.id);
-  if (!profile) return;
-
-  const problems = scan.problems.map((p) => ({
-    problem_id: p.id,
-    problem_name: p.name,
-    body_region: p.bodyRegion,
-    dominant_view: p.dominantView,
-    risk_category: p.riskCategory,
-    score: p.score,
-    detected_in_views: p.detectedInViews,
-    description: p.description,
-  }));
-
-  await saveScanResults({
-    userId: profile.id,
-    photos: {},
-    keypoints: {
-      front: scan.allKeypoints.front,
-      side: scan.allKeypoints.side,
-      back: scan.allKeypoints.back,
-    },
-    postureLevel: scan.postureLevel,
-    severityBand: scan.severityBand,
-    problems,
-  });
 }
 
 export function buildLocalScanEntry(scan: ScanReport): LocalScanEntry {

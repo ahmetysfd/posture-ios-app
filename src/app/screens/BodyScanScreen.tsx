@@ -21,7 +21,6 @@ import { scanReportToPostureReport } from '../services/scanReportAdapter';
 import {
   appendLocalScanLog,
   buildLocalScanEntry,
-  tryCloudPersistScan,
 } from '../services/scanPersistence';
 import { generateAndStoreDailyProgram, initLevelSystem } from '../services/DailyProgram';
 import { loadUserProfile, saveUserProfile, levelToDefaultDifficulty } from '../services/UserProfile';
@@ -382,7 +381,6 @@ const BodyScanScreen: React.FC = () => {
       const scanEntry = buildLocalScanEntry(scan);
       appendLocalScanLog(scanEntry);
       initLevelSystem(scanEntry.riskSummary);
-      void tryCloudPersistScan(scan);
 
       setPreviewUrl(photos.side || photos.front || photos.back || null);
       setFlow('done');

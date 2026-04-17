@@ -315,7 +315,10 @@ const ExerciseFlow: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '52px 20px 12px' }}>
         <button
           type="button"
-          onClick={() => navigate(`/problem/${problemId}`)}
+          onClick={() => {
+            if (window.history.length > 1) navigate(-1);
+            else navigate(`/problem/${problemId}`, { replace: true });
+          }}
           style={{
             width: 38, height: 38, borderRadius: 11,
             background: T.surface, border: `1px solid ${T.border2}`,

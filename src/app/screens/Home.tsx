@@ -157,9 +157,8 @@ interface DayCellState {
 interface DayConfig {
   off?: boolean;
   reminders?: string[];      // legacy (Progress page calendar)
-  programId?: string;        // NEW: program chosen for this day
-  time?: string;             // NEW: reminder/scheduled time "HH:MM"
-  demoDone?: boolean;        // NEW: manual/demo override for "done" visual
+  programId?: string;
+  time?: string;
 }
 const DAY_CONFIG_KEY = 'posturefix_day_config';
 
@@ -178,7 +177,6 @@ function isConfigEmpty(cfg: DayConfig): boolean {
   return !cfg.off
     && !cfg.programId
     && !cfg.time
-    && !cfg.demoDone
     && (!cfg.reminders || cfg.reminders.length === 0);
 }
 
@@ -198,40 +196,6 @@ function getProgramOptions(): ProgramOption[] {
   ];
 }
 
-/** First-visit demo seed: fill the current week with varied states so the
- *  user can see done/missed/off/today/scheduled cells in action. Only runs
- *  when there is no real progress log and no existing day config. */
-function seedDemoIfEmpty(): boolean {
-  if (typeof window === 'undefined') return false;
-  const existing = loadDayConfigMap();
-  if (Object.keys(existing).length > 0) return false;
-  try {
-    const logRaw = localStorage.getItem('posturefix_progress_log');
-    if (logRaw && JSON.parse(logRaw).length > 0) return false;
-  } catch { /* ignore */ }
-
-  const opts = getProgramOptions();
-  const p1 = opts[0]?.id ?? 'daily';
-  const p2 = opts[1]?.id ?? p1;
-
-  const weekStart = startOfWeekMonday(new Date());
-  const patterns: DayConfig[] = [
-    { programId: p1, time: '08:00', demoDone: true },  // Mon
-    { programId: p1, time: '08:00', demoDone: true },  // Tue
-    { off: true },                                     // Wed (off)
-    { programId: p1, time: '09:00' },                  // Thu
-    { programId: p2, time: '18:30' },                  // Fri
-    { off: true },                                     // Sat (off)
-    { programId: p1, time: '10:00' },                  // Sun
-  ];
-  const map: Record<string, DayConfig> = {};
-  for (let i = 0; i < 7; i++) {
-    map[toIsoDate(addDays(weekStart, i))] = patterns[i];
-  }
-  saveDayConfigMap(map);
-  return true;
-}
-
 function buildWeek(
   weekStart: Date,
   todayIso: string,
@@ -249,7 +213,7 @@ function buildWeek(
     const d = addDays(weekStart, i);
     const iso = toIsoDate(d);
     const cfg = configs[iso];
-    const isDone = completed.has(iso) || cfg?.demoDone === true;
+    const isDone = completed.has(iso);
     const isOff = cfg?.off === true;
     const isToday = iso === todayIso;
     const isPast = iso < todayIso;
@@ -285,10 +249,7 @@ const Home: React.FC = () => {
   const profile = loadUserProfile();
   const program = loadActiveProgramForSession(profile);
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekMonday(new Date()));
-  const [configs, setConfigs] = useState<Record<string, DayConfig>>(() => {
-    seedDemoIfEmpty();
-    return loadDayConfigMap();
-  });
+  const [configs, setConfigs] = useState<Record<string, DayConfig>>(() => loadDayConfigMap());
   const [editingIso, setEditingIso] = useState<string | null>(null);
 
   useEffect(() => { saveDayConfigMap(configs); }, [configs]);
@@ -365,7 +326,7 @@ const Home: React.FC = () => {
                 advanced:     { label: 'Advanced' },
               };
               const lvl = levelState ? LEVEL_LABELS[levelState.currentLevel] : null;
-              const streak = realStreak || 8;
+              const streak = realStreak;
 
               return (
                 <>
@@ -747,7 +708,6 @@ const DayPickerModal: React.FC<DayPickerModalProps> = ({ iso, config, programs, 
       reminders: config.reminders,
       programId: programId || undefined,
       time: time || undefined,
-      demoDone: config.demoDone,
     });
   };
 
