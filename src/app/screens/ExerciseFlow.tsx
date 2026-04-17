@@ -161,7 +161,8 @@ const ExerciseFlow: React.FC = () => {
         exercises.map(e => ({ name: e.name, emoji: e.emoji })),
         3,
       );
-      navigate(`/completion/${problemId}`);
+      const diff = exercises[0]?.difficulty ?? 'beginner';
+      navigate(`/completion/${problemId}?done=${exercises.length}&diff=${diff}`);
     }
   }, [ex, exIdx, total, exRestSec, exercises, navigate, problemId]);
 
@@ -203,9 +204,10 @@ const ExerciseFlow: React.FC = () => {
     if (exIdx < total - 1) {
       setExIdx(i => i + 1);
     } else {
-      navigate(`/completion/${problemId}`);
+      const diff = exercises[0]?.difficulty ?? 'beginner';
+      navigate(`/completion/${problemId}?done=${exIdx + 1}&diff=${diff}`);
     }
-  }, [ex, exIdx, total, navigate, problemId]);
+  }, [ex, exIdx, total, exercises, navigate, problemId]);
 
   // Active timer
   useEffect(() => {
@@ -307,7 +309,7 @@ const ExerciseFlow: React.FC = () => {
 
   return (
     <div style={{
-      width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh',
+      width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100dvh',
       background: T.bg, display: 'flex', flexDirection: 'column', fontFamily: T.font,
     }}>
 

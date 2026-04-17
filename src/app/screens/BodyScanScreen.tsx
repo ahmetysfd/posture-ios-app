@@ -412,7 +412,7 @@ const BodyScanScreen: React.FC = () => {
       width: '100%',
       maxWidth: 430,
       margin: '0 auto',
-      minHeight: '100vh',
+      minHeight: '100dvh',
       background: 'var(--color-bg)',
       fontFamily: 'var(--font-body)',
       display: 'flex',

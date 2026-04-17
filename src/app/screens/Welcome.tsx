@@ -9,8 +9,8 @@ const Welcome: React.FC = () => {
     <Layout>
       <div
         style={{
-          minHeight: 'calc(100vh - 94px)',
-          height: 'calc(100vh - 94px)',
+          minHeight: 'calc(100dvh - 94px)',
+          height: 'calc(100dvh - 94px)',
           background: '#0a0a0f',
           display: 'flex',
           flexDirection: 'column',

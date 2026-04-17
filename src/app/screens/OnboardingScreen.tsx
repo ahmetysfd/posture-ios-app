@@ -139,7 +139,7 @@ const OnboardingScreen: React.FC = () => {
 
   return (
     <div style={{
-      width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100vh',
+      width: '100%', maxWidth: 430, margin: '0 auto', minHeight: '100dvh',
       background: T.bg, fontFamily: T.font,
       display: 'flex', flexDirection: 'column',
     }}>
