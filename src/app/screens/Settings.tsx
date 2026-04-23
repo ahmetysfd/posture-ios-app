@@ -9,6 +9,7 @@ const Settings: React.FC = () => {
   const handleReset = () => {
     if (!confirmReset) { setConfirmReset(true); return; }
     localStorage.clear();
+    sessionStorage.clear();
     navigate('/onboarding');
   };
 

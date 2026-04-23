@@ -484,13 +484,15 @@ const BodyScanScreen: React.FC = () => {
           </div>
         )}
 
+        {/* Avoid `display:none` so iOS Safari reliably opens camera / photo picker */}
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
           capture={uploadCaptureMode}
           onChange={handleFileSelect}
-          style={{ display: 'none' }}
+          className="sr-only"
+          aria-hidden
         />
 
         {flow === 'intro' && (

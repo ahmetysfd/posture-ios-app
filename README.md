@@ -103,6 +103,39 @@ npm run dev
 npm run build
 ```
 
+## ☁️ Deploy Online (Vercel + Supabase)
+
+1. Create a Supabase project and enable **Anonymous sign-ins** in Authentication.
+2. In Supabase SQL Editor, run `supabase-minimal.sql`.
+3. In Vercel, import this repo and set environment variables:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+4. Deploy. `vercel.json` already handles SPA rewrites.
+
+### Data minimization (already implemented)
+
+- Cloud sync stores only compact progress stats in `user_progress_snapshots`.
+- No camera photos, keypoints, or full scan payloads are sent to Supabase.
+- Local reset clears both `localStorage` and `sessionStorage`.
+
+## 📲 Play Store path (after web deploy)
+
+This app is already set up with Capacitor. For Android release:
+
+```bash
+npm run build
+npx cap add android
+npx cap sync android
+npx cap open android
+```
+
+Then in Android Studio:
+
+1. Build signed `AAB` (`Build > Generate Signed Bundle/APK`).
+2. Create Google Play Console app.
+3. Complete Data Safety + privacy policy.
+4. Upload the `AAB` to internal testing, then production.
+
 ## 📱 Screens
 
 1. **Onboarding** — 3-step carousel introducing the app, with skip option

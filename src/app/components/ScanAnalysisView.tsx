@@ -31,8 +31,6 @@ interface ScanAnalysisViewProps {
   showDailyPlanButton?: boolean;
   /** Optional — when provided, Risk Analysis cards become tappable. */
   onProblemSelect?: (problemId: string) => void;
-  /** When true, only render the Risk Analysis card — no skeleton, tabs, level card, or buttons. */
-  riskAnalysisOnly?: boolean;
 }
 
 // ── Body-region crop system ──────────────────────────────────────────────────
@@ -45,7 +43,11 @@ interface RegionDef {
   keypoints: number[];
   /** When set, always crop from this view regardless of confidence scoring. */
   forceView?: IntendedView;
+  /** Lower values zoom further into the relevant body area. */
+  cropScale?: number;
 }
+
+type CanvasPoint = { x: number; y: number };
 
 const PROBLEM_REGIONS: Record<string, RegionDef> = {
   // Head over shoulders — forced to side view.
@@ -53,6 +55,7 @@ const PROBLEM_REGIONS: Record<string, RegionDef> = {
     forceView: 'side',
     viewPriority: ['side'],
     keypoints: [KP.NOSE, KP.LEFT_EAR, KP.RIGHT_EAR, KP.LEFT_SHOULDER, KP.RIGHT_SHOULDER],
+    cropScale: 1.45,
   },
   // Shoulder curl — forced to side view.
   'rounded-shoulders': {
@@ -63,18 +66,21 @@ const PROBLEM_REGIONS: Record<string, RegionDef> = {
       KP.LEFT_SHOULDER, KP.RIGHT_SHOULDER,
       KP.LEFT_ELBOW, KP.RIGHT_ELBOW,
     ],
+    cropScale: 1.55,
   },
   // Horizontal shoulder line — forced to back view.
   'uneven-shoulders': {
     forceView: 'back',
     viewPriority: ['back'],
     keypoints: [KP.LEFT_SHOULDER, KP.RIGHT_SHOULDER, KP.LEFT_ELBOW, KP.RIGHT_ELBOW],
+    cropScale: 1.55,
   },
   // Shoulder blades — only visible from behind.
   'winging-scapula': {
     forceView: 'back',
     viewPriority: ['back'],
     keypoints: [KP.LEFT_SHOULDER, KP.RIGHT_SHOULDER, KP.LEFT_ELBOW, KP.RIGHT_ELBOW],
+    cropScale: 1.5,
   },
   // Upper-torso curve — forced to back view.
   kyphosis: {
@@ -84,6 +90,7 @@ const PROBLEM_REGIONS: Record<string, RegionDef> = {
       KP.LEFT_SHOULDER, KP.RIGHT_SHOULDER,
       KP.LEFT_HIP, KP.RIGHT_HIP,
     ],
+    cropScale: 1.75,
   },
   // Pelvis + surrounding chain (shoulder-hip-knee stack).
   'anterior-pelvic': {
@@ -94,12 +101,14 @@ const PROBLEM_REGIONS: Record<string, RegionDef> = {
       KP.LEFT_HIP, KP.RIGHT_HIP,
       KP.LEFT_KNEE, KP.RIGHT_KNEE,
     ],
+    cropScale: 1.65,
   },
 };
 
 const DEFAULT_REGION: RegionDef = {
   viewPriority: ['front', 'side', 'back'],
   keypoints: [KP.LEFT_SHOULDER, KP.RIGHT_SHOULDER, KP.LEFT_HIP, KP.RIGHT_HIP],
+  cropScale: 1.8,
 };
 
 // Connections between keypoints to draw as colored lines for each problem.
@@ -143,6 +152,111 @@ const PROBLEM_CONNECTIONS: Record<string, [number, number][]> = {
     [KP.RIGHT_HIP, KP.RIGHT_KNEE],
   ],
 };
+
+function averagePoint(points: Array<CanvasPoint | null | undefined>): CanvasPoint | null {
+  const valid = points.filter((p): p is CanvasPoint => Boolean(p));
+  if (!valid.length) return null;
+  return {
+    x: valid.reduce((sum, p) => sum + p.x, 0) / valid.length,
+    y: valid.reduce((sum, p) => sum + p.y, 0) / valid.length,
+  };
+}
+
+function lineMidpoint(a: CanvasPoint, b: CanvasPoint): CanvasPoint {
+  return {
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2,
+  };
+}
+
+function buildIdealReferenceLines(
+  problemId: string,
+  pointAt: (idx: number) => CanvasPoint | null,
+): CanvasPoint[][] {
+  const shoulderMid = averagePoint([pointAt(KP.LEFT_SHOULDER), pointAt(KP.RIGHT_SHOULDER)]);
+  const hipMid = averagePoint([pointAt(KP.LEFT_HIP), pointAt(KP.RIGHT_HIP)]);
+  const kneeMid = averagePoint([pointAt(KP.LEFT_KNEE), pointAt(KP.RIGHT_KNEE)]);
+  const earMid = averagePoint([pointAt(KP.LEFT_EAR), pointAt(KP.RIGHT_EAR), pointAt(KP.NOSE)]);
+  const leftShoulder = pointAt(KP.LEFT_SHOULDER);
+  const rightShoulder = pointAt(KP.RIGHT_SHOULDER);
+  const leftElbow = pointAt(KP.LEFT_ELBOW);
+  const rightElbow = pointAt(KP.RIGHT_ELBOW);
+
+  switch (problemId) {
+    case 'forward-head': {
+      if (!earMid || !shoulderMid) return [];
+      const x = shoulderMid.x;
+      return [[
+        { x, y: earMid.y },
+        { x, y: shoulderMid.y },
+      ]];
+    }
+    case 'rounded-shoulders': {
+      if (!earMid || !shoulderMid) return [];
+      const elbowMid = averagePoint([leftElbow, rightElbow]);
+      const x = shoulderMid.x;
+      const line: CanvasPoint[] = [
+        { x, y: earMid.y },
+        { x, y: shoulderMid.y },
+      ];
+      if (elbowMid) line.push({ x, y: elbowMid.y });
+      return [line];
+    }
+    case 'uneven-shoulders': {
+      if (!leftShoulder || !rightShoulder) return [];
+      const y = (leftShoulder.y + rightShoulder.y) / 2;
+      return [[
+        { x: leftShoulder.x, y },
+        { x: rightShoulder.x, y },
+      ]];
+    }
+    case 'winging-scapula': {
+      if (!leftShoulder || !rightShoulder) return [];
+      const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+      const lines: CanvasPoint[][] = [[
+        { x: leftShoulder.x, y: shoulderY },
+        { x: rightShoulder.x, y: shoulderY },
+      ]];
+      if (leftElbow) {
+        lines.push([
+          { x: leftShoulder.x, y: shoulderY },
+          { x: leftElbow.x, y: leftElbow.y },
+        ]);
+      }
+      if (rightElbow) {
+        lines.push([
+          { x: rightShoulder.x, y: shoulderY },
+          { x: rightElbow.x, y: rightElbow.y },
+        ]);
+      }
+      return lines;
+    }
+    case 'kyphosis': {
+      if (!leftShoulder || !rightShoulder || !hipMid) return [];
+      const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+      const shoulderLeft = { x: leftShoulder.x, y: shoulderY };
+      const shoulderRight = { x: rightShoulder.x, y: shoulderY };
+      return [
+        [shoulderLeft, shoulderRight],
+        [shoulderLeft, { x: leftShoulder.x, y: hipMid.y }],
+        [shoulderRight, { x: rightShoulder.x, y: hipMid.y }],
+        [{ x: leftShoulder.x, y: hipMid.y }, { x: rightShoulder.x, y: hipMid.y }],
+      ];
+    }
+    case 'anterior-pelvic': {
+      if (!shoulderMid || !hipMid) return [];
+      const x = averagePoint([shoulderMid, hipMid, kneeMid])?.x ?? hipMid.x;
+      const line: CanvasPoint[] = [
+        { x, y: shoulderMid.y },
+        { x, y: hipMid.y },
+      ];
+      if (kneeMid) line.push({ x, y: kneeMid.y });
+      return [line];
+    }
+    default:
+      return [];
+  }
+}
 
 /** Score how well a view supports a problem's region keypoints.
  *  Returns 0 if fewer than 2 relevant keypoints are visible. */
@@ -194,13 +308,15 @@ function pickViewForProblem(
 /** Canvas-based body-region crop. Draws the requested region of a scan photo
  *  directly onto a square canvas so there are no CSS layout gymnastics. */
 const RegionCropCanvas: React.FC<{
+  problemId: string;
   photoUrl: string;
   keypoints: Keypoint[];
   regionKps: number[];
+  cropScale: number;
   reloadKey: string;
   color: string;
   connections: [number, number][];
-}> = ({ photoUrl, keypoints, regionKps, reloadKey, color, connections }) => {
+}> = ({ problemId, photoUrl, keypoints, regionKps, cropScale, reloadKey, color, connections }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -250,11 +366,10 @@ const RegionCropCanvas: React.FC<{
         const cy = (minY + maxY) / 2;
         const range = Math.max(maxX - minX, maxY - minY);
 
-        // Generous padding so the body part reads as a region, not a tight cutout.
-        side = range * 2.4 + minSide * 0.08;
-        // Clamp: at least a third of the shorter image dimension, at most almost all of it.
-        side = Math.max(side, minSide * 0.34);
-        side = Math.min(side, minSide * 0.96);
+        // Tight crop around the highlighted body region so the overlay is easy to read.
+        side = range * cropScale + minSide * 0.03;
+        side = Math.max(side, minSide * 0.18);
+        side = Math.min(side, minSide * 0.7);
 
         sx = cx - side / 2;
         sy = cy - side / 2;
@@ -281,41 +396,65 @@ const RegionCropCanvas: React.FC<{
         };
       };
 
-      // Connection lines first, so dots sit on top.
-      ctx.lineWidth = 6;
+      const pointAt = (idx: number) => toCanvas(keypoints[idx]);
+      const idealLines = buildIdealReferenceLines(problemId, pointAt);
+      const visibleIdealLines = idealLines.filter(line => line.length >= 2);
+
+      // Thin black reference lines show the healthy / target posture.
+      if (visibleIdealLines.length) {
+        ctx.lineWidth = 5.25;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = 'rgba(8, 8, 10, 0.95)';
+        ctx.shadowColor = 'rgba(255,255,255,0.18)';
+        ctx.shadowBlur = 2;
+        for (const line of visibleIdealLines) {
+          ctx.beginPath();
+          ctx.moveTo(line[0].x, line[0].y);
+          for (let i = 1; i < line.length; i++) {
+            ctx.lineTo(line[i].x, line[i].y);
+          }
+          ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+      }
+
+      // Colored problem lines.
+      ctx.lineWidth = 3;
       ctx.lineCap = 'round';
       ctx.strokeStyle = color;
       ctx.shadowColor = color;
       ctx.shadowBlur = 14;
-      for (const [a, b] of connections) {
-        if (!regionKps.includes(a) || !regionKps.includes(b)) continue;
-        const pa = toCanvas(keypoints[a]);
-        const pb = toCanvas(keypoints[b]);
-        if (!pa || !pb) continue;
+      const visibleColoredLines: [CanvasPoint, CanvasPoint][] = [];
+      connections.forEach(([a, b]) => {
+        if (!regionKps.includes(a) || !regionKps.includes(b)) return;
+        const pa = pointAt(a);
+        const pb = pointAt(b);
+        if (!pa || !pb) return;
+        visibleColoredLines.push([pa, pb]);
         ctx.beginPath();
         ctx.moveTo(pa.x, pa.y);
         ctx.lineTo(pb.x, pb.y);
         ctx.stroke();
-      }
+      });
       ctx.shadowBlur = 0;
 
       // Dots for each region keypoint.
       for (const idx of regionKps) {
-        const p = toCanvas(keypoints[idx]);
+        const p = pointAt(idx);
         if (!p) continue;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.shadowColor = color;
         ctx.shadowBlur = 18;
         ctx.fill();
         ctx.shadowBlur = 0;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
         ctx.fillStyle = '#FFFFFF';
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
       }
@@ -363,7 +502,6 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
   showNewScanButton = true,
   showDailyPlanButton = true,
   onProblemSelect,
-  riskAnalysisOnly = false,
 }) => {
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
@@ -440,9 +578,11 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
           }}
         >
           <RegionCropCanvas
+            problemId={problem.id}
             photoUrl={photoUrl}
             keypoints={viewKps}
             regionKps={region.keypoints}
+            cropScale={region.cropScale ?? DEFAULT_REGION.cropScale ?? 1.8}
             reloadKey={reloadKey}
             color={color}
             connections={connections}
@@ -569,62 +709,58 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 24 }}>
 
-      {!riskAnalysisOnly && (
-        <>
-          {/* ── 21-day program level (replaces scan-only badge + thin bars) ── */}
-          <DailyProgramLevelCard />
+      {/* ── 21-day program level (replaces scan-only badge + thin bars) ── */}
+      <DailyProgramLevelCard />
 
-          {/* ── View tabs ─────────────────────────── */}
-          <div style={{
-            display: 'flex', background: T.surface, borderRadius: 18, padding: 4, border: `1px solid ${T.border}`,
-          }}>
-            {(['front', 'side', 'back'] as const).map(v => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setActiveView(v)}
-                style={{
-                  flex: 1, textAlign: 'center', padding: '9px 0',
-                  borderRadius: 12, fontSize: 12,
-                  fontWeight: activeView === v ? 600 : 400,
-                  cursor: 'pointer', fontFamily: T.font, border: 'none',
-                  color: activeView === v ? T.text : T.text3,
-                  background: activeView === v ? 'linear-gradient(135deg, #2A2A2F 0%, #1A1A1E 100%)' : 'transparent',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                {VIEW_LABELS[v]}
-              </button>
-            ))}
-          </div>
+      {/* ── View tabs ─────────────────────────── */}
+      <div style={{
+        display: 'flex', background: T.surface, borderRadius: 18, padding: 4, border: `1px solid ${T.border}`,
+      }}>
+        {(['front', 'side', 'back'] as const).map(v => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setActiveView(v)}
+            style={{
+              flex: 1, textAlign: 'center', padding: '9px 0',
+              borderRadius: 12, fontSize: 12,
+              fontWeight: activeView === v ? 600 : 400,
+              cursor: 'pointer', fontFamily: T.font, border: 'none',
+              color: activeView === v ? T.text : T.text3,
+              background: activeView === v ? 'linear-gradient(135deg, #2A2A2F 0%, #1A1A1E 100%)' : 'transparent',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            {VIEW_LABELS[v]}
+          </button>
+        ))}
+      </div>
 
-          {/* ── Skeleton overlay on photo ─────────── */}
-          <SkeletonOverlay
-            photoUrl={photos[activeView]}
-            keypoints={keypoints[activeView]}
-            view={activeView}
-            problems={report.problems}
-            showSkeleton={showSkeleton}
-            showLabels={showLabels}
-          />
+      {/* ── Skeleton overlay on photo ─────────── */}
+      <SkeletonOverlay
+        photoUrl={photos[activeView]}
+        keypoints={keypoints[activeView]}
+        view={activeView}
+        problems={report.problems}
+        showSkeleton={showSkeleton}
+        showLabels={showLabels}
+      />
 
-          {/* ── Toggle buttons ────────────────────── */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <ToggleButton
-              label="Skeleton"
-              icon="◉"
-              active={showSkeleton}
-              onPress={() => setShowSkeleton(!showSkeleton)}
-            />
-            <ToggleButton
-              label="Labels"
-              icon="▣"
-              active={showLabels}
-              onPress={() => setShowLabels(!showLabels)}
-            />
-          </div>
-        </>
-      )}
+      {/* ── Toggle buttons ────────────────────── */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <ToggleButton
+          label="Skeleton"
+          icon="◉"
+          active={showSkeleton}
+          onPress={() => setShowSkeleton(!showSkeleton)}
+        />
+        <ToggleButton
+          label="Labels"
+          icon="▣"
+          active={showLabels}
+          onPress={() => setShowLabels(!showLabels)}
+        />
+      </div>
 
       {/* ── Risk summary ─────────────────────── */}
       <div style={{
@@ -703,61 +839,60 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
         )}
       </div>
 
-      {!riskAnalysisOnly && (
-        <>
-          {/* ── Disclaimer ────────────────────────── */}
-          <div style={{ padding: '2px 4px', borderRadius: 8 }}>
-            <p style={{ fontSize: 10, color: T.text3, lineHeight: 1.5, fontFamily: T.font }}>
-              AI posture screen — not a medical diagnosis. Consult a professional for pain or clinical concerns.
-            </p>
-          </div>
+      {/* ── Disclaimer ────────────────────────── */}
+      <div style={{
+        padding: '2px 4px',
+        borderRadius: 8,
+      }}>
+        <p style={{ fontSize: 10, color: T.text3, lineHeight: 1.5, fontFamily: T.font }}>
+          AI posture screen — not a medical diagnosis. Consult a professional for pain or clinical concerns.
+        </p>
+      </div>
 
-          {/* ── Action buttons ────────────────────── */}
-          {showDailyPlanButton && (
-            <button
-              type="button"
-              onClick={onViewDailyPlan}
-              style={{
-                width: '100%', padding: 16, borderRadius: 18,
-                background: 'linear-gradient(90deg, #EA580C 0%, #FB923C 100%)', color: '#FFFFFF',
-                fontSize: 14, fontWeight: 600, border: 'none',
-                cursor: 'pointer', fontFamily: T.font,
-                boxShadow: '0 0 24px rgba(249,115,22,0.22)',
-              }}
-            >
-              See your daily plan
-            </button>
-          )}
-          {showFullReportButton && (
-            <button
-              type="button"
-              onClick={onViewFullReport}
-              style={{
-                width: '100%', padding: 15, borderRadius: 16,
-                background: T.surface, color: T.text,
-                fontSize: 13, fontWeight: 500,
-                cursor: 'pointer', fontFamily: T.font,
-                border: `1px solid ${T.border}`,
-              }}
-            >
-              Full report →
-            </button>
-          )}
-          {showNewScanButton && (
-            <button
-              type="button"
-              onClick={onNewScan}
-              style={{
-                width: '100%', padding: 15, borderRadius: 16,
-                background: T.surface, color: T.text2,
-                border: `1px solid ${T.border}`,
-                fontSize: 13, cursor: 'pointer', fontFamily: T.font,
-              }}
-            >
-              New scan
-            </button>
-          )}
-        </>
+      {/* ── Action buttons ────────────────────── */}
+      {showDailyPlanButton && (
+        <button
+          type="button"
+          onClick={onViewDailyPlan}
+          style={{
+            width: '100%', padding: 16, borderRadius: 18,
+            background: 'linear-gradient(90deg, #EA580C 0%, #FB923C 100%)', color: '#FFFFFF',
+            fontSize: 14, fontWeight: 600, border: 'none',
+            cursor: 'pointer', fontFamily: T.font,
+            boxShadow: '0 0 24px rgba(249,115,22,0.22)',
+          }}
+        >
+          See your daily plan
+        </button>
+      )}
+      {showFullReportButton && (
+        <button
+          type="button"
+          onClick={onViewFullReport}
+          style={{
+            width: '100%', padding: 15, borderRadius: 16,
+            background: T.surface, color: T.text,
+            fontSize: 13, fontWeight: 500,
+            cursor: 'pointer', fontFamily: T.font,
+            border: `1px solid ${T.border}`,
+          }}
+        >
+          Full report →
+        </button>
+      )}
+      {showNewScanButton && (
+        <button
+          type="button"
+          onClick={onNewScan}
+          style={{
+            width: '100%', padding: 15, borderRadius: 16,
+            background: T.surface, color: T.text2,
+            border: `1px solid ${T.border}`,
+            fontSize: 13, cursor: 'pointer', fontFamily: T.font,
+          }}
+        >
+          New scan
+        </button>
       )}
     </div>
   );

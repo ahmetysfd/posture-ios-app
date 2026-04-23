@@ -478,7 +478,15 @@ export const OnboardingFlow: React.FC<{ onFinish?: () => void }> = ({ onFinish }
 
   return (
     <div className="w-full h-full bg-[#0a0a0f] flex flex-col" style={{ fontFamily: "system-ui, -apple-system, 'Helvetica Neue', sans-serif" }}>
-      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} style={{ display: 'none' }} />
+      {/* `display:none` breaks programmatic `.click()` on some iOS Safari versions; keep input in layout but visually hidden */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="sr-only"
+        aria-hidden
+      />
       {/* Progress */}
       <div className="px-6 pt-4 pb-0.5">
         <div className="flex gap-1.5">
