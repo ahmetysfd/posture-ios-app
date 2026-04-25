@@ -86,6 +86,7 @@ const EXERCISE_IMAGES: Record<string, ExerciseImage> = {
   'Wall Lean Plank':         { src: '/exercises/wall-lean-plank.jpg' },
   'Swimmers':                { src: '/exercises/swimmers.jpg' },
   'Chair Supported Squat':   { src: '/exercises/chair-supported-squat.jpg' },
+  '90 degree Hip Hinge':     { src: '/exercises/90-degree-hip-hinge.jpg' },
   'Adductor Squeeze Crunch': { src: '/exercises/adductor-squeeze-crunch.jpg' },
   'Crossed Leg Forward Stretch': { src: '/exercises/crossed-leg-forward-stretch.jpg' },
   'Bird Dog':                { src: '/exercises/bird-dog.jpg' },

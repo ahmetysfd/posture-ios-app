@@ -160,7 +160,7 @@ export const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
   'anterior-pelvic': {
     beginner: ['Standing Pelvic Tilt', 'Supine Pelvic Tilt', 'Pelvic Rocks'],
     medium:   ['Chair Supported Squat', 'TVA Frog Leg', 'Wall Lean Plank', 'Swimmers'],
-    hard:     ['Split Squat Pelvic Tilts', 'Adductor Squeeze Crunch', 'Crossed Leg Forward Stretch'],
+    hard:     ['Split Squat Pelvic Tilts', '90 degree Hip Hinge', 'Adductor Squeeze Crunch', 'Crossed Leg Forward Stretch'],
   },
   'uneven-shoulders': {
     beginner: ['Lower Trap Activation', 'Levator Scapulae Stretch', 'Wall Lean'],
@@ -221,6 +221,7 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
   'Split Squat Pelvic Tilts':        ['anterior-pelvic'],
   'Adductor Squeeze Crunch':         ['anterior-pelvic'],
   'Crossed Leg Forward Stretch':     ['anterior-pelvic'],
+  '90 degree Hip Hinge':             ['anterior-pelvic'],
   // ── Uneven Shoulders ────────────────────────────────────────────────────────
   'Lower Trap Activation':           ['uneven-shoulders'],
   'Levator Scapulae Stretch':        ['uneven-shoulders'],
@@ -298,6 +299,7 @@ export const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   'Scapular Rows':                                  'strength',
   'Advanced Bird Dog':                              'strength',
   'Split Squat Pelvic Tilts':                       'strength',
+  '90 degree Hip Hinge':                            'strength',
   'Chin Tuck Neck Bridge':                          'strength',
   'Half Kneel Pallof Press':                        'strength',
   'Adductor Squeeze Crunch':                        'strength',
@@ -344,6 +346,7 @@ export const EXERCISE_REPS: Record<string, number> = {
   // Wall Lean Plank: time-based (isometric hold)
   'Swimmers':                                       20,  // 10 per side
   'Split Squat Pelvic Tilts':                       20,
+  '90 degree Hip Hinge':                            12,
   'Adductor Squeeze Crunch':                        12,
   // Crossed Leg Forward Stretch: time-based (static stretch)
   // ── Rounded Shoulders ─────────────────────────────────────────────────────
@@ -411,6 +414,7 @@ export const EXERCISE_TEMPO: Record<string, string> = {
   'Scapular Rows':                                  '1-2-2', // 5 s
   'Banded Lat Pull-Down':                           '1-2-2', // 5 s
   'Swimmers':                                       '1-0-1', // 2 s: fast alternating (keep)
+  '90 degree Hip Hinge':                            '2-1-2', // 5 s
   'Archer Push-Up':                                 '2-1-2', // 5 s
   'Push-Up Plus':                                   '2-1-2', // 5 s
   'Half Kneel Pallof Press':                        '1-2-1', // 4 s: press 1, hold 2, return 1
