@@ -158,8 +158,8 @@ export const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
     hard:     ['Sphinx Cat Camels', 'Prone Y-Raise', 'Banded Reverse Fly'],
   },
   'anterior-pelvic': {
-    beginner: ['Standing Pelvic Tilt', 'Supine Pelvic Tilt', 'Pelvic Rocks'],
-    medium:   ['Chair Supported Squat', 'TVA Frog Leg', 'Wall Lean Plank', 'Swimmers'],
+    beginner: ['Standing Pelvic Tilt', 'Supine Pelvic Tilt', 'TVA Frog Leg', 'Pelvic Rocks'],
+    medium:   ['Chair Supported Squat', 'Frog Stretch', 'Wall Lean Plank', 'Swimmers'],
     hard:     ['Split Squat Pelvic Tilts', '90 degree Hip Hinge', 'Adductor Squeeze Crunch', 'Crossed Leg Forward Stretch'],
   },
   'uneven-shoulders': {
@@ -215,6 +215,7 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
   'Supine Pelvic Tilt':              ['anterior-pelvic'],
   'Pelvic Rocks':                    ['anterior-pelvic'],
   'TVA Frog Leg':                    ['anterior-pelvic'],
+  'Frog Stretch':                    ['anterior-pelvic'],
   'Wall Lean Plank':                 ['anterior-pelvic'],
   'Chair Supported Squat':           ['anterior-pelvic'],
   'Swimmers':                        ['anterior-pelvic'],
@@ -252,6 +253,7 @@ export const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   'Levator Scapulae Stretch':                       'mobility',
   'Upper Trapezius Stretch':                        'mobility',
   'Pelvic Rocks':                                   'mobility',
+  'Frog Stretch':                                   'mobility',
   'Crossed Leg Forward Stretch':                    'mobility',
   'Baby Cobra':                                     'mobility',
   'Quadruped Thoracic Rotation (Hand Behind Head)': 'mobility',
@@ -343,6 +345,7 @@ export const EXERCISE_REPS: Record<string, number> = {
   // Pelvic Rocks: time-based (oscillating joint mobility)
   'TVA Frog Leg':                                   10,
   'Chair Supported Squat':                          12,
+  // Frog Stretch: time-based (static mobility stretch)
   // Wall Lean Plank: time-based (isometric hold)
   'Swimmers':                                       20,  // 10 per side
   'Split Squat Pelvic Tilts':                       20,

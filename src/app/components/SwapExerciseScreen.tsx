@@ -78,6 +78,7 @@ const EXERCISE_IMAGES: Record<string, ExerciseImage> = {
   'Supine Pelvic Tilt':      { src: '/exercises/supine-pelvic-tilt.jpg' },
   'Pelvic Rocks':            { src: '/exercises/pelvic-rocks.jpg' },
   'TVA Frog Leg':            { src: '/exercises/tva-frog-leg.jpg' },
+  'Frog Stretch':            { src: '/exercises/frog-stretch.jpg' },
   'Wall Lean Plank':         { src: '/exercises/wall-lean-plank.jpg' },
   'Swimmers':                { src: '/exercises/swimmers.jpg' },
   'Chair Supported Squat':   { src: '/exercises/chair-supported-squat.jpg' },
