@@ -73,7 +73,7 @@ export const postureProblems: PostureProblem[] = [
     id: 'forward-head',
     title: 'Forward Head',
     cardImage: '/problems/forward-head.png',
-    exercises: 9,
+    exercises: 10,
     duration: '3m',
     reasonImage: '/problems/forward-head-reason.png',
     reasonLead: `Most people spend hours:
@@ -112,6 +112,9 @@ The head shifts forward from its natural position`,
       { id: 'fh-b6', name: 'Upper Trapezius Stretch', difficulty: 'beginner', duration: 35, emoji: '🙆', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/3h0jsXcRT94',
         description: 'Releases the upper trapezius — a primary driver of forward head tension.',
         instructions: ['Sit tall with one hand anchored under your seat to stabilise the shoulder', 'Let your opposite ear drop toward your shoulder slowly and gently', 'Add a light hand weight on top of your head — do not pull', 'Hold 20–25 seconds feeling the lateral neck lengthen', 'Slowly return to neutral and switch sides'] },
+      { id: 'fh-b7', name: 'Thoracic Openers', difficulty: 'beginner', duration: 40, emoji: '🌀', iconType: 'back', youtubeUrl: 'https://www.youtube.com/shorts/B6h87p-TviI',
+        description: 'Gentle thoracic opening improves upper-back mobility to reduce forward-head compensation.',
+        instructions: ['Sit or stand tall with your ribs stacked over your pelvis', 'Place hands behind your head and gently draw elbows wide', 'Lift your chest slightly and guide your upper back into extension', 'Pause briefly while keeping your neck long and relaxed', 'Return to neutral and repeat smooth controlled reps'] },
       // ── Medium ──
       { id: 'fh-m3', name: 'Chin Tuck Floor Angels', difficulty: 'medium', duration: 45, emoji: '🪄', iconType: 'neck', youtubeUrl: 'https://www.youtube.com/shorts/tmZ6ufhHeNA',
         description: 'Combines neck retraction with full-arm overhead pattern for whole-chain correction.',

@@ -47,6 +47,7 @@ const EXERCISE_IMAGES: Record<string, ExerciseImage> = {
   'Chin Tuck':               { src: '/exercises/chin-tuck.jpg' },
   'Supine Chin Tuck':        { src: '/exercises/supine-chin-tuck.jpg' },
   'Upper Trapezius Stretch': { src: '/exercises/upper-trapezius-stretch.jpg' },
+  'Thoracic Openers':        { src: '/exercises/thoracic-openers.jpg' },
   'Side Lean Wall Slide':    { src: '/exercises/side-lean-wall-slide.jpg' },
   'Wall Angel':              { src: '/exercises/wall-angel.jpg' },
   'Scapular Flutters':       { src: '/exercises/scapular-flutters.jpg' },

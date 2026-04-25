@@ -143,7 +143,7 @@ function getDisplayReps(ex: Exercise, _diff: ExerciseDifficulty): string {
 
 export const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
   'forward-head': {
-    beginner: ['Chin Tuck', 'Supine Chin Tuck', 'Upper Trapezius Stretch'],
+    beginner: ['Chin Tuck', 'Supine Chin Tuck', 'Upper Trapezius Stretch', 'Thoracic Openers'],
     medium:   ['Chin Tuck Floor Angels', 'Chin Tuck Rotations', 'Wall Lean Chin Tuck'],
     hard:     ['Prone Chin Tuck', 'Chin Tuck Neck Bridge', 'Banded Chin Tucks'],
   },
@@ -182,6 +182,7 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
   'Chin Tuck':                       ['forward-head'],
   'Supine Chin Tuck':                ['forward-head'],
   'Upper Trapezius Stretch':         ['forward-head'],
+  'Thoracic Openers':                ['forward-head'],
   'Chin Tuck Floor Angels':          ['forward-head'],
   'Chin Tuck Rotations':             ['forward-head'],
   'Wall Lean Chin Tuck':             ['forward-head'],
@@ -252,6 +253,7 @@ export const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   'Foam Roller Thoracic Extension':                 'mobility',
   'Levator Scapulae Stretch':                       'mobility',
   'Upper Trapezius Stretch':                        'mobility',
+  'Thoracic Openers':                               'mobility',
   'Pelvic Rocks':                                   'mobility',
   'Frog Stretch':                                   'mobility',
   'Crossed Leg Forward Stretch':                    'mobility',
