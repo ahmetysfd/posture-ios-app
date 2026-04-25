@@ -167,7 +167,7 @@ The head shifts forward from its natural position`,
     id: 'winging-scapula',
     title: 'Winging Scapula',
     cardImage: '/problems/winging-scapula.png',
-    exercises: 9,
+    exercises: 10,
     duration: '3m',
     reasonLead: `Most people spend hours:
 
@@ -220,6 +220,9 @@ This creates functional winging (not nerve damage, but poor control).`,
         description: 'Rapid alternating scapular protraction-retraction builds serratus endurance for dynamic stability.',
         instructions: ['Stand tall with arms relaxed at your sides, shoulders relaxed', 'Alternately protract and retract each shoulder blade in a flutter rhythm', 'Keep your chest open and neck long throughout — no head bobbing', 'Perform 20–30 alternating flutter movements per set', 'Slow the flutter to a controlled retraction hold on the last rep each side'] },
       // ── Hard ──
+      { id: 'ws-h10', name: 'Prayer Stretch', difficulty: 'hard', duration: 55, emoji: '🙏', iconType: 'back', youtubeUrl: 'https://www.youtube.com/shorts/sIcgbAQ837M',
+        description: 'Supported prayer stretch position opens the chest and upper back while training scapular control.',
+        instructions: ['Kneel in front of a bench or elevated surface and place your elbows on top', 'Bring your hands together behind your head to form a prayer position', 'Gently sink your chest toward the floor while keeping your ribs controlled', 'Focus on smooth shoulder-blade motion without shrugging into your neck', 'Hold and breathe steadily, then return slowly and repeat with control'] },
       { id: 'ws-h7', name: 'Quadruped Scapular Circles', difficulty: 'hard', duration: 55, emoji: '🔄', iconType: 'back', youtubeUrl: 'https://www.youtube.com/shorts/LmfhXfoKGlI',
         description: 'Circles the scapula through its full range in a loaded position, building serratus stamina.',
         instructions: ['Start on all fours — wrists under shoulders, knees under hips', 'Fully protract both shoulder blades (push floor away)', 'Slowly draw large circles with each shoulder blade — forward, up, back, down', 'Keep the core engaged and avoid letting the lower back sag', '8–10 circles in each direction per side at a slow, deliberate pace'] },
@@ -271,7 +274,7 @@ This creates functional winging (not nerve damage, but poor control).`,
     title: 'Anterior Pelvic Tilt',
     cardImage: '/problems/anterior-pelvic.png',
     cardImageObjectPosition: 'center 100%',
-    exercises: 9,
+    exercises: 10,
     duration: '4m',
     reasonImage: '/problems/anterior-pelvic-reason.png',
     reasonLead: `Most people spend hours:
@@ -311,6 +314,9 @@ The pelvis tilts forward from its neutral position`,
         description: 'Gentle oscillating pelvic movement restores awareness of neutral pelvic position.',
         instructions: ['Lie on your back, knees bent, feet flat, arms resting by your sides', 'Rock your pelvis slowly forward — arch your lower back away from the floor', 'Then rock it backward — flatten your lower back into the floor', 'Find the midpoint between both extremes — that is your neutral pelvis', '15–20 slow rocks, pausing at neutral for 2 seconds each pass'] },
       // ── Medium ──
+      { id: 'apt-m4', name: 'Chair Supported Squat', difficulty: 'medium', duration: 45, emoji: '🪑', iconType: 'hip', youtubeUrl: 'https://www.youtube.com/shorts/O7n7Iu7Vph8',
+        description: 'Chair-assisted squat pattern builds glute and core control to reduce excessive anterior pelvic tilt.',
+        instructions: ['Stand behind a stable chair and hold the backrest lightly with both hands', 'Set your ribs down and gently tuck your pelvis to neutral before you descend', 'Sit your hips back and bend your knees into a controlled squat', 'Pause near parallel while keeping your lower back from over-arching', 'Press through your heels to stand tall and repeat for smooth controlled reps'] },
       { id: 'apt-m3', name: 'TVA Frog Leg', difficulty: 'medium', duration: 45, emoji: '🐸', iconType: 'core', youtubeUrl: 'https://www.youtube.com/shorts/lUK-PlvD8Ek',
         description: 'Transverse abdominis isolation in a hip-open position challenges deep core without hip flexor dominance.',
         instructions: ['Lie on your back with soles of feet together and knees open to the sides', 'Place one hand on your lower abdomen to feel the TVA engage', 'Exhale fully and draw your navel toward your spine — no glute squeeze', 'Hold the TVA engagement for 8–10 seconds while breathing normally', '10–12 reps, keeping the lower back neutral against the floor throughout'] },
@@ -658,6 +664,7 @@ export interface ExerciseIndexEntry {
 }
 
 export const bothSideExercises: ExerciseIndexEntry[] = [
+  { id: 'apt-m4', name: 'Chair Supported Squat',                          postureTypes: ['anterior-pelvic'] },
   { id: 'ky-e3', name: 'Quadruped Thoracic Rotation (Hand Behind Head)', postureTypes: ['kyphosis'] },
   { id: 'ky-h2', name: 'Prone Y-Raise',                                  postureTypes: ['kyphosis'] },
   { id: 'rs-m3', name: 'Prone T-Raise',                                  postureTypes: ['rounded-shoulders'] },

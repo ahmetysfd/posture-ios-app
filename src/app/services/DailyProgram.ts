@@ -159,7 +159,7 @@ export const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
   },
   'anterior-pelvic': {
     beginner: ['Standing Pelvic Tilt', 'Supine Pelvic Tilt', 'Pelvic Rocks'],
-    medium:   ['TVA Frog Leg', 'Wall Lean Plank', 'Swimmers'],
+    medium:   ['Chair Supported Squat', 'TVA Frog Leg', 'Wall Lean Plank', 'Swimmers'],
     hard:     ['Split Squat Pelvic Tilts', 'Adductor Squeeze Crunch', 'Crossed Leg Forward Stretch'],
   },
   'uneven-shoulders': {
@@ -170,7 +170,7 @@ export const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
   'winging-scapula': {
     beginner: ['Quadruped Scapular Push', 'Air Angel', 'Floor Angel'],
     medium:   ['Side Lean Wall Slide', 'Wall Angel', 'Scapular Flutters'],
-    hard:     ['Quadruped Scapular Circles', 'Bear Crawl Scapular Push Up', 'Elevated Scapular Push Up'],
+    hard:     ['Prayer Stretch', 'Quadruped Scapular Circles', 'Bear Crawl Scapular Push Up', 'Elevated Scapular Push Up'],
   },
 };
 
@@ -215,6 +215,7 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
   'Pelvic Rocks':                    ['anterior-pelvic'],
   'TVA Frog Leg':                    ['anterior-pelvic'],
   'Wall Lean Plank':                 ['anterior-pelvic'],
+  'Chair Supported Squat':           ['anterior-pelvic'],
   'Swimmers':                        ['anterior-pelvic'],
   'Split Squat Pelvic Tilts':        ['anterior-pelvic'],
   'Adductor Squeeze Crunch':         ['anterior-pelvic'],
@@ -233,6 +234,7 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
   'Side Lean Wall Slide':            ['winging-scapula'],
   'Wall Angel':                      ['winging-scapula'],
   'Scapular Flutters':               ['winging-scapula'],
+  'Prayer Stretch':                  ['winging-scapula'],
   'Quadruped Scapular Circles':      ['winging-scapula'],
   'Bear Crawl Scapular Push Up':     ['winging-scapula'],
   'Elevated Scapular Push Up':       ['winging-scapula'],
@@ -273,12 +275,14 @@ export const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   'Supine Pelvic Tilt':                             'activation',
   'Standing Pelvic Tilt':                           'activation',
   'TVA Frog Leg':                                   'activation',
+  'Chair Supported Squat':                          'strength',
   'Side Lean Wall Slide':                           'activation',
   'Scapular Flutters':                              'activation',
   'Quadruped Scapular Circles':                     'activation',
   // ── Strength: progressive load, build capacity ────────────────────────────
   'Prone T-Raise':                                  'strength',
   'Prone Y-Raise':                                  'strength',
+  'Prayer Stretch':                                 'strength',
   'Y-Pull with Band':                               'strength',
   'Banded Chin Tucks':                               'strength',
   'Banded Reverse Fly':                             'strength',
@@ -324,6 +328,7 @@ export const EXERCISE_REPS: Record<string, number> = {
   'Floor Angel':                                    10,
   'Side Lean Wall Slide':                           20,  // 10 per side
   'Wall Angel':                                     10,
+  'Prayer Stretch':                                 12,
   'Quadruped Scapular Circles':                     16,  // 8 per direction × 2
   'Bear Crawl Scapular Push Up':                    10,
   'Elevated Scapular Push Up':                      12,
@@ -332,6 +337,7 @@ export const EXERCISE_REPS: Record<string, number> = {
   'Supine Pelvic Tilt':                             15,
   // Pelvic Rocks: time-based (oscillating joint mobility)
   'TVA Frog Leg':                                   10,
+  'Chair Supported Squat':                          12,
   // Wall Lean Plank: time-based (isometric hold)
   'Swimmers':                                       20,  // 10 per side
   'Split Squat Pelvic Tilts':                       20,
@@ -387,6 +393,7 @@ export const EXERCISE_TEMPO: Record<string, string> = {
   'Bird Dog':                                       '1-2-1', // 4 s: extend 1, hold 2, return 1
   'Advanced Bird Dog':                              '1-2-1', // 4 s
   'TVA Frog Leg':                                   '1-1-2', // 4 s
+  'Chair Supported Squat':                          '2-1-2', // 5 s
   'Wall Slide':                                     '1-1-2', // 4 s
   'Wall Angel':                                     '1-1-2', // 4 s
   'Air Angel':                                      '1-1-2', // 4 s
@@ -395,6 +402,7 @@ export const EXERCISE_TEMPO: Record<string, string> = {
   'Prone T-Raise':                                  '1-2-2', // 5 s
   'Prone Y-Raise':                                  '1-2-2', // 5 s
   'Banded Reverse Fly':                             '1-2-2', // 5 s
+  'Prayer Stretch':                                 '2-1-2', // 5 s
   'Y-Pull with Band':                               '1-2-2', // 5 s
   'Scapular Rows':                                  '1-2-2', // 5 s
   'Banded Lat Pull-Down':                           '1-2-2', // 5 s
