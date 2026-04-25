@@ -145,7 +145,7 @@ export const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
   'forward-head': {
     beginner: ['Chin Tuck', 'Supine Chin Tuck', 'Upper Trapezius Stretch', 'Thoracic Openers'],
     medium:   ['Chin Tuck Floor Angels', 'Chin Tuck Rotations', 'Wall Lean Chin Tuck', 'Seated Floor Taps'],
-    hard:     ['Prone Chin Tuck', 'Chin Tuck Neck Bridge', 'Banded Chin Tucks', 'Neck Retraction Hold'],
+    hard:     ['Prone Chin Tuck', 'Chin Tuck Neck Bridge', 'Banded Chin Tucks', 'Side Lying Chin Tuck'],
   },
   'rounded-shoulders': {
     beginner: ['Doorway Chest Stretch', 'Quadruped Scapular Push', 'Floor Angel'],
@@ -168,9 +168,9 @@ export const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
     hard:     ['Single-Arm Plank', 'Advanced Bird Dog', 'Half Kneel Pallof Press'],
   },
   'winging-scapula': {
-    beginner: ['Quadruped Scapular Push', 'Air Angel', 'Floor Angel'],
+    beginner: ['Quadruped Scapular Push', 'Air Angel', 'Floor Angel', 'Quadruped Scapular Circles'],
     medium:   ['Side Lean Wall Slide', 'Prisoner Rotation', 'Wall Angel', 'Scapular Flutters'],
-    hard:     ['Prayer Stretch', 'Quadruped Scapular Circles', 'Bear Crawl Scapular Push Up', 'Elevated Scapular Push Up'],
+    hard:     ['Prayer Stretch', 'Plank Plus', 'Bear Crawl Scapular Push Up', 'Elevated Scapular Push Up'],
   },
 };
 
@@ -190,7 +190,7 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
   'Prone Chin Tuck':                 ['forward-head'],
   'Chin Tuck Neck Bridge':           ['forward-head'],
   'Banded Chin Tucks':                ['forward-head'],
-  'Neck Retraction Hold':            ['forward-head'],
+  'Side Lying Chin Tuck':            ['forward-head'],
   // ── Rounded Shoulders (some shared with Winging Scapula) ────────────────────
   'Doorway Chest Stretch':           ['rounded-shoulders'],
   'Quadruped Scapular Push':         ['rounded-shoulders', 'winging-scapula'],
@@ -244,6 +244,7 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
   'Quadruped Scapular Circles':      ['winging-scapula'],
   'Bear Crawl Scapular Push Up':     ['winging-scapula'],
   'Elevated Scapular Push Up':       ['winging-scapula'],
+  'Plank Plus':                      ['winging-scapula'],
 };
 
 // ── Static exercise type lookup ───────────────────────────────────────────────
@@ -269,7 +270,7 @@ export const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   'Chin Tuck Rotations':                            'activation',
   'Seated Floor Taps':                              'activation',
   'Prone Chin Tuck':                                'activation',
-  'Neck Retraction Hold':                            'activation',
+  'Side Lying Chin Tuck':                            'activation',
   'Chin Tuck Floor Angels':                         'activation',
   'Wall Angel':                                     'activation',
   'Air Angel':                                      'activation',
@@ -313,6 +314,7 @@ export const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   'Adductor Squeeze Crunch':                        'strength',
   'Bear Crawl Scapular Push Up':                    'strength',
   'Elevated Scapular Push Up':                      'strength',
+  'Plank Plus':                                     'strength',
 };
 
 /**
@@ -335,7 +337,7 @@ export const EXERCISE_REPS: Record<string, number> = {
   'Prone Chin Tuck':                                12,
   'Chin Tuck Neck Bridge':                          8,
   'Banded Chin Tucks':                              12,
-  'Neck Retraction Hold':                           10,
+  'Side Lying Chin Tuck':                           10,
   // ── Winging Scapula ───────────────────────────────────────────────────────
   'Quadruped Scapular Push':                        12,
   'Air Angel':                                      12,
@@ -347,6 +349,7 @@ export const EXERCISE_REPS: Record<string, number> = {
   'Quadruped Scapular Circles':                     16,  // 8 per direction × 2
   'Bear Crawl Scapular Push Up':                    10,
   'Elevated Scapular Push Up':                      12,
+  'Plank Plus':                                     12,
   // ── Anterior Pelvic Tilt ──────────────────────────────────────────────────
   'Standing Pelvic Tilt':                           12,
   'Supine Pelvic Tilt':                             15,
@@ -405,7 +408,7 @@ export const EXERCISE_TEMPO: Record<string, string> = {
   // Activation — 4 s/rep
   'Chin Tuck':                                      '1-2-1', // 4 s: retract 1, hold 2, release 1
   'Chin Tuck Neck Bridge':                          '1-2-1', // 4 s
-  'Neck Retraction Hold':                           '1-2-1', // 4 s
+  'Side Lying Chin Tuck':                           '1-2-1', // 4 s
   'Standing Pelvic Tilt':                           '1-1-2', // 4 s
   'Supine Pelvic Tilt':                             '1-1-2', // 4 s
   'Bird Dog':                                       '1-2-1', // 4 s: extend 1, hold 2, return 1
@@ -427,6 +430,7 @@ export const EXERCISE_TEMPO: Record<string, string> = {
   'Scapular Rows':                                  '1-2-2', // 5 s
   'Banded Lat Pull-Down':                           '1-2-2', // 5 s
   'Swimmers':                                       '1-0-1', // 2 s: fast alternating (keep)
+  'Plank Plus':                                     '2-1-2', // 5 s
   '90 degree Hip Hinge':                            '2-1-2', // 5 s
   'Archer Push-Up':                                 '2-1-2', // 5 s
   'Push-Up Plus':                                   '2-1-2', // 5 s
