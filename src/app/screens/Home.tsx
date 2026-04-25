@@ -462,19 +462,17 @@ const Home: React.FC = () => {
                       {/* Day grid */}
                       <div
                         onClick={(e) => e.stopPropagation()}
-                        style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6, marginBottom: 16 }}
+                        style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8, marginBottom: 16 }}
                       >
                         {weekCells.map((d) => {
                           const tone =
-                            d.isToday ? { bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.25)', labelColor: '#fb923c', dateColor: '#FFFFFF' }
-                            : d.isDone ? { bg: 'rgba(16,185,129,0.06)', border: 'rgba(16,185,129,0.15)', labelColor: '#34d399', dateColor: '#6ee7b7' }
+                            d.isToday ? { bg: 'linear-gradient(180deg, #FB923C 0%, #EA580C 100%)', border: 'rgba(249,115,22,0.5)', labelColor: 'rgba(255,255,255,0.9)', dateColor: '#FFFFFF' }
+                            : d.isDone ? { bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.22)', labelColor: '#34d399', dateColor: '#6ee7b7' }
                             : d.isMissed ? { bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.15)', labelColor: '#f87171', dateColor: '#fca5a5' }
-                            : d.isOff ? { bg: 'rgba(255,255,255,0.01)', border: 'rgba(255,255,255,0.03)', labelColor: '#52525b', dateColor: '#3f3f46' }
-                            : { bg: 'rgba(255,255,255,0.02)', border: 'rgba(255,255,255,0.04)', labelColor: '#52525b', dateColor: '#a1a1aa' };
+                            : d.isOff ? { bg: 'rgba(255,255,255,0.02)', border: 'rgba(255,255,255,0.04)', labelColor: '#52525b', dateColor: '#3f3f46' }
+                            : { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.07)', labelColor: '#71717a', dateColor: '#a1a1aa' };
 
-                          // Subtitle: short program initial + scheduled time (hidden for done/off/missed which use icons)
                           const programInitial = d.programName ? d.programName.trim().charAt(0).toUpperCase() : null;
-                          const showScheduled = !d.isDone && !d.isOff && !d.isMissed && (d.time || d.programId);
 
                           return (
                             <button
@@ -484,9 +482,9 @@ const Home: React.FC = () => {
                               style={{
                                 position: 'relative',
                                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                aspectRatio: '0.85',
-                                padding: '5px 0',
-                                borderRadius: 12,
+                                aspectRatio: '0.62',
+                                padding: '8px 0',
+                                borderRadius: 14,
                                 background: tone.bg,
                                 border: `1px solid ${tone.border}`,
                                 cursor: 'pointer',
@@ -495,67 +493,65 @@ const Home: React.FC = () => {
                               }}
                             >
                               <span style={{
-                                fontSize: 8, fontWeight: 700,
+                                fontSize: 9, fontWeight: 700,
                                 letterSpacing: '0.06em', textTransform: 'uppercase',
                                 color: tone.labelColor,
                               }}>
                                 {d.label}
                               </span>
                               <span style={{
-                                fontSize: 13, fontWeight: 700, lineHeight: 1,
-                                marginTop: 2, color: tone.dateColor,
+                                fontSize: 16, fontWeight: 700, lineHeight: 1,
+                                marginTop: 4, color: tone.dateColor,
                               }}>
                                 {d.date}
                               </span>
-                              <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 12, gap: 1 }}>
+                              <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 16, gap: 3 }}>
                                 {d.isOff ? (
-                                  <span style={{ fontSize: 7, fontWeight: 700, color: '#52525b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Off</span>
-                                ) : d.isDone ? (
-                                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="20 6 9 17 4 12" />
-                                  </svg>
-                                ) : d.isMissed ? (
-                                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                  </svg>
-                                ) : showScheduled ? (
+                                  <span style={{ fontSize: 8, fontWeight: 700, color: '#52525b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Off</span>
+                                ) : (
                                   <>
                                     {programInitial && (
                                       <span style={{
                                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                        width: 14, height: 14, borderRadius: 4,
-                                        background: d.isToday ? 'rgba(251,146,60,0.18)' : 'rgba(255,255,255,0.06)',
-                                        color: d.isToday ? '#fb923c' : '#a1a1aa',
-                                        fontSize: 8, fontWeight: 700, lineHeight: 1,
+                                        width: 20, height: 20, borderRadius: 6,
+                                        background: d.isToday ? 'rgba(255,255,255,0.22)'
+                                          : d.isDone ? 'rgba(16,185,129,0.20)'
+                                          : d.isMissed ? 'rgba(239,68,68,0.12)'
+                                          : 'rgba(255,255,255,0.08)',
+                                        color: d.isToday ? '#FFFFFF'
+                                          : d.isDone ? '#34d399'
+                                          : d.isMissed ? '#f87171'
+                                          : '#a1a1aa',
+                                        fontSize: 9, fontWeight: 700, lineHeight: 1,
                                       }}>
                                         {programInitial}
                                       </span>
                                     )}
-                                    {d.time && (
+                                    {d.isDone ? (
+                                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                    ) : d.isMissed ? (
+                                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                      </svg>
+                                    ) : d.time ? (
                                       <span style={{
-                                        fontSize: 7.5, fontWeight: 600,
-                                        color: d.isToday ? 'rgba(251,146,60,0.9)' : '#a1a1aa',
+                                        fontSize: 8, fontWeight: 600,
+                                        padding: '2px 5px', borderRadius: 5,
+                                        background: d.isToday ? 'rgba(255,255,255,0.20)' : 'transparent',
+                                        color: d.isToday ? 'rgba(255,255,255,0.9)' : '#a1a1aa',
                                         letterSpacing: '0.02em',
                                       }}>
                                         {d.time}
                                       </span>
-                                    )}
+                                    ) : !programInitial ? (
+                                      <span style={{ fontSize: 10, color: d.isToday ? 'rgba(255,255,255,0.7)' : '#52525b' }}>+</span>
+                                    ) : null}
                                   </>
-                                ) : (
-                                  <span style={{ fontSize: 8, color: d.isToday ? 'rgba(251,146,60,0.7)' : '#52525b' }}>
-                                    +
-                                  </span>
                                 )}
                               </div>
-                              {d.isToday && (
-                                <div style={{
-                                  position: 'absolute', bottom: -2, left: '50%',
-                                  transform: 'translateX(-50%)',
-                                  width: 4, height: 4, borderRadius: 2,
-                                  background: '#f97316',
-                                }} />
-                              )}
                             </button>
                           );
                         })}

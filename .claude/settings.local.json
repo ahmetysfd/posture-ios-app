@@ -11,7 +11,10 @@
       "mcp__figma__get_screenshot",
       "Bash(curl:*)",
       "Bash(cat C:/Users/Ahmet/Desktop/posturefix/tailwind.config.*)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "mcp__figma__whoami",
+      "Bash(node *)",
+      "WebFetch(domain:fleck-fog-00766364.figma.site)"
     ]
   }
 }
