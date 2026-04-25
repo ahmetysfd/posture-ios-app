@@ -144,8 +144,8 @@ function getDisplayReps(ex: Exercise, _diff: ExerciseDifficulty): string {
 export const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
   'forward-head': {
     beginner: ['Chin Tuck', 'Supine Chin Tuck', 'Upper Trapezius Stretch', 'Thoracic Openers'],
-    medium:   ['Chin Tuck Floor Angels', 'Chin Tuck Rotations', 'Wall Lean Chin Tuck'],
-    hard:     ['Prone Chin Tuck', 'Chin Tuck Neck Bridge', 'Banded Chin Tucks'],
+    medium:   ['Chin Tuck Floor Angels', 'Chin Tuck Rotations', 'Wall Lean Chin Tuck', 'Seated Floor Taps'],
+    hard:     ['Prone Chin Tuck', 'Chin Tuck Neck Bridge', 'Banded Chin Tucks', 'Neck Retraction Hold'],
   },
   'rounded-shoulders': {
     beginner: ['Doorway Chest Stretch', 'Quadruped Scapular Push', 'Floor Angel'],
@@ -186,9 +186,11 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
   'Chin Tuck Floor Angels':          ['forward-head'],
   'Chin Tuck Rotations':             ['forward-head'],
   'Wall Lean Chin Tuck':             ['forward-head'],
+  'Seated Floor Taps':               ['forward-head'],
   'Prone Chin Tuck':                 ['forward-head'],
   'Chin Tuck Neck Bridge':           ['forward-head'],
   'Banded Chin Tucks':                ['forward-head'],
+  'Neck Retraction Hold':            ['forward-head'],
   // ── Rounded Shoulders (some shared with Winging Scapula) ────────────────────
   'Doorway Chest Stretch':           ['rounded-shoulders'],
   'Quadruped Scapular Push':         ['rounded-shoulders', 'winging-scapula'],
@@ -265,7 +267,9 @@ export const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   'Supine Chin Tuck':                               'activation',
   'Wall Lean Chin Tuck':                            'activation',
   'Chin Tuck Rotations':                            'activation',
+  'Seated Floor Taps':                              'activation',
   'Prone Chin Tuck':                                'activation',
+  'Neck Retraction Hold':                            'activation',
   'Chin Tuck Floor Angels':                         'activation',
   'Wall Angel':                                     'activation',
   'Air Angel':                                      'activation',
@@ -327,9 +331,11 @@ export const EXERCISE_REPS: Record<string, number> = {
   'Chin Tuck Floor Angels':                         10,
   'Chin Tuck Rotations':                            20,  // 10 per side
   'Wall Lean Chin Tuck':                            10,
+  'Seated Floor Taps':                              20,  // 10 per side
   'Prone Chin Tuck':                                12,
   'Chin Tuck Neck Bridge':                          8,
   'Banded Chin Tucks':                              12,
+  'Neck Retraction Hold':                           10,
   // ── Winging Scapula ───────────────────────────────────────────────────────
   'Quadruped Scapular Push':                        12,
   'Air Angel':                                      12,
@@ -399,6 +405,7 @@ export const EXERCISE_TEMPO: Record<string, string> = {
   // Activation — 4 s/rep
   'Chin Tuck':                                      '1-2-1', // 4 s: retract 1, hold 2, release 1
   'Chin Tuck Neck Bridge':                          '1-2-1', // 4 s
+  'Neck Retraction Hold':                           '1-2-1', // 4 s
   'Standing Pelvic Tilt':                           '1-1-2', // 4 s
   'Supine Pelvic Tilt':                             '1-1-2', // 4 s
   'Bird Dog':                                       '1-2-1', // 4 s: extend 1, hold 2, return 1
@@ -409,6 +416,7 @@ export const EXERCISE_TEMPO: Record<string, string> = {
   'Wall Angel':                                     '1-1-2', // 4 s
   'Air Angel':                                      '1-1-2', // 4 s
   'Floor Angel':                                    '1-1-2', // 4 s
+  'Seated Floor Taps':                              '1-1-2', // 4 s
   'Prisoner Rotation':                              '1-1-2', // 4 s
   // Strength — 5 s/rep (hold + eccentric benefit, user-approved max)
   'Prone T-Raise':                                  '1-2-2', // 5 s
@@ -441,6 +449,7 @@ export const EXERCISE_ALTERNATING = new Set<string>([
   'Bird Dog',              // right arm + left leg, then left arm + right leg
   'Advanced Bird Dog',     // same movement pattern
   'Chin Tuck Rotations',   // rotate right, then left, alternating each rep
+  'Seated Floor Taps',     // alternate side-to-side taps
   'Swimmers',              // right arm + left leg, then left arm + right leg
 ]);
 
