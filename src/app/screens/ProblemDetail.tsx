@@ -50,6 +50,7 @@ const EXERCISE_IMAGES: Record<string, ExerciseImage> = {
   'Side Lean Wall Slide':    { src: '/exercises/side-lean-wall-slide.jpg' },
   'Wall Angel':              { src: '/exercises/wall-angel.jpg' },
   'Scapular Flutters':       { src: '/exercises/scapular-flutters.jpg' },
+  'Prisoner Rotation':       { src: '/exercises/prisoner-rotation.jpg' },
   'Prayer Stretch':         { src: '/exercises/prayer-stretch.jpg' },
   'Quadruped Scapular Circles': { src: '/exercises/quadruped-scapular-circles.jpg' },
   'Bear Crawl Scapular Push Up': { src: '/exercises/bear-crawl-scapular-push-up.jpg' },

@@ -149,7 +149,7 @@ export const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
   },
   'rounded-shoulders': {
     beginner: ['Doorway Chest Stretch', 'Quadruped Scapular Push', 'Floor Angel'],
-    medium:   ['Air Angel', 'Bear Hold', 'Prone T-Raise'],
+    medium:   ['Air Angel', 'Prisoner Rotation', 'Bear Hold', 'Prone T-Raise'],
     hard:     ['Archer Push-Up', 'Push-Up Plus', 'Y-Pull with Band'],
   },
   'kyphosis': {
@@ -169,7 +169,7 @@ export const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
   },
   'winging-scapula': {
     beginner: ['Quadruped Scapular Push', 'Air Angel', 'Floor Angel'],
-    medium:   ['Side Lean Wall Slide', 'Wall Angel', 'Scapular Flutters'],
+    medium:   ['Side Lean Wall Slide', 'Prisoner Rotation', 'Wall Angel', 'Scapular Flutters'],
     hard:     ['Prayer Stretch', 'Quadruped Scapular Circles', 'Bear Crawl Scapular Push Up', 'Elevated Scapular Push Up'],
   },
 };
@@ -193,6 +193,7 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
   'Quadruped Scapular Push':         ['rounded-shoulders', 'winging-scapula'],
   'Floor Angel':                     ['rounded-shoulders', 'winging-scapula'],
   'Air Angel':                       ['rounded-shoulders', 'winging-scapula'],
+  'Prisoner Rotation':               ['rounded-shoulders', 'winging-scapula'],
   'Bear Hold':                       ['rounded-shoulders'],
   'Prone T-Raise':                   ['rounded-shoulders'],
   'Archer Push-Up':                  ['rounded-shoulders'],
@@ -278,6 +279,7 @@ export const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   'Chair Supported Squat':                          'strength',
   'Side Lean Wall Slide':                           'activation',
   'Scapular Flutters':                              'activation',
+  'Prisoner Rotation':                              'activation',
   'Quadruped Scapular Circles':                     'activation',
   // ── Strength: progressive load, build capacity ────────────────────────────
   'Prone T-Raise':                                  'strength',
@@ -328,6 +330,7 @@ export const EXERCISE_REPS: Record<string, number> = {
   'Floor Angel':                                    10,
   'Side Lean Wall Slide':                           20,  // 10 per side
   'Wall Angel':                                     10,
+  'Prisoner Rotation':                              12,
   'Prayer Stretch':                                 12,
   'Quadruped Scapular Circles':                     16,  // 8 per direction × 2
   'Bear Crawl Scapular Push Up':                    10,
@@ -398,6 +401,7 @@ export const EXERCISE_TEMPO: Record<string, string> = {
   'Wall Angel':                                     '1-1-2', // 4 s
   'Air Angel':                                      '1-1-2', // 4 s
   'Floor Angel':                                    '1-1-2', // 4 s
+  'Prisoner Rotation':                              '1-1-2', // 4 s
   // Strength — 5 s/rep (hold + eccentric benefit, user-approved max)
   'Prone T-Raise':                                  '1-2-2', // 5 s
   'Prone Y-Raise':                                  '1-2-2', // 5 s
