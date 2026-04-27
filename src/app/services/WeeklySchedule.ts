@@ -100,9 +100,12 @@ function addDays(d: Date, n: number): Date {
 
 /**
  * Materialize a weekly template into per-date configs starting at this week's
- * Monday and extending `weeksAhead` weeks. Past dates are skipped, and any
- * date the user already customised individually (non-empty existing config) is
- * preserved.
+ * Monday and extending `weeksAhead` weeks.
+ *
+ * The Schedule page is the single source of truth for editing, so today and
+ * every future date is overwritten with whatever the template says — including
+ * clearing the entry when the template slot is empty. Past dates are kept
+ * untouched so we don't rewrite history.
  */
 export function applyTemplateToDates(
   template: WeeklyTemplate,
@@ -116,11 +119,15 @@ export function applyTemplateToDates(
     for (let i = 0; i < 7; i++) {
       const d = addDays(monday, w * 7 + i);
       const iso = toIsoDate(d);
-      if (iso < todayIso) continue;
-      if (next[iso] && !isConfigEmpty(next[iso])) continue;
+      if (iso < todayIso) continue;          // never rewrite history
       const slot = template[WEEKDAY_KEYS[i]];
-      if (!slot || isConfigEmpty(slot)) continue;
-      next[iso] = { ...slot };
+      if (!slot || isConfigEmpty(slot)) {
+        // Template says "nothing scheduled this weekday" — clear the future
+        // date so it doesn't keep showing stale data from a prior schedule.
+        delete next[iso];
+      } else {
+        next[iso] = { ...slot };
+      }
     }
   }
   return next;

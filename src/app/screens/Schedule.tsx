@@ -93,20 +93,16 @@ const Schedule: React.FC = () => {
         <main style={{ padding: '52px 20px 32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
           {/* Header */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{
-              fontSize: 10, letterSpacing: '0.22em', color: '#737373',
-              textTransform: 'uppercase', fontWeight: 500,
-            }}>
-              Weekly Schedule
-            </span>
-            <h1 style={{
-              fontSize: 30, fontWeight: 600, color: '#FFFFFF',
-              letterSpacing: '-0.02em', margin: 0, lineHeight: 1,
-            }}>
-              Your week
-            </h1>
-          </div>
+          <h1 style={{
+            fontSize: 34,
+            fontWeight: 700,
+            color: '#FFFFFF',
+            letterSpacing: '-0.035em',
+            margin: 0,
+            lineHeight: 1,
+          }}>
+            Weekly Schedule
+          </h1>
 
           {/* 2-col grid of day cards */}
           <div style={{

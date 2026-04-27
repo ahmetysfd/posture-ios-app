@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { postureProblems } from '../data/postureData';
 import { loadActiveProgramForSession, getDailyStats, getLevelInfo, loadProgressLog } from '../services/DailyProgram';
@@ -161,30 +161,6 @@ interface DayConfig {
   time?: string;
 }
 const DAY_CONFIG_KEY = 'posturefix_day_config';
-const WEEKLY_TEMPLATE_KEY = 'posturefix_weekly_template';
-
-// Monday-first weekday keys aligned with WEEK_LABELS above.
-const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
-type WeekdayKey = typeof WEEKDAY_KEYS[number];
-type WeeklyTemplate = Record<WeekdayKey, DayConfig>;
-
-function emptyWeeklyTemplate(): WeeklyTemplate {
-  return WEEKDAY_KEYS.reduce((acc, k) => {
-    acc[k] = {};
-    return acc;
-  }, {} as WeeklyTemplate);
-}
-
-function loadWeeklyTemplate(): WeeklyTemplate | null {
-  try {
-    const raw = localStorage.getItem(WEEKLY_TEMPLATE_KEY);
-    return raw ? (JSON.parse(raw) as WeeklyTemplate) : null;
-  } catch { return null; }
-}
-
-function saveWeeklyTemplate(t: WeeklyTemplate): void {
-  try { localStorage.setItem(WEEKLY_TEMPLATE_KEY, JSON.stringify(t)); } catch {}
-}
 
 function loadDayConfigMap(): Record<string, DayConfig> {
   try {
@@ -193,40 +169,11 @@ function loadDayConfigMap(): Record<string, DayConfig> {
   } catch { return {}; }
 }
 
-function saveDayConfigMap(cfg: Record<string, DayConfig>): void {
-  try { localStorage.setItem(DAY_CONFIG_KEY, JSON.stringify(cfg)); } catch {}
-}
-
 function isConfigEmpty(cfg: DayConfig): boolean {
   return !cfg.off
     && !cfg.programId
     && !cfg.time
     && (!cfg.reminders || cfg.reminders.length === 0);
-}
-
-/** Materialize a weekly template into per-date configs for `weeksAhead` weeks
- *  starting from this week's Monday. Skips past dates and never overwrites
- *  user-edited days that already have a config in `existing`. */
-function applyTemplateToDates(
-  template: WeeklyTemplate,
-  existing: Record<string, DayConfig>,
-  weeksAhead: number,
-  todayIso: string,
-): Record<string, DayConfig> {
-  const next: Record<string, DayConfig> = { ...existing };
-  const monday = startOfWeekMonday(new Date());
-  for (let w = 0; w < weeksAhead; w++) {
-    for (let i = 0; i < 7; i++) {
-      const d = addDays(monday, w * 7 + i);
-      const iso = toIsoDate(d);
-      if (iso < todayIso) continue;          // never write history
-      if (next[iso] && !isConfigEmpty(next[iso])) continue; // respect prior edits
-      const slot = template[WEEKDAY_KEYS[i]];
-      if (!slot || isConfigEmpty(slot)) continue;
-      next[iso] = { ...slot };
-    }
-  }
-  return next;
 }
 
 interface ProgramOption { id: string; name: string }
@@ -299,10 +246,14 @@ const Home: React.FC = () => {
   const program = loadActiveProgramForSession(profile);
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeekMonday(new Date()));
   const [configs, setConfigs] = useState<Record<string, DayConfig>>(() => loadDayConfigMap());
-  const [editingIso, setEditingIso] = useState<string | null>(null);
-  const [weeklySetupOpen, setWeeklySetupOpen] = useState<boolean>(false);
+  const location = useLocation();
 
-  useEffect(() => { saveDayConfigMap(configs); }, [configs]);
+  // The weekly card is read-only here — the Schedule tab is the single source
+  // of truth for editing. Re-read storage whenever the user navigates back to
+  // Home so any Schedule changes show up immediately.
+  useEffect(() => {
+    setConfigs(loadDayConfigMap());
+  }, [location.pathname, location.key]);
 
   // No weekly program yet → prompt the user to set one up.
   const hasWeeklyPlan = useMemo(() => {
@@ -330,16 +281,6 @@ const Home: React.FC = () => {
       ? `${MONTH_LABELS[start.getMonth()]} ${start.getDate()} – ${end.getDate()}`
       : `${MONTH_LABELS[start.getMonth()]} ${start.getDate()} – ${MONTH_LABELS[end.getMonth()]} ${end.getDate()}`;
   }, [weekStart]);
-
-  const applyDayConfig = (iso: string, next: DayConfig) => {
-    setConfigs(prev => {
-      if (isConfigEmpty(next)) {
-        const { [iso]: _removed, ...rest } = prev;
-        return rest;
-      }
-      return { ...prev, [iso]: next };
-    });
-  };
 
   const totalEx = program?.exercises.length ?? 0;
   const completedEx = program?.exercises.filter(e => e.completed).length ?? 0;
@@ -409,7 +350,7 @@ const Home: React.FC = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setWeeklySetupOpen(true)}
+                  onClick={() => navigate('/schedule')}
                   style={{
                     padding: '10px 14px',
                     borderRadius: 12,
@@ -593,27 +534,85 @@ const Home: React.FC = () => {
                             ? { bg: '#10b981', color: '#FFFFFF', shadow: '0 2px 4px rgba(16,185,129,0.2)' }
                             : { bg: '#404040', color: '#e5e5e5', shadow: 'none' };
 
+                          // Bottom row content (only one of these renders).
+                          // Priority: off > missed > scheduled time > done dot > upcoming dot.
+                          let bottomNode: React.ReactNode = null;
+                          if (isOff) {
+                            bottomNode = (
+                              <span style={{ fontSize: 8, fontWeight: 700, color: '#52525b', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>Off</span>
+                            );
+                          } else if (isMissed) {
+                            bottomNode = (
+                              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                              </svg>
+                            );
+                          } else if (d.time) {
+                            // Today gets the dark highlighted chip; other days
+                            // get a subtle text version so the time is still
+                            // visible without dominating.
+                            bottomNode = isToday ? (
+                              <span style={{
+                                padding: '2px 6px', borderRadius: 6,
+                                background: 'rgba(0,0,0,0.25)',
+                                color: '#FFFFFF', fontSize: 10,
+                                letterSpacing: '-0.01em', lineHeight: 1,
+                                fontVariantNumeric: 'tabular-nums',
+                              }}>
+                                {d.time}
+                              </span>
+                            ) : (
+                              <span style={{
+                                color: isDone ? '#34d399' : '#71717a',
+                                fontSize: 10, fontWeight: 500, lineHeight: 1,
+                                letterSpacing: '-0.01em',
+                                fontVariantNumeric: 'tabular-nums',
+                              }}>
+                                {d.time}
+                              </span>
+                            );
+                          } else if (!isDone) {
+                            bottomNode = (
+                              <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#404040' }} />
+                            );
+                          }
+
                           return (
-                            <button
+                            <div
                               key={d.iso}
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); setEditingIso(d.iso); }}
                               style={{
                                 position: 'relative',
-                                aspectRatio: '3/5',
+                                aspectRatio: '1 / 2',
                                 borderRadius: 16,
                                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                                 justifyContent: 'space-between',
-                                padding: '12px 4px',
+                                padding: '10px 4px',
                                 background: cs.bg,
                                 border: `1px solid ${cs.border}`,
                                 boxShadow: cs.shadow,
                                 transform: cs.scale,
-                                cursor: 'pointer',
                                 fontFamily: T.font,
                                 color: 'inherit',
                               }}
                             >
+                              {/* Done badge — corner placement so it never collides with the time chip */}
+                              {isDone && (
+                                <div style={{
+                                  position: 'absolute',
+                                  top: -5,
+                                  right: -5,
+                                  width: 16, height: 16, borderRadius: '50%',
+                                  background: '#10b981',
+                                  border: '2px solid #141416',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  boxShadow: '0 2px 4px rgba(16,185,129,0.35)',
+                                }}>
+                                  <svg width={9} height={9} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                </div>
+                              )}
+
                               <span style={{
                                 fontSize: 10, fontWeight: 700,
                                 letterSpacing: '0.1em',
@@ -643,39 +642,10 @@ const Home: React.FC = () => {
                                 )}
                               </div>
 
-                              <div style={{ height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                {isDone && (
-                                  <div style={{
-                                    width: 20, height: 20, borderRadius: '50%',
-                                    background: '#10b981',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  }}>
-                                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                  </div>
-                                )}
-                                {isToday && d.time && (
-                                  <span style={{
-                                    padding: '2px 6px', borderRadius: 6,
-                                    background: 'rgba(0,0,0,0.25)',
-                                    color: '#FFFFFF', fontSize: 10,
-                                    letterSpacing: '-0.01em', lineHeight: 1,
-                                  }}>
-                                    {d.time}
-                                  </span>
-                                )}
-                                {isMissed && (
-                                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                                  </svg>
-                                )}
-                                {isOff && (
-                                  <span style={{ fontSize: 8, fontWeight: 700, color: '#52525b', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>Off</span>
-                                )}
-                                {!isDone && !isToday && !isMissed && !isOff && (
-                                  <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#404040' }} />
-                                )}
+                              <div style={{ height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {bottomNode}
                               </div>
-                            </button>
+                            </div>
                           );
                         })}
                       </div>
@@ -766,490 +736,7 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {editingIso && (
-        <DayPickerModal
-          iso={editingIso}
-          config={configs[editingIso] ?? {}}
-          programs={programOptions}
-          onClose={() => setEditingIso(null)}
-          onSave={(next) => {
-            applyDayConfig(editingIso, next);
-            setEditingIso(null);
-          }}
-        />
-      )}
-
-      {weeklySetupOpen && (
-        <WeeklySetupModal
-          initial={loadWeeklyTemplate() ?? emptyWeeklyTemplate()}
-          programs={programOptions}
-          onClose={() => setWeeklySetupOpen(false)}
-          onSave={(template) => {
-            saveWeeklyTemplate(template);
-            const todayIso = toIsoDate(new Date());
-            const next = applyTemplateToDates(template, configs, 4, todayIso);
-            setConfigs(next);
-            setWeeklySetupOpen(false);
-          }}
-        />
-      )}
     </Layout>
-  );
-};
-
-// ── Day picker modal ─────────────────────────────────────────────────────────
-
-interface DayPickerModalProps {
-  iso: string;
-  config: DayConfig;
-  programs: ProgramOption[];
-  onClose: () => void;
-  onSave: (next: DayConfig) => void;
-}
-
-function prettyDateFromIso(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
-  const dow = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dt.getDay()];
-  return `${dow}, ${MONTH_LABELS[dt.getMonth()]} ${dt.getDate()}`;
-}
-
-const DayPickerModal: React.FC<DayPickerModalProps> = ({ iso, config, programs, onClose, onSave }) => {
-  const [off, setOff] = useState<boolean>(Boolean(config.off));
-  const [programId, setProgramId] = useState<string>(config.programId ?? programs[0]?.id ?? '');
-  const [time, setTime] = useState<string>(config.time ?? '08:00');
-
-  const handleSave = () => {
-    if (off) {
-      onSave({ off: true, reminders: config.reminders });
-      return;
-    }
-    onSave({
-      off: false,
-      reminders: config.reminders,
-      programId: programId || undefined,
-      time: time || undefined,
-    });
-  };
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 120,
-        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '100%', maxWidth: 440,
-          background: 'linear-gradient(180deg, #1E1E22 0%, #141416 100%)',
-          borderTopLeftRadius: 24, borderTopRightRadius: 24,
-          borderTop: '1px solid rgba(255,255,255,0.08)',
-          padding: 20, paddingBottom: 28,
-          fontFamily: T.font, color: T.text,
-        }}
-      >
-        <div style={{
-          width: 36, height: 4, borderRadius: 2,
-          background: 'rgba(255,255,255,0.12)', margin: '0 auto 14px',
-        }} />
-
-        <div style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.text3, fontWeight: 700, marginBottom: 2 }}>
-          Plan this day
-        </div>
-        <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>
-          {prettyDateFromIso(iso)}
-        </div>
-
-        {/* Off toggle */}
-        <button
-          type="button"
-          onClick={() => setOff(v => !v)}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '12px 14px', borderRadius: 14,
-            background: off ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.03)',
-            border: `1px solid ${off ? 'rgba(239,68,68,0.45)' : 'rgba(255,255,255,0.08)'}`,
-            color: T.text, cursor: 'pointer', fontFamily: T.font, marginBottom: 18,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 16, color: off ? '#ef4444' : T.text2 }}>{off ? '✕' : '○'}</span>
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>Off day</div>
-              <div style={{ fontSize: 11, color: T.text3 }}>
-                {off ? 'No program or reminder' : 'Mark this day as a rest day'}
-              </div>
-            </div>
-          </div>
-          <div style={{
-            width: 36, height: 22, borderRadius: 11, position: 'relative',
-            background: off ? '#ef4444' : 'rgba(255,255,255,0.1)',
-            transition: 'background 0.2s',
-          }}>
-            <div style={{
-              position: 'absolute', top: 2, left: off ? 16 : 2,
-              width: 18, height: 18, borderRadius: '50%',
-              background: '#FFF', transition: 'left 0.2s',
-            }} />
-          </div>
-        </button>
-
-        {/* Program + time — disabled when off */}
-        <div style={{ opacity: off ? 0.4 : 1, pointerEvents: off ? 'none' : 'auto' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.text3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
-            Program
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
-            {programs.map(p => {
-              const selected = p.id === programId;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setProgramId(p.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '11px 14px', borderRadius: 12,
-                    background: selected ? 'rgba(249,115,22,0.12)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${selected ? 'rgba(249,115,22,0.45)' : 'rgba(255,255,255,0.08)'}`,
-                    color: T.text, cursor: 'pointer', fontFamily: T.font,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      width: 26, height: 26, borderRadius: 8,
-                      background: selected ? '#fb923c' : 'rgba(255,255,255,0.06)',
-                      color: selected ? '#0a0a0c' : '#a1a1aa',
-                      fontSize: 11, fontWeight: 800,
-                    }}>
-                      {p.name.trim().charAt(0).toUpperCase()}
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</span>
-                  </div>
-                  {selected && (
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fb923c" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.text3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
-            Reminder time
-          </div>
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            style={{
-              width: '100%', padding: '10px 12px', borderRadius: 12,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: T.text, fontSize: 14, fontFamily: T.font,
-              colorScheme: 'dark',
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              flex: 1, padding: 14, borderRadius: 14,
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-              color: T.text2, fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', fontFamily: T.font,
-            }}
-          >Cancel</button>
-          <button
-            type="button"
-            onClick={handleSave}
-            style={{
-              flex: 1, padding: 14, borderRadius: 14,
-              background: 'linear-gradient(90deg, #ea580c, #fb923c)',
-              border: 'none', color: '#0a0a0c',
-              fontSize: 13, fontWeight: 700,
-              cursor: 'pointer', fontFamily: T.font,
-            }}
-          >Save</button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Weekly setup modal ───────────────────────────────────────────────────────
-
-interface WeeklySetupModalProps {
-  initial: WeeklyTemplate;
-  programs: ProgramOption[];
-  onClose: () => void;
-  onSave: (template: WeeklyTemplate) => void;
-}
-
-const FULL_WEEKDAY_LABELS: Record<WeekdayKey, string> = {
-  mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
-  fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
-};
-
-const WeeklySetupModal: React.FC<WeeklySetupModalProps> = ({ initial, programs, onClose, onSave }) => {
-  const [template, setTemplate] = useState<WeeklyTemplate>(() => {
-    // Seed every day with sensible defaults so the user can save quickly.
-    const seeded = emptyWeeklyTemplate();
-    for (const k of WEEKDAY_KEYS) {
-      const src = initial[k] ?? {};
-      seeded[k] = {
-        off: src.off,
-        programId: src.programId ?? programs[0]?.id,
-        time: src.time ?? '08:00',
-        reminders: src.reminders,
-      };
-    }
-    return seeded;
-  });
-
-  const updateDay = (key: WeekdayKey, patch: Partial<DayConfig>) => {
-    setTemplate(prev => ({ ...prev, [key]: { ...prev[key], ...patch } }));
-  };
-
-  const applyToAll = (patch: Partial<DayConfig>) => {
-    setTemplate(prev => {
-      const next = { ...prev };
-      for (const k of WEEKDAY_KEYS) next[k] = { ...next[k], ...patch };
-      return next;
-    });
-  };
-
-  const handleSave = () => {
-    // Strip programId/time when off so storage stays clean.
-    const cleaned = emptyWeeklyTemplate();
-    for (const k of WEEKDAY_KEYS) {
-      const d = template[k];
-      if (d.off) {
-        cleaned[k] = { off: true, reminders: d.reminders };
-      } else {
-        cleaned[k] = {
-          off: false,
-          reminders: d.reminders,
-          programId: d.programId || undefined,
-          time: d.time || undefined,
-        };
-      }
-    }
-    onSave(cleaned);
-  };
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 120,
-        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '100%', maxWidth: 480,
-          maxHeight: '92dvh',
-          background: 'linear-gradient(180deg, #1E1E22 0%, #141416 100%)',
-          borderTopLeftRadius: 24, borderTopRightRadius: 24,
-          borderTop: '1px solid rgba(255,255,255,0.08)',
-          padding: 20, paddingBottom: 28,
-          fontFamily: T.font, color: T.text,
-          display: 'flex', flexDirection: 'column',
-        }}
-      >
-        <div style={{
-          width: 36, height: 4, borderRadius: 2,
-          background: 'rgba(255,255,255,0.12)', margin: '0 auto 14px',
-          flexShrink: 0,
-        }} />
-
-        <div style={{ flexShrink: 0 }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.text3, fontWeight: 700, marginBottom: 2 }}>
-            Weekly schedule
-          </div>
-          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
-            Set up your week
-          </div>
-          <div style={{ fontSize: 12, color: T.text3, marginBottom: 14 }}>
-            Pick a program and reminder time for each day. Tap “Off” for rest days — they keep your streak.
-          </div>
-        </div>
-
-        <div style={{
-          overflowY: 'auto',
-          flex: 1,
-          display: 'flex', flexDirection: 'column', gap: 10,
-          paddingRight: 4,
-        }}>
-          {WEEKDAY_KEYS.map((key) => {
-            const day = template[key];
-            const off = Boolean(day.off);
-            return (
-              <div
-                key={key}
-                style={{
-                  borderRadius: 14,
-                  border: `1px solid ${off ? 'rgba(239,68,68,0.32)' : 'rgba(255,255,255,0.08)'}`,
-                  background: off ? 'rgba(239,68,68,0.06)' : 'rgba(255,255,255,0.02)',
-                  padding: 12,
-                  display: 'flex', flexDirection: 'column', gap: 10,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: T.text, letterSpacing: '-0.01em' }}>
-                    {FULL_WEEKDAY_LABELS[key]}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => updateDay(key, { off: !off })}
-                    style={{
-                      padding: '6px 10px', borderRadius: 9999,
-                      background: off ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${off ? 'rgba(239,68,68,0.45)' : 'rgba(255,255,255,0.1)'}`,
-                      color: off ? '#fca5a5' : T.text2,
-                      fontSize: 11, fontWeight: 700, letterSpacing: '0.05em',
-                      cursor: 'pointer', fontFamily: T.font,
-                    }}
-                  >
-                    {off ? 'OFF DAY' : 'OFF?'}
-                  </button>
-                </div>
-
-                {!off && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {/* Program chips */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {programs.map(p => {
-                        const selected = day.programId === p.id;
-                        return (
-                          <button
-                            key={p.id}
-                            type="button"
-                            onClick={() => updateDay(key, { programId: p.id })}
-                            style={{
-                              display: 'inline-flex', alignItems: 'center', gap: 6,
-                              padding: '6px 10px', borderRadius: 9999,
-                              background: selected ? 'rgba(249,115,22,0.16)' : 'rgba(255,255,255,0.04)',
-                              border: `1px solid ${selected ? 'rgba(249,115,22,0.45)' : 'rgba(255,255,255,0.08)'}`,
-                              color: selected ? '#fb923c' : T.text2,
-                              fontSize: 12, fontWeight: 600,
-                              cursor: 'pointer', fontFamily: T.font,
-                            }}
-                          >
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                              width: 18, height: 18, borderRadius: 6,
-                              background: selected ? '#fb923c' : 'rgba(255,255,255,0.08)',
-                              color: selected ? '#0a0a0c' : '#a1a1aa',
-                              fontSize: 10, fontWeight: 800,
-                            }}>
-                              {p.name.trim().charAt(0).toUpperCase()}
-                            </span>
-                            {p.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Reminder time */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: T.text3, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                        Remind
-                      </span>
-                      <input
-                        type="time"
-                        value={day.time ?? ''}
-                        onChange={(e) => updateDay(key, { time: e.target.value })}
-                        style={{
-                          flex: 1, padding: '8px 10px', borderRadius: 10,
-                          background: 'rgba(255,255,255,0.03)',
-                          border: '1px solid rgba(255,255,255,0.08)',
-                          color: T.text, fontSize: 13, fontFamily: T.font,
-                          colorScheme: 'dark',
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Quick actions */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap', flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={() => applyToAll({ time: template.mon.time, programId: template.mon.programId, off: false })}
-            style={{
-              padding: '8px 12px', borderRadius: 10,
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-              color: T.text2, fontSize: 11, fontWeight: 600,
-              cursor: 'pointer', fontFamily: T.font,
-            }}
-          >
-            Apply Monday to all
-          </button>
-          <button
-            type="button"
-            onClick={() => setTemplate(prev => {
-              const next = { ...prev };
-              next.sat = { ...next.sat, off: true };
-              next.sun = { ...next.sun, off: true };
-              return next;
-            })}
-            style={{
-              padding: '8px 12px', borderRadius: 10,
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-              color: T.text2, fontSize: 11, fontWeight: 600,
-              cursor: 'pointer', fontFamily: T.font,
-            }}
-          >
-            Weekends off
-          </button>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, marginTop: 14, flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              flex: 1, padding: 14, borderRadius: 14,
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-              color: T.text2, fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', fontFamily: T.font,
-            }}
-          >Cancel</button>
-          <button
-            type="button"
-            onClick={handleSave}
-            style={{
-              flex: 1, padding: 14, borderRadius: 14,
-              background: 'linear-gradient(90deg, #ea580c, #fb923c)',
-              border: 'none', color: '#0a0a0c',
-              fontSize: 13, fontWeight: 700,
-              cursor: 'pointer', fontFamily: T.font,
-            }}
-          >Save week</button>
-        </div>
-      </div>
-    </div>
   );
 };
 
