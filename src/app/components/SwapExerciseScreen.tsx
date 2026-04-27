@@ -95,6 +95,15 @@ const EXERCISE_IMAGES: Record<string, ExerciseImage> = {
   'Push-Up Plus':            { src: '/exercises/push-up-plus.jpg' },
   'Prone Y-Raise':           { src: '/exercises/prone-y-raise.jpg' },
   'Split Squat Pelvic Tilts':{ src: '/exercises/split-squat-pelvic-tilts.jpg' },
+  // ── New exercises ────────────────────────────────────────────────
+  'Shoulder Rockets':                     { src: '/exercises/shoulder rockets.png',                     offsetX: 0 },
+  'Cuffed Angels':                        { src: '/exercises/Cuffed Angels.png',                        offsetX: 0 },
+  'Banded Rainbow':                       { src: '/exercises/Banded Rainbow.png',                       offsetX: 0 },
+  'Thoracic Open Book':                   { src: '/exercises/Throracic Open Book.png',                  offsetX: 0 },
+  'Eccentric Reverse Fly':                { src: '/exercises/Eccentric Reverse Fly.png',                offsetX: 0 },
+  'Overhead Shrug':                       { src: '/exercises/Overhead Shrugs.png',                      offsetX: 0 },
+  'Overhead Shrug Neck Rotations':        { src: '/exercises/Overhead Shrug Neck Rotations.png',        offsetX: 0 },
+  'Eccentric Shoulder External Rotation': { src: '/exercises/Eccentric Shoulder External Rotation.png', offsetX: 0 },
 };
 
 function isExerciseSelectable(

@@ -167,14 +167,14 @@ export const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
     hard:     ['Prone Chin Tuck', 'Chin Tuck Neck Bridge', 'Banded Chin Tucks', 'Side Lying Chin Tuck'],
   },
   'rounded-shoulders': {
-    beginner: ['Doorway Chest Stretch', 'Quadruped Scapular Push', 'Floor Angel'],
-    medium:   ['Air Angel', 'Prisoner Rotation', 'Bear Hold', 'Prone T-Raise'],
-    hard:     ['Archer Push-Up', 'Push-Up Plus', 'Y-Pull with Band'],
+    beginner: ['Doorway Chest Stretch', 'Quadruped Scapular Push', 'Floor Angel', 'Shoulder Rockets'],
+    medium:   ['Air Angel', 'Prisoner Rotation', 'Bear Hold', 'Prone T-Raise', 'Cuffed Angels'],
+    hard:     ['Archer Push-Up', 'Push-Up Plus', 'Y-Pull with Band', 'Banded Rainbow'],
   },
   'kyphosis': {
-    beginner: ['Baby Cobra', 'Foam Roller Thoracic Extension', 'Quadruped Thoracic Rotation (Hand Behind Head)'],
+    beginner: ['Baby Cobra', 'Foam Roller Thoracic Extension', 'Quadruped Thoracic Rotation (Hand Behind Head)', 'Thoracic Open Book'],
     medium:   ['Thoracic Extension', 'Wall Assisted Shoulder Flexion', 'Wall Slide', 'Scapular Rows'],
-    hard:     ['Sphinx Cat Camels', 'Prone Y-Raise', 'Banded Reverse Fly'],
+    hard:     ['Sphinx Cat Camels', 'Prone Y-Raise', 'Banded Reverse Fly', 'Eccentric Reverse Fly'],
   },
   'anterior-pelvic': {
     beginner: ['Standing Pelvic Tilt', 'Supine Pelvic Tilt', 'TVA Frog Leg', 'Pelvic Rocks'],
@@ -182,9 +182,9 @@ export const PRIORITY: Record<string, Record<ExerciseDifficulty, string[]>> = {
     hard:     ['Split Squat Pelvic Tilts', '90 degree Hip Hinge', 'Adductor Squeeze Crunch', 'Crossed Leg Forward Stretch'],
   },
   'uneven-shoulders': {
-    beginner: ['Lower Trap Activation', 'Levator Scapulae Stretch', 'Wall Lean'],
-    medium:   ['Side Plank', 'Bird Dog', 'Banded Lat Pull-Down'],
-    hard:     ['Single-Arm Plank', 'Advanced Bird Dog', 'Half Kneel Pallof Press'],
+    beginner: ['Lower Trap Activation', 'Levator Scapulae Stretch', 'Wall Lean', 'Overhead Shrug'],
+    medium:   ['Side Plank', 'Bird Dog', 'Banded Lat Pull-Down', 'Overhead Shrug Neck Rotations'],
+    hard:     ['Single-Arm Plank', 'Advanced Bird Dog', 'Half Kneel Pallof Press', 'Eccentric Shoulder External Rotation'],
   },
   'winging-scapula': {
     beginner: ['Quadruped Scapular Push', 'Air Angel', 'Floor Angel', 'Quadruped Scapular Circles'],
@@ -221,6 +221,9 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
   'Archer Push-Up':                  ['rounded-shoulders'],
   'Push-Up Plus':                    ['rounded-shoulders'],
   'Y-Pull with Band':                ['rounded-shoulders'],
+  'Shoulder Rockets':                ['rounded-shoulders'],
+  'Cuffed Angels':                   ['rounded-shoulders'],
+  'Banded Rainbow':                  ['rounded-shoulders'],
   // ── Kyphosis ────────────────────────────────────────────────────────────────
   'Baby Cobra':                      ['kyphosis'],
   'Foam Roller Thoracic Extension':  ['kyphosis'],
@@ -232,6 +235,8 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
   'Sphinx Cat Camels':               ['kyphosis'],
   'Prone Y-Raise':                   ['kyphosis'],
   'Banded Reverse Fly':              ['kyphosis'],
+  'Thoracic Open Book':              ['kyphosis'],
+  'Eccentric Reverse Fly':           ['kyphosis'],
   // ── Anterior Pelvic ─────────────────────────────────────────────────────────
   'Standing Pelvic Tilt':            ['anterior-pelvic'],
   'Supine Pelvic Tilt':              ['anterior-pelvic'],
@@ -246,15 +251,18 @@ const EXERCISE_PROBLEMS: Record<string, string[]> = {
   'Crossed Leg Forward Stretch':     ['anterior-pelvic'],
   '90 degree Hip Hinge':             ['anterior-pelvic'],
   // ── Uneven Shoulders ────────────────────────────────────────────────────────
-  'Lower Trap Activation':           ['uneven-shoulders'],
-  'Levator Scapulae Stretch':        ['uneven-shoulders'],
-  'Wall Lean':                       ['uneven-shoulders'],
-  'Side Plank':                      ['uneven-shoulders'],
-  'Bird Dog':                        ['uneven-shoulders'],
-  'Banded Lat Pull-Down':            ['uneven-shoulders'],
-  'Single-Arm Plank':                ['uneven-shoulders'],
-  'Advanced Bird Dog':               ['uneven-shoulders'],
-  'Half Kneel Pallof Press':         ['uneven-shoulders'],
+  'Lower Trap Activation':                    ['uneven-shoulders'],
+  'Levator Scapulae Stretch':                 ['uneven-shoulders'],
+  'Wall Lean':                                ['uneven-shoulders'],
+  'Side Plank':                               ['uneven-shoulders'],
+  'Bird Dog':                                 ['uneven-shoulders'],
+  'Banded Lat Pull-Down':                     ['uneven-shoulders'],
+  'Single-Arm Plank':                         ['uneven-shoulders'],
+  'Advanced Bird Dog':                        ['uneven-shoulders'],
+  'Half Kneel Pallof Press':                  ['uneven-shoulders'],
+  'Overhead Shrug':                           ['uneven-shoulders'],
+  'Overhead Shrug Neck Rotations':            ['uneven-shoulders'],
+  'Eccentric Shoulder External Rotation':     ['uneven-shoulders'],
   // ── Winging Scapula (unique exercises — shared ones listed under RS above) ──
   'Side Lean Wall Slide':            ['winging-scapula'],
   'Wall Angel':                      ['winging-scapula'],
@@ -282,6 +290,7 @@ export const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   'Baby Cobra':                                     'mobility',
   'Quadruped Thoracic Rotation (Hand Behind Head)': 'mobility',
   'Sphinx Cat Camels':                              'mobility',
+  'Thoracic Open Book':                             'mobility',
   // ── Activation: motor control, postural retraining, endurance ────────────
   'Chin Tuck':                                      'activation',
   'Supine Chin Tuck':                               'activation',
@@ -310,6 +319,10 @@ export const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   'Scapular Flutters':                              'activation',
   'Prisoner Rotation':                              'activation',
   'Quadruped Scapular Circles':                     'activation',
+  'Shoulder Rockets':                               'activation',
+  'Cuffed Angels':                                  'activation',
+  'Overhead Shrug':                                 'activation',
+  'Overhead Shrug Neck Rotations':                  'activation',
   // ── Strength: progressive load, build capacity ────────────────────────────
   'Prone T-Raise':                                  'strength',
   'Prone Y-Raise':                                  'strength',
@@ -334,6 +347,9 @@ export const EXERCISE_TYPE: Record<string, ExercisePhase> = {
   'Bear Crawl Scapular Push Up':                    'strength',
   'Elevated Scapular Push Up':                      'strength',
   'Plank Plus':                                     'strength',
+  'Banded Rainbow':                                 'strength',
+  'Eccentric Reverse Fly':                          'strength',
+  'Eccentric Shoulder External Rotation':           'strength',
 };
 
 /**
@@ -389,10 +405,14 @@ export const EXERCISE_REPS: Record<string, number> = {
   'Archer Push-Up':                                 16,  // 8 per side
   'Push-Up Plus':                                   10,
   'Y-Pull with Band':                               12,
+  'Shoulder Rockets':                               20,  // 10 per side
+  'Cuffed Angels':                                  12,
+  'Banded Rainbow':                                 12,
   // ── Kyphosis ──────────────────────────────────────────────────────────────
   'Baby Cobra':                                     10,
   // Foam Roller Thoracic Extension: time-based (mobility per segment)
   'Quadruped Thoracic Rotation (Hand Behind Head)': 20,  // 10 per side
+  'Thoracic Open Book':                             20,  // 10 per side
   'Thoracic Extension':                             10,
   'Wall Assisted Shoulder Flexion':                 10,
   'Wall Slide':                                     10,
@@ -400,6 +420,7 @@ export const EXERCISE_REPS: Record<string, number> = {
   'Sphinx Cat Camels':                              10,
   'Prone Y-Raise':                                  20,  // 10 per side
   'Banded Reverse Fly':                             12,
+  'Eccentric Reverse Fly':                          12,
   // ── Uneven Shoulders ──────────────────────────────────────────────────────
   'Lower Trap Activation':                          24,  // 12 per side
   // Levator Scapulae Stretch: time-based (static stretch)
@@ -411,6 +432,9 @@ export const EXERCISE_REPS: Record<string, number> = {
   // Single-Arm Plank: time-based (repeated isometric holds)
   'Advanced Bird Dog':                              20,  // 10 per side
   'Half Kneel Pallof Press':                        24,  // 12 per side
+  'Overhead Shrug':                                 12,
+  'Overhead Shrug Neck Rotations':                  20,  // 10 per direction
+  'Eccentric Shoulder External Rotation':           20,  // 10 per side
 };
 
 /**
@@ -424,7 +448,12 @@ export const EXERCISE_TEMPO: Record<string, string> = {
   'Quadruped Thoracic Rotation (Hand Behind Head)': '3-2-0', // 5 s: slow rotation, no return pause (keep)
   'Sphinx Cat Camels':                              '2-0-1', // 3 s: fluid oscillation, no hold
   'Thoracic Extension':                             '1-1-2', // 4 s
+  'Thoracic Open Book':                             '3-2-0', // 5 s: slow open, hold stretch, return
   // Activation — 4 s/rep
+  'Shoulder Rockets':                               '1-2-1', // 4 s: raise 1, hold 2, lower 1
+  'Cuffed Angels':                                  '1-2-1', // 4 s: rotate out 1, hold 2, return 1
+  'Overhead Shrug':                                 '1-2-1', // 4 s: shrug 1, depress-hold 2, reset 1
+  'Overhead Shrug Neck Rotations':                  '2-1-0', // 3 s: slow rotation, brief hold, return
   'Chin Tuck':                                      '1-2-1', // 4 s: retract 1, hold 2, release 1
   'Chin Tuck Neck Bridge':                          '1-2-1', // 4 s
   'Side Lying Chin Tuck':                           '1-2-1', // 4 s
@@ -454,6 +483,10 @@ export const EXERCISE_TEMPO: Record<string, string> = {
   'Archer Push-Up':                                 '2-1-2', // 5 s
   'Push-Up Plus':                                   '2-1-2', // 5 s
   'Half Kneel Pallof Press':                        '1-2-1', // 4 s: press 1, hold 2, return 1
+  // Strength — eccentric-focused exercises
+  'Banded Rainbow':                                 '2-1-2', // 5 s: sweep up 2, hold 1, return 2
+  'Eccentric Reverse Fly':                          '1-1-4', // 6 s: raise 1, hold 1, slow lower 4
+  'Eccentric Shoulder External Rotation':           '1-1-4', // 6 s: rotate out 1, hold 1, slow return 4
 };
 
 /** Default tempo by exercise phase when EXERCISE_TEMPO has no entry. */
@@ -469,11 +502,12 @@ export const DEFAULT_TEMPO_BY_PHASE: Record<string, string> = {
  * These are NOT in EXERCISE_BILATERAL; the two maps are mutually exclusive.
  */
 export const EXERCISE_ALTERNATING = new Set<string>([
-  'Bird Dog',              // right arm + left leg, then left arm + right leg
-  'Advanced Bird Dog',     // same movement pattern
-  'Chin Tuck Rotations',   // rotate right, then left, alternating each rep
-  'Seated Floor Taps',     // alternate side-to-side taps
-  'Swimmers',              // right arm + left leg, then left arm + right leg
+  'Bird Dog',                       // right arm + left leg, then left arm + right leg
+  'Advanced Bird Dog',              // same movement pattern
+  'Chin Tuck Rotations',            // rotate right, then left, alternating each rep
+  'Seated Floor Taps',              // alternate side-to-side taps
+  'Swimmers',                       // right arm + left leg, then left arm + right leg
+  'Overhead Shrug Neck Rotations',  // neck rotates right then left, alternating each rep
 ]);
 
 /**
@@ -490,8 +524,11 @@ export const EXERCISE_BILATERAL: Record<string, number> = {
   'Lower Trap Activation':                          12,
   'Half Kneel Pallof Press':                        12,
   'Quadruped Scapular Circles':                      8, // per direction (CW then CCW)
-  // Note: Bird Dog, Advanced Bird Dog, Chin Tuck Rotations, Swimmers
-  // are alternating (every rep) — see EXERCISE_ALTERNATING above
+  'Shoulder Rockets':                               10, // 10 per side
+  'Thoracic Open Book':                             10, // 10 per side
+  'Eccentric Shoulder External Rotation':           10, // 10 per side
+  // Note: Bird Dog, Advanced Bird Dog, Chin Tuck Rotations, Swimmers,
+  // Overhead Shrug Neck Rotations are alternating (every rep) — see EXERCISE_ALTERNATING above
 };
 
 /**
