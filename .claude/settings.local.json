@@ -14,7 +14,12 @@
       "Bash(npx vite *)",
       "mcp__figma__whoami",
       "Bash(node *)",
-      "WebFetch(domain:fleck-fog-00766364.figma.site)"
+      "WebFetch(domain:fleck-fog-00766364.figma.site)",
+      "Read(//c/Users/nateh/AppData/Local/Temp/puppeteer-test/node_modules/**)",
+      "Read(//c/Users/nateh/AppData/Local/Temp/**)",
+      "Bash(npx puppeteer *)",
+      "Bash(npm list *)",
+      "Bash(npm install *)"
     ]
   }
 }

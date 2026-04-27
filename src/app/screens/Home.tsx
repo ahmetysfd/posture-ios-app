@@ -332,113 +332,105 @@ const Home: React.FC = () => {
                 <>
                   <div
                     style={{
-                      position: 'relative',
-                      overflow: 'hidden',
                       borderRadius: 24,
-                      background: 'linear-gradient(135deg, #1a1a1f 0%, #111114 100%)',
-                      border: '1px solid rgba(255,255,255,0.06)',
+                      background: 'rgba(23,23,23,0.8)',
+                      border: '1px solid #27272a',
+                      padding: 24,
+                      backdropFilter: 'blur(4px)',
                     }}
                   >
-                    {/* Orange glow */}
-                    <div style={{ position: 'absolute', top: '-40%', right: '-15%', width: 176, height: 176, borderRadius: '50%', background: 'rgba(249,115,22,0.10)', filter: 'blur(50px)', pointerEvents: 'none' }} />
-
-                    <div style={{ position: 'relative', zIndex: 1, padding: 20 }}>
-                      {/* Top row: Title left, Play + Streak right */}
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+                      {/* Top row */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
                         <div>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+                          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 6 }}>
                             Daily Program
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 12, color: '#71717a' }}>
-                            <span>{hasProgram ? `${program!.totalDurationMin} min` : '6 min'}</span>
-                            <span style={{ color: '#3f3f46' }}>·</span>
-                            <span>{hasProgram ? `${totalEx} exercises` : '6 exercises'}</span>
-                          </div>
+                          </h1>
+                          <p style={{ fontSize: 13, color: '#737373', letterSpacing: '-0.01em' }}>
+                            {hasProgram ? `${program!.totalDurationMin} min` : '6 min'} · {hasProgram ? `${totalEx} exercises` : '6 exercises'}
+                          </p>
                         </div>
 
-                        {/* Play button + Streak */}
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexShrink: 0, marginLeft: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexShrink: 0, marginLeft: 12 }}>
+                          {/* Play button */}
                           <button
                             type="button"
                             onClick={() => navigate(hasProgram ? '/program' : '/scan')}
                             aria-label={ctaLabel}
                             style={{
-                              width: 42, height: 42, borderRadius: '50%',
-                              background: 'linear-gradient(to top right, #ea580c, #fb923c)',
+                              width: 48, height: 48, borderRadius: '50%',
+                              background: '#f97316',
                               border: 'none', cursor: 'pointer',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              boxShadow: '0 0 20px rgba(249,115,22,0.3)',
+                              boxShadow: '0 10px 15px -3px rgba(249,115,22,0.2)',
                               flexShrink: 0,
                             }}
                           >
                             {allDone ? (
-                              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                              <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="20 6 9 17 4 12" />
                               </svg>
                             ) : (
-                              <svg width={16} height={16} viewBox="0 0 24 24" fill="#FFFFFF" style={{ marginLeft: 2 }}>
+                              <svg width={20} height={20} viewBox="0 0 24 24" fill="#FFFFFF" style={{ marginLeft: 2 }}>
                                 <path d="M8 5.5v13l10-6.5-10-6.5Z" />
                               </svg>
                             )}
                           </button>
 
-                          {/* Streak box */}
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                          {/* Streak */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
                             <div style={{
-                              position: 'relative',
-                              width: 48, height: 48, borderRadius: 16,
-                              background: 'rgba(249,115,22,0.08)',
-                              border: '1px solid rgba(249,115,22,0.20)',
+                              width: 48, height: 48, borderRadius: '50%',
+                              background: 'rgba(249,115,22,0.1)',
+                              border: '1px solid rgba(249,115,22,0.3)',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}>
-                              <div style={{ position: 'absolute', inset: 0, borderRadius: 16, background: 'rgba(249,115,22,0.05)', filter: 'blur(2px)' }} />
-                              {/* Flame SVG */}
-                              <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ position: 'relative', zIndex: 1 }}>
+                              <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
                               </svg>
                             </div>
-                            <span style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', lineHeight: 1, marginTop: 4 }}>{streak}</span>
-                            <span style={{ fontSize: 9, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700 }}>Streak</span>
+                            <div style={{ marginTop: 6, textAlign: 'center', lineHeight: 1 }}>
+                              <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF' }}>{streak}</div>
+                              <div style={{ fontSize: 9, color: '#737373', letterSpacing: '0.12em', marginTop: 2, fontWeight: 600 }}>STREAK</div>
+                            </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Level pill */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center',
-                          padding: '4px 10px', borderRadius: 8,
-                          background: 'rgba(255,255,255,0.04)',
-                          border: '1px solid rgba(255,255,255,0.05)',
-                          fontSize: 11, fontWeight: 600,
-                          color: '#fb923c',
-                        }}>
-                          {lvl?.label ?? 'Beginner'}
-                        </span>
+                      {/* Level badge */}
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center',
+                        padding: '4px 12px', borderRadius: 9999,
+                        background: 'rgba(249,115,22,0.1)',
+                        border: '1px solid rgba(249,115,22,0.2)',
+                        color: '#fb923c', fontSize: 14,
+                        letterSpacing: '-0.01em',
+                        marginBottom: 24,
+                      }}>
+                        {lvl?.label ?? 'Beginner'}
                       </div>
 
-                      {/* Week navigation */}
+                      {/* Week navigator */}
                       <div
                         onClick={(e) => e.stopPropagation()}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}
                       >
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setWeekStart(prev => addDays(prev, -7)); }}
                           aria-label="Previous week"
                           style={{
-                            width: 28, height: 28, borderRadius: 8,
-                            background: 'rgba(255,255,255,0.04)',
+                            width: 36, height: 36, borderRadius: '50%',
+                            background: 'rgba(39,39,42,0.6)',
                             border: 'none', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             color: '#a1a1aa',
                           }}
                         >
-                          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="15 18 9 12 15 6" />
                           </svg>
                         </button>
-                        <span style={{ fontSize: 11, color: '#a1a1aa', fontWeight: 600 }}>
+                        <span style={{ fontSize: 14, color: '#d4d4d8', letterSpacing: '-0.01em' }}>
                           {weekRangeLabel}
                         </span>
                         <button
@@ -446,33 +438,46 @@ const Home: React.FC = () => {
                           onClick={(e) => { e.stopPropagation(); setWeekStart(prev => addDays(prev, 7)); }}
                           aria-label="Next week"
                           style={{
-                            width: 28, height: 28, borderRadius: 8,
-                            background: 'rgba(255,255,255,0.04)',
+                            width: 36, height: 36, borderRadius: '50%',
+                            background: 'rgba(39,39,42,0.6)',
                             border: 'none', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             color: '#a1a1aa',
                           }}
                         >
-                          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9 18 15 12 9 6" />
                           </svg>
                         </button>
                       </div>
 
-                      {/* Day grid */}
+                      {/* Date cards */}
                       <div
                         onClick={(e) => e.stopPropagation()}
-                        style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8, marginBottom: 16 }}
+                        style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8 }}
                       >
                         {weekCells.map((d) => {
-                          const tone =
-                            d.isToday ? { bg: 'linear-gradient(180deg, #FB923C 0%, #EA580C 100%)', border: 'rgba(249,115,22,0.5)', labelColor: 'rgba(255,255,255,0.9)', dateColor: '#FFFFFF' }
-                            : d.isDone ? { bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.22)', labelColor: '#34d399', dateColor: '#6ee7b7' }
-                            : d.isMissed ? { bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.15)', labelColor: '#f87171', dateColor: '#fca5a5' }
-                            : d.isOff ? { bg: 'rgba(255,255,255,0.02)', border: 'rgba(255,255,255,0.04)', labelColor: '#52525b', dateColor: '#3f3f46' }
-                            : { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.07)', labelColor: '#71717a', dateColor: '#a1a1aa' };
-
+                          const isToday = d.isToday;
+                          const isDone = d.isDone;
+                          const isMissed = d.isMissed;
+                          const isOff = d.isOff;
                           const programInitial = d.programName ? d.programName.trim().charAt(0).toUpperCase() : null;
+
+                          const cs = isToday
+                            ? { bg: 'linear-gradient(180deg, #f97316 0%, #ea580c 100%)', border: '#fb923c', shadow: '0 10px 15px -3px rgba(249,115,22,0.3)', scale: 'scale(1.05)', lbl: 'rgba(255,255,255,0.9)', dt: '#FFFFFF' }
+                            : isDone
+                            ? { bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.4)', shadow: 'none', scale: 'none', lbl: '#34d399', dt: '#6ee7b7' }
+                            : isMissed
+                            ? { bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.15)', shadow: 'none', scale: 'none', lbl: '#f87171', dt: '#fca5a5' }
+                            : isOff
+                            ? { bg: 'rgba(255,255,255,0.02)', border: 'rgba(255,255,255,0.04)', shadow: 'none', scale: 'none', lbl: '#52525b', dt: '#3f3f46' }
+                            : { bg: 'rgba(39,39,42,0.4)', border: '#27272a', shadow: 'none', scale: 'none', lbl: '#737373', dt: '#d4d4d8' };
+
+                          const bs = isToday
+                            ? { bg: '#FFFFFF', color: '#ea580c', shadow: 'none' }
+                            : isDone
+                            ? { bg: '#10b981', color: '#FFFFFF', shadow: '0 2px 4px rgba(16,185,129,0.2)' }
+                            : { bg: '#404040', color: '#e5e5e5', shadow: 'none' };
 
                           return (
                             <button
@@ -481,91 +486,85 @@ const Home: React.FC = () => {
                               onClick={(e) => { e.stopPropagation(); setEditingIso(d.iso); }}
                               style={{
                                 position: 'relative',
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                aspectRatio: '0.62',
-                                padding: '8px 0',
-                                borderRadius: 14,
-                                background: tone.bg,
-                                border: `1px solid ${tone.border}`,
+                                aspectRatio: '3/5',
+                                borderRadius: 16,
+                                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '12px 4px',
+                                background: cs.bg,
+                                border: `1px solid ${cs.border}`,
+                                boxShadow: cs.shadow,
+                                transform: cs.scale,
                                 cursor: 'pointer',
                                 fontFamily: T.font,
                                 color: 'inherit',
                               }}
                             >
                               <span style={{
-                                fontSize: 9, fontWeight: 700,
-                                letterSpacing: '0.06em', textTransform: 'uppercase',
-                                color: tone.labelColor,
+                                fontSize: 10, fontWeight: 700,
+                                letterSpacing: '0.1em',
+                                color: cs.lbl,
+                                lineHeight: 1,
                               }}>
-                                {d.label}
+                                {d.label.toUpperCase()}
                               </span>
-                              <span style={{
-                                fontSize: 16, fontWeight: 700, lineHeight: 1,
-                                marginTop: 4, color: tone.dateColor,
-                              }}>
-                                {d.date}
-                              </span>
-                              <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 16, gap: 3 }}>
-                                {d.isOff ? (
-                                  <span style={{ fontSize: 8, fontWeight: 700, color: '#52525b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Off</span>
-                                ) : (
-                                  <>
-                                    {programInitial && (
-                                      <span style={{
-                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                        width: 20, height: 20, borderRadius: 6,
-                                        background: d.isToday ? 'rgba(255,255,255,0.22)'
-                                          : d.isDone ? 'rgba(16,185,129,0.20)'
-                                          : d.isMissed ? 'rgba(239,68,68,0.12)'
-                                          : 'rgba(255,255,255,0.08)',
-                                        color: d.isToday ? '#FFFFFF'
-                                          : d.isDone ? '#34d399'
-                                          : d.isMissed ? '#f87171'
-                                          : '#a1a1aa',
-                                        fontSize: 9, fontWeight: 700, lineHeight: 1,
-                                      }}>
-                                        {programInitial}
-                                      </span>
-                                    )}
-                                    {d.isDone ? (
-                                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="20 6 9 17 4 12" />
-                                      </svg>
-                                    ) : d.isMissed ? (
-                                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="18" y1="6" x2="6" y2="18" />
-                                        <line x1="6" y1="6" x2="18" y2="18" />
-                                      </svg>
-                                    ) : d.time ? (
-                                      <span style={{
-                                        fontSize: 8, fontWeight: 600,
-                                        padding: '2px 5px', borderRadius: 5,
-                                        background: d.isToday ? 'rgba(255,255,255,0.20)' : 'transparent',
-                                        color: d.isToday ? 'rgba(255,255,255,0.9)' : '#a1a1aa',
-                                        letterSpacing: '0.02em',
-                                      }}>
-                                        {d.time}
-                                      </span>
-                                    ) : !programInitial ? (
-                                      <span style={{ fontSize: 10, color: d.isToday ? 'rgba(255,255,255,0.7)' : '#52525b' }}>+</span>
-                                    ) : null}
-                                  </>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                                <span style={{
+                                  fontSize: 16, fontWeight: 700, lineHeight: 1,
+                                  color: cs.dt, letterSpacing: '-0.01em',
+                                }}>
+                                  {d.date}
+                                </span>
+                                {programInitial && !isOff && (
+                                  <span style={{
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                    width: 18, height: 18, borderRadius: 4,
+                                    background: bs.bg, color: bs.color,
+                                    fontSize: 10, fontWeight: 700, lineHeight: 1,
+                                    boxShadow: bs.shadow,
+                                  }}>
+                                    {programInitial}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div style={{ height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {isDone && (
+                                  <div style={{
+                                    width: 20, height: 20, borderRadius: '50%',
+                                    background: '#10b981',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  }}>
+                                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                  </div>
+                                )}
+                                {isToday && d.time && (
+                                  <span style={{
+                                    padding: '2px 6px', borderRadius: 6,
+                                    background: 'rgba(0,0,0,0.25)',
+                                    color: '#FFFFFF', fontSize: 10,
+                                    letterSpacing: '-0.01em', lineHeight: 1,
+                                  }}>
+                                    {d.time}
+                                  </span>
+                                )}
+                                {isMissed && (
+                                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                                  </svg>
+                                )}
+                                {isOff && (
+                                  <span style={{ fontSize: 8, fontWeight: 700, color: '#52525b', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>Off</span>
+                                )}
+                                {!isDone && !isToday && !isMissed && !isOff && (
+                                  <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#404040' }} />
                                 )}
                               </div>
                             </button>
                           );
                         })}
                       </div>
-
-                      {(!hasProgram || allDone) && (
-                        <>
-                          <div style={{ height: 1, background: 'rgba(255,255,255,0.04)', marginBottom: 16 }} />
-                          <div style={{ fontSize: 13, color: '#71717a' }}>
-                            {hasProgram ? 'All done for today' : 'Take a scan to begin'}
-                          </div>
-                        </>
-                      )}
-                    </div>
                   </div>
 
                 </>
@@ -649,9 +648,6 @@ const Home: React.FC = () => {
               })}
             </div>
 
-            <p style={{ textAlign: 'center', fontSize: 12, color: T.text4, margin: '18px 0 16px' }}>
-              5 minutes a day for lasting posture change
-            </p>
           </section>
         </div>
       </div>

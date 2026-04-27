@@ -11,7 +11,6 @@ import {
 import { loadUserProfile } from '../services/UserProfile';
 import {
   applyProgressionsToProgram,
-  getProgressionDisplay,
   getUpgradeInfo,
   acceptTierUpgrade,
   dismissUpgrade,
@@ -294,93 +293,70 @@ const PersonalizedProgramScreen: React.FC = () => {
           </>
         )}
 
-        <div style={{ position: 'relative', marginTop: 20, borderRadius: 22, overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #1E1E22 0%, #121215 100%)', border: `1px solid ${T.border}`, borderRadius: 22 }} />
-          <div style={{ position: 'absolute', top: '-30%', right: '-10%', width: 160, height: 160, borderRadius: '50%', background: 'rgba(249,115,22,0.12)', filter: 'blur(40px)', pointerEvents: 'none' }} />
-
-          <div style={{ position: 'relative', zIndex: 1, padding: '20px 20px 18px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <span style={{ fontSize: 10, color: T.text3, fontWeight: 600 }}>
-                    {completedCount}/{total} done
-                  </span>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {program.exercises.map(ex => {
-                    const dc = ex.difficulty === 'hard'
-                      ? { color: '#EF4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)' }
-                      : ex.difficulty === 'medium'
-                        ? { color: '#EAB308', bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.25)' }
-                        : { color: '#22C55E', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.25)' };
-                    return (
-                      <span
-                        key={ex.id}
-                        style={{
-                          fontSize: 10, fontWeight: 700, letterSpacing: '0.02em',
-                          padding: '4px 10px', borderRadius: 8,
-                          background: dc.bg,
-                          border: `1px solid ${dc.border}`,
-                          color: dc.color,
-                        }}
-                      >
-                        {ex.name}
-                      </span>
-                    );
-                  })}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: T.text2 }}>
-                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="9" />
-                      <path d="M12 7v5l3 2" />
-                    </svg>
-                    {program.totalDurationMin} min
-                  </span>
-                  <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(63,63,70,1)' }} />
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: T.text2 }}>
-                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                    </svg>
-                    {total} exercises
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => navigate('/daily-exercise')}
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: '50%',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: 'linear-gradient(135deg, #EA580C 0%, #FB923C 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 0 20px rgba(249,115,22,0.3)',
-                  flexShrink: 0,
-                }}
-              >
-                <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-                  <path d="M8 5.5v13l10-6.5-10-6.5Z" fill="#FFFFFF" />
-                </svg>
-              </button>
+        {/* Stats card — minimal & professional */}
+        <div style={{
+          marginTop: 20,
+          borderRadius: 20,
+          background: 'rgba(20,20,24,0.7)',
+          border: '1px solid rgba(255,255,255,0.05)',
+          padding: '18px 18px 16px',
+          backdropFilter: 'blur(8px)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <span style={{ fontSize: 28, fontWeight: 700, color: T.text, letterSpacing: '-0.02em', lineHeight: 1 }}>
+                {completedCount}
+              </span>
+              <span style={{ fontSize: 14, color: T.text3, fontWeight: 500 }}>
+                / {total} done
+              </span>
             </div>
+            <button
+              type="button"
+              onClick={() => navigate('/daily-exercise')}
+              aria-label="Start session"
+              style={{
+                width: 44, height: 44, borderRadius: '50%',
+                border: 'none', cursor: 'pointer',
+                background: '#F97316',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 8px 20px -4px rgba(249,115,22,0.4)',
+                flexShrink: 0,
+              }}
+            >
+              <svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                <path d="M8 5.5v13l10-6.5-10-6.5Z" fill="#FFFFFF" />
+              </svg>
+            </button>
+          </div>
 
-            <div style={{ marginTop: 16, height: 3, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
-              <div
-                style={{
-                  height: '100%',
-                  borderRadius: 999,
-                  background: 'linear-gradient(90deg, #F97316 0%, #FB923C 100%)',
-                  width: `${(completedCount / total) * 100}%`,
-                  transition: 'width 0.3s ease',
-                }}
-              />
-            </div>
+          <div style={{ height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 14 }}>
+            <div
+              style={{
+                height: '100%',
+                borderRadius: 999,
+                background: '#F97316',
+                width: `${(completedCount / total) * 100}%`,
+                transition: 'width 0.3s ease',
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: T.text2, fontWeight: 500 }}>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+              </svg>
+              {program.totalDurationMin} min
+            </span>
+            <span style={{ width: 3, height: 3, borderRadius: '50%', background: T.text4 }} />
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: T.text2, fontWeight: 500 }}>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+              {total} moves
+            </span>
           </div>
         </div>
 
@@ -516,139 +492,96 @@ const PersonalizedProgramScreen: React.FC = () => {
           })}
 
         {expanded && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {program.exercises.map((ex) => {
               const levelLabel = ex.difficulty === 'beginner' ? 'Beginner' : ex.difficulty === 'medium' ? 'Medium' : 'Hard';
               const levelColor = DIFFICULTY_LABEL_COLOR[ex.difficulty] ?? T.text2;
               const imageCfg = EXERCISE_IMAGES[ex.name];
               const imageOffsetX = imageCfg?.offsetX ?? DEFAULT_IMAGE_OFFSET_X;
-              const firstTarget = ex.targetProblemLabels[0];
-              const extraTargets = ex.targetProblemLabels.length - 1;
-              const prog = getProgressionDisplay(ex.name);
+              const isStrength = ex.duration === 0 || (ex.displayReps && /\d/.test(ex.displayReps) && !ex.displayReps.includes('s'));
+              const detailText = isStrength ? ex.displayReps : `${ex.duration}s`;
               return (
                 <div
                   key={ex.id}
                   style={{
                     position: 'relative',
-                    borderRadius: 16,
+                    borderRadius: 18,
                     overflow: 'hidden',
-                    opacity: ex.completed ? 0.62 : 1,
+                    background: 'rgba(20,20,24,0.7)',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    opacity: ex.completed ? 0.55 : 1,
+                    transition: 'opacity 0.2s ease',
                   }}
                 >
-                  <div style={{ position: 'absolute', inset: 0, background: '#131316', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16 }} />
-                  <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
-                    {/* Image — square top */}
-                    <div
-                      style={{
-                        width: '100%',
-                        aspectRatio: '1 / 1',
-                        overflow: 'hidden',
-                        borderTopLeftRadius: 16,
-                        borderTopRightRadius: 16,
-                        background: '#18181B',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {imageCfg ? (
-                        <img
-                          src={imageCfg.src}
-                          alt={ex.name}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'contain',
-                            display: 'block',
-                            transform: `translateX(${imageOffsetX}px) scale(1.15)`,
-                            transformOrigin: 'center',
-                          }}
-                        />
-                      ) : (
-                        <span style={{ fontSize: 48 }} aria-hidden>{ex.emoji}</span>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div style={{ padding: '10px 12px 12px' }}>
-                      <h3 style={{
-                        fontSize: 13, fontWeight: 600, color: T.text, lineHeight: 1.2, margin: 0,
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  {/* Image — square top */}
+                  <div
+                    style={{
+                      width: '100%',
+                      aspectRatio: '1 / 1',
+                      overflow: 'hidden',
+                      background: '#0F0F12',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative',
+                    }}
+                  >
+                    {imageCfg ? (
+                      <img
+                        src={imageCfg.src}
+                        alt={ex.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          display: 'block',
+                          transform: `translateX(${imageOffsetX}px) scale(1.15)`,
+                          transformOrigin: 'center',
+                        }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: 56, opacity: 0.7 }} aria-hidden>{ex.emoji}</span>
+                    )}
+                    {ex.completed && (
+                      <div style={{
+                        position: 'absolute', top: 10, right: 10,
+                        width: 24, height: 24, borderRadius: '50%',
+                        background: '#10B981',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.4)',
                       }}>
-                        {ex.name}
-                      </h3>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 10 }}>
-                        {ex.sets > 1 && (
-                          <span style={{
-                            fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
-                            padding: '1px 5px', borderRadius: 5,
-                            background: 'rgba(217,184,76,0.15)', color: '#D9B84C',
-                            border: '1px solid rgba(217,184,76,0.25)',
-                          }}>{ex.sets}×</span>
-                        )}
-                        <span style={{ color: T.text3 }}>{ex.displayReps}</span>
-                        <span style={{ color: T.text4 }}>·</span>
-                        <span style={{ color: levelColor }}>{levelLabel}</span>
+                        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
                       </div>
-                      {/* Set progression bar — only show if not maxed and has some progress */}
-                      {!prog.isMaxed && prog.percentToNext > 0 && (
-                        <div style={{ marginTop: 6 }}>
-                          <div style={{
-                            height: 2, borderRadius: 2,
-                            background: 'rgba(255,255,255,0.06)', overflow: 'hidden',
-                          }}>
-                            <div style={{
-                              height: '100%', borderRadius: 2,
-                              background: 'rgba(217,184,76,0.55)',
-                              width: `${prog.percentToNext}%`,
-                              transition: 'width 0.4s ease',
-                            }} />
-                          </div>
-                          <div style={{ fontSize: 8, color: T.text4, marginTop: 3 }}>
-                            {prog.completionsAtVolume}/{prog.threshold} → {ex.sets + 1} sets
-                          </div>
-                        </div>
-                      )}
-                      {/* Tier upgrade progress bar — show for all non-hard exercises */}
-                      {ex.difficulty !== 'hard' && !prog.pendingTierUpgrade && (
-                        <div style={{ marginTop: 5 }}>
-                          <div style={{
-                            height: 2, borderRadius: 2,
-                            background: 'rgba(255,255,255,0.06)', overflow: 'hidden',
-                          }}>
-                            <div style={{
-                              height: '100%', borderRadius: 2,
-                              background: 'rgba(249,115,22,0.55)',
-                              width: `${Math.min(100, Math.round((prog.totalCompletions / 21) * 100))}%`,
-                              transition: 'width 0.4s ease',
-                            }} />
-                          </div>
-                          <div style={{ fontSize: 8, color: T.text4, marginTop: 3 }}>
-                            {prog.totalCompletions}/21 → next exercise
-                          </div>
-                        </div>
-                      )}
-                      {firstTarget && (
-                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
-                          <span
-                            style={{
-                              fontSize: 7,
-                              fontWeight: 600,
-                              letterSpacing: '0.03em',
-                              padding: '1px 6px',
-                              borderRadius: 4,
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              background: 'rgba(255,255,255,0.03)',
-                              color: 'rgba(161,161,170,0.85)',
-                            }}
-                          >
-                            {firstTarget}
-                          </span>
-                          {extraTargets > 0 && (
-                            <span style={{ fontSize: 7, color: T.text4 }}>+{extraTargets}</span>
-                          )}
-                        </div>
-                      )}
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ padding: '14px 14px 16px' }}>
+                    <h3 style={{
+                      fontSize: 15, fontWeight: 600, color: T.text, lineHeight: 1.25, margin: 0,
+                      letterSpacing: '-0.01em',
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      minHeight: 38,
+                    }}>
+                      {ex.name}
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                      <span style={{
+                        fontSize: 12, fontWeight: 600, color: T.text2,
+                        letterSpacing: '-0.01em',
+                      }}>
+                        {ex.sets > 1 ? `${ex.sets} × ${detailText}` : detailText}
+                      </span>
+                      <span style={{ width: 3, height: 3, borderRadius: '50%', background: T.text4 }} />
+                      <span style={{
+                        fontSize: 12, fontWeight: 600, color: levelColor,
+                        letterSpacing: '-0.01em',
+                      }}>
+                        {levelLabel}
+                      </span>
                     </div>
                   </div>
                 </div>
