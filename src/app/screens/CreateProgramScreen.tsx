@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { postureProblems, type Exercise, type PostureProblem } from '../data/postureData';
+import { EXERCISE_IMAGES, DEFAULT_IMAGE_OFFSET_X } from '../data/exerciseImages';
 import { addCustomProgramToLibrary, buildProgramFromPickedExercises } from '../services/DailyProgram';
 
 const T = {
@@ -202,20 +203,56 @@ const CreateProgramScreen: React.FC = () => {
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', color: T.text3, textTransform: 'uppercase', marginBottom: 10 }}>
                 Moves ({playlist.length})
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {playlist.map(row => (
-                  <div
-                    key={row.key}
-                    style={{
-                      padding: '12px 14px', borderRadius: 14, background: T.surface, border: `1px solid rgba(255,255,255,0.04)`,
-                    }}
-                  >
-                    <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{row.exercise.name}</div>
-                    <div style={{ fontSize: 11, color: T.text3, marginTop: 3 }}>
-                      {row.title} · {row.exercise.duration}s · {difficultyLabel(row.exercise.difficulty)}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {playlist.map(row => {
+                  const imageCfg = EXERCISE_IMAGES[row.exercise.name];
+                  const imageOffsetX = imageCfg?.offsetX ?? DEFAULT_IMAGE_OFFSET_X;
+                  return (
+                    <div
+                      key={row.key}
+                      style={{
+                        background: 'rgba(20,20,24,0.7)',
+                        borderRadius: 18,
+                        overflow: 'hidden',
+                        border: '1px solid rgba(255,255,255,0.06)',
+                        backdropFilter: 'blur(8px)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', gap: 14, padding: 14 }}>
+                        <div style={{
+                          width: 72, height: 72, borderRadius: 12,
+                          overflow: 'hidden', background: '#0F0F12',
+                          flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          border: '1px solid rgba(255,255,255,0.04)',
+                        }}>
+                          {imageCfg ? (
+                            <img
+                              src={imageCfg.src}
+                              alt={row.exercise.name}
+                              style={{
+                                width: '100%', height: '100%',
+                                objectFit: 'contain', display: 'block',
+                                transform: `translateX(${imageOffsetX * 0.45}px) scale(1.18)`,
+                                transformOrigin: 'center',
+                              }}
+                            />
+                          ) : (
+                            <span style={{ fontSize: 30, opacity: 0.7 }} aria-hidden>{row.exercise.emoji ?? '🧘'}</span>
+                          )}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: T.text, lineHeight: 1.25 }}>
+                            {row.exercise.name}
+                          </div>
+                          <div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>
+                            {row.title} · {row.exercise.duration}s · {difficultyLabel(row.exercise.difficulty)}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           ) : (
@@ -326,53 +363,113 @@ const CreateProgramScreen: React.FC = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {filteredExercises.map(exercise => {
                       const already = namesInPlaylist.has(exercise.name);
+                      const imageCfg = EXERCISE_IMAGES[exercise.name];
+                      const imageOffsetX = imageCfg?.offsetX ?? DEFAULT_IMAGE_OFFSET_X;
+                      const diffColor = exercise.difficulty === 'hard'
+                        ? '#EF4444'
+                        : exercise.difficulty === 'medium'
+                          ? '#EAB308'
+                          : '#22C55E';
                       return (
                         <div
                           key={exercise.id}
                           style={{
                             position: 'relative',
-                            width: '100%',
-                            textAlign: 'left',
+                            background: 'rgba(20,20,24,0.7)',
                             borderRadius: 18,
                             overflow: 'hidden',
-                            padding: 0,
-                            border: `1px solid rgba(255,255,255,0.04)`,
-                            background: T.surface,
+                            border: '1px solid rgba(255,255,255,0.06)',
+                            backdropFilter: 'blur(8px)',
                           }}
                         >
-                          <div style={{ position: 'relative', zIndex: 1, padding: '14px 16px' }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <h3 style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.15, color: T.text, margin: 0 }}>
+                          <div style={{ display: 'flex', gap: 14, padding: 14 }}>
+                            {/* Exercise thumbnail */}
+                            <div style={{
+                              width: 88, height: 88, borderRadius: 14,
+                              overflow: 'hidden', background: '#0F0F12',
+                              flexShrink: 0,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              border: '1px solid rgba(255,255,255,0.04)',
+                            }}>
+                              {imageCfg ? (
+                                <img
+                                  src={imageCfg.src}
+                                  alt={exercise.name}
+                                  style={{
+                                    width: '100%', height: '100%',
+                                    objectFit: 'contain', display: 'block',
+                                    transform: `translateX(${imageOffsetX * 0.45}px) scale(1.18)`,
+                                    transformOrigin: 'center',
+                                  }}
+                                />
+                              ) : (
+                                <span style={{ fontSize: 36, opacity: 0.7 }} aria-hidden>{exercise.emoji ?? '🧘'}</span>
+                              )}
+                            </div>
+
+                            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                              <div>
+                                <h3 style={{
+                                  fontSize: 15, fontWeight: 600, letterSpacing: '-0.015em',
+                                  color: T.text, margin: 0, lineHeight: 1.25,
+                                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                }}>
                                   {exercise.name}
                                 </h3>
-                                <p style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>
-                                  {exercise.duration}s · {difficultyLabel(exercise.difficulty)}
-                                </p>
-                                {already && (
-                                  <p style={{ fontSize: 10, color: T.text4, marginTop: 8 }}>
-                                    Already in your program
-                                  </p>
-                                )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                                  <span style={{
+                                    width: 6, height: 6, borderRadius: '50%',
+                                    background: diffColor,
+                                  }} />
+                                  <span style={{
+                                    fontSize: 11, fontWeight: 600,
+                                    color: diffColor,
+                                    letterSpacing: '0.04em', textTransform: 'uppercase',
+                                  }}>
+                                    {difficultyLabel(exercise.difficulty)}
+                                  </span>
+                                  <span style={{ fontSize: 11, color: T.text4 }}>·</span>
+                                  <span style={{ fontSize: 11, color: T.text3, fontWeight: 500 }}>
+                                    {exercise.duration}s
+                                  </span>
+                                </div>
                               </div>
+
                               <button
                                 type="button"
                                 disabled={already}
                                 onClick={() => addExercise(exercise)}
                                 style={{
-                                  flexShrink: 0,
-                                  padding: '8px 12px',
-                                  borderRadius: 12,
+                                  alignSelf: 'flex-start',
+                                  marginTop: 8,
+                                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                                  padding: '6px 12px', borderRadius: 10,
                                   border: 'none',
                                   cursor: already ? 'default' : 'pointer',
-                                  background: already ? 'rgba(255,255,255,0.04)' : 'linear-gradient(90deg, #EA580C 0%, #FB923C 100%)',
-                                  color: already ? T.text4 : '#fff',
-                                  fontSize: 12,
-                                  fontWeight: 700,
+                                  background: already ? 'rgba(255,255,255,0.04)' : 'rgba(249,115,22,0.10)',
+                                  color: already ? T.text4 : T.gold2,
+                                  fontSize: 11, fontWeight: 600,
+                                  letterSpacing: '0.02em',
                                   fontFamily: T.font,
                                 }}
                               >
-                                {already ? 'Added' : 'Add'}
+                                {already ? (
+                                  <>
+                                    <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                                      <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    Added
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                                      <line x1="12" y1="5" x2="12" y2="19" />
+                                      <line x1="5" y1="12" x2="19" y2="12" />
+                                    </svg>
+                                    Add move
+                                  </>
+                                )}
                               </button>
                             </div>
                           </div>
