@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
+import WeeklyProgramCard, { type ProgramOption } from '../components/WeeklyProgramCard';
 import {
   getActiveProgramId,
   loadActiveProgramForSession,
@@ -116,7 +117,6 @@ const PersonalizedProgramScreen: React.FC = () => {
     const p = loadActiveProgramForSession(profile);
     return p ? applyProgressionsToProgram(p) : null;
   });
-  const [expanded, setExpanded] = useState(true);
 
   // Set of exercise names that have a pending tier-upgrade suggestion
   const [pendingUpgrades, setPendingUpgrades] = useState<Set<string>>(() => {
@@ -156,6 +156,10 @@ const PersonalizedProgramScreen: React.FC = () => {
     : [];
   const activeId = getActiveProgramId();
   const headerProgramTitle = sortedEntries.find(e => e.id === activeId)?.name ?? 'Daily Program';
+
+  const programOptions: ProgramOption[] = sortedEntries.length > 0
+    ? sortedEntries.map(e => ({ id: e.id, name: e.name }))
+    : [{ id: 'daily', name: 'Daily Program' }];
 
   const total = program.exercises.length;
   const completedCount = program.exercises.filter(e => e.completed).length;
@@ -217,7 +221,7 @@ const PersonalizedProgramScreen: React.FC = () => {
                     <line x1="12" y1="5" x2="12" y2="19" />
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#FB923C' }}>New</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#FB923C' }}>Create program</span>
                 </button>
               </div>
             </div>
@@ -293,9 +297,12 @@ const PersonalizedProgramScreen: React.FC = () => {
           </>
         )}
 
+        <div style={{ marginTop: 20 }}>
+          <WeeklyProgramCard programs={programOptions} />
+        </div>
+
         {/* Stats card — minimal & professional */}
         <div style={{
-          marginTop: 20,
           borderRadius: 20,
           background: 'rgba(20,20,24,0.7)',
           border: '1px solid rgba(255,255,255,0.05)',
@@ -360,26 +367,33 @@ const PersonalizedProgramScreen: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 28, marginBottom: 12 }}>
-          <button
-            type="button"
-            onClick={() => setExpanded(v => !v)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-          >
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', color: T.text3, textTransform: 'uppercase', fontFamily: T.font }}>
-              Exercises
-            </span>
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={T.text3} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-              {expanded ? <polyline points="18 15 12 9 6 15" /> : <polyline points="6 9 12 15 18 9" />}
-            </svg>
-          </button>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 28, marginBottom: 14 }}>
+          <h2 style={{
+            fontSize: 20,
+            fontWeight: 800,
+            color: T.text,
+            letterSpacing: '-0.02em',
+            margin: 0,
+            lineHeight: 1,
+            fontFamily: T.font,
+          }}>
+            Exercises
+          </h2>
 
           <button
             type="button"
             onClick={() => navigate('/program/edit')}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 11, color: T.text3, fontFamily: T.font }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '8px 14px', borderRadius: 10,
+              background: 'transparent',
+              border: `1px solid ${T.gold2}`,
+              color: T.gold2,
+              fontSize: 12, fontWeight: 700, letterSpacing: '-0.01em',
+              cursor: 'pointer', fontFamily: T.font,
+            }}
           >
-            <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20h9" />
               <path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z" />
             </svg>
@@ -491,9 +505,8 @@ const PersonalizedProgramScreen: React.FC = () => {
             );
           })}
 
-        {expanded && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {program.exercises.map((ex) => {
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {program.exercises.map((ex) => {
               const levelLabel = ex.difficulty === 'beginner' ? 'Beginner' : ex.difficulty === 'medium' ? 'Medium' : 'Hard';
               const levelColor = DIFFICULTY_LABEL_COLOR[ex.difficulty] ?? T.text2;
               const imageCfg = EXERCISE_IMAGES[ex.name];
@@ -588,7 +601,6 @@ const PersonalizedProgramScreen: React.FC = () => {
               );
             })}
           </div>
-        )}
       </main>
 
       <div style={{
