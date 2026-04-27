@@ -147,45 +147,56 @@ const WeeklyProgramCard: React.FC<WeeklyProgramCardProps> = ({ programs, onChang
     <section
       style={{
         marginBottom: 16,
-        borderRadius: 20,
-        background: 'rgba(20,20,24,0.7)',
-        border: '1px solid rgba(255,255,255,0.05)',
-        padding: '18px 18px 14px',
-        backdropFilter: 'blur(8px)',
+        borderRadius: 24,
+        background: '#1c1c1e',
+        padding: 20,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 20,
         fontFamily: T.font,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div>
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: T.text3, textTransform: 'uppercase', margin: 0, marginBottom: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={{
+            fontSize: 11, letterSpacing: '0.14em', color: '#737373',
+            textTransform: 'uppercase', fontWeight: 600,
+          }}>
             Schedule
-          </p>
-          <h3 style={{ fontSize: 18, fontWeight: 800, color: T.text, letterSpacing: '-0.02em', margin: 0, lineHeight: 1 }}>
+          </span>
+          <h2 style={{
+            fontSize: 20, fontWeight: 600, color: '#FFFFFF',
+            letterSpacing: '-0.02em', margin: 0, lineHeight: 1.2,
+          }}>
             Weekly Program
-          </h3>
+          </h2>
         </div>
         <button
           type="button"
           onClick={() => setOpen(true)}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '8px 12px', borderRadius: 10,
+            padding: '6px 12px', borderRadius: 9999,
             background: 'transparent',
-            border: '1px solid rgba(249,115,22,0.45)',
-            color: T.gold2,
-            fontSize: 12, fontWeight: 700, letterSpacing: '-0.01em',
+            border: '1px solid rgba(249,115,22,0.30)',
+            color: '#F97316',
+            fontSize: 12, fontWeight: 500,
             cursor: 'pointer', fontFamily: T.font,
+            transition: 'background 0.15s ease',
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(249,115,22,0.10)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
         >
-          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+          {/* Pencil icon (lucide) */}
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 20h9" />
             <path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z" />
           </svg>
-          {hasAnything ? 'Edit' : 'Set up'}
+          <span>{hasAnything ? 'Edit' : 'Set up'}</span>
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6 }}>
         {WEEKDAY_KEYS.map((k) => {
           const cfg = template[k];
           const off = Boolean(cfg.off);
@@ -193,6 +204,17 @@ const WeeklyProgramCard: React.FC<WeeklyProgramCardProps> = ({ programs, onChang
           const time = cfg.time;
           const empty = isConfigEmpty(cfg);
           const initial = programName ? programName.trim().charAt(0).toUpperCase() : null;
+          // Day-letter (M T W T F S S)
+          const letter = SHORT_LABEL[k].charAt(0);
+
+          // Circle styling: orange for active program, red-ish for off, neutral when empty
+          const circleBg = off
+            ? '#7f1d1d'
+            : initial
+              ? '#F97316'
+              : 'rgba(255,255,255,0.10)';
+          const circleColor = off || initial ? '#FFFFFF' : '#737373';
+          const circleContent = off ? '×' : (initial ?? '–');
 
           return (
             <button
@@ -200,67 +222,50 @@ const WeeklyProgramCard: React.FC<WeeklyProgramCardProps> = ({ programs, onChang
               type="button"
               onClick={() => setOpen(true)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '10px 12px', borderRadius: 12,
-                background: off
-                  ? 'rgba(239,68,68,0.05)'
-                  : empty
-                    ? 'rgba(255,255,255,0.02)'
-                    : 'rgba(249,115,22,0.05)',
-                border: `1px solid ${
-                  off
-                    ? 'rgba(239,68,68,0.18)'
-                    : empty
-                      ? 'rgba(255,255,255,0.06)'
-                      : 'rgba(249,115,22,0.18)'
-                }`,
-                cursor: 'pointer', fontFamily: T.font,
-                textAlign: 'left',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                borderRadius: 16,
+                background: 'rgba(255,255,255,0.04)',
+                padding: '10px 4px',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: T.font,
+                transition: 'background 0.15s ease',
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
             >
               <span style={{
-                width: 36, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
-                color: off ? '#fca5a5' : empty ? T.text4 : T.text2,
-                textTransform: 'uppercase', flexShrink: 0,
+                fontSize: 10, color: '#737373',
+                letterSpacing: '0.05em', lineHeight: 1,
               }}>
-                {SHORT_LABEL[k]}
+                {letter}
               </span>
 
               <span style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                width: 26, height: 26, borderRadius: 8,
-                background: off
-                  ? 'rgba(239,68,68,0.12)'
-                  : initial
-                    ? 'rgba(249,115,22,0.18)'
-                    : 'rgba(255,255,255,0.04)',
-                color: off ? '#fca5a5' : initial ? T.gold2 : T.text4,
-                fontSize: 11, fontWeight: 800,
-                flexShrink: 0,
+                width: 28, height: 28, borderRadius: '50%',
+                background: circleBg,
+                color: circleColor,
+                fontSize: 12, fontWeight: 500, lineHeight: 1,
               }}>
-                {off ? '×' : (initial ?? '–')}
+                {circleContent}
               </span>
 
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  fontSize: 13, fontWeight: 600, color: empty ? T.text3 : T.text,
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                }}>
-                  {off ? 'Off day' : (programName ?? 'No program set')}
-                </div>
-              </div>
-
-              {!off && time && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 2,
+                color: '#a3a3a3', lineHeight: 1,
+              }}>
+                {/* Clock icon (lucide) */}
+                <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
                 <span style={{
-                  fontSize: 12, fontWeight: 600, color: T.text2,
-                  fontVariantNumeric: 'tabular-nums', flexShrink: 0,
+                  fontSize: 9, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em',
                 }}>
-                  {time}
+                  {off ? 'off' : (time ?? '—')}
                 </span>
-              )}
-              {!off && !time && !empty && (
-                <span style={{ fontSize: 11, color: T.text4, flexShrink: 0 }}>No reminder</span>
-              )}
+              </div>
             </button>
           );
         })}
