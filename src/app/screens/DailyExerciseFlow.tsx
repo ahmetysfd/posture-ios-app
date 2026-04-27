@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import YoutubeModal from '../components/YoutubeModal';
-import { toYouTubeEmbed } from '../lib/youtubeEmbed';
+import { buildExerciseVideoSrc } from '../lib/youtubeEmbed';
 import {
   loadActiveProgramForSession, markExerciseComplete, loadDailyProgram, saveDailyProgram,
   EXERCISE_REPS, EXERCISE_TEMPO, DEFAULT_TEMPO_BY_PHASE,
@@ -85,6 +85,20 @@ const DailyExerciseFlow: React.FC = () => {
   const [repsDone, setRepsDone] = useState(false);
   // Between-exercise rest: timer expired, waiting for user to tap "Next exercise"
   const [restReady, setRestReady] = useState(false);
+  // Persisted user preference: hide the live rep counter and just show the
+  // target. Toggle stays off across sessions until the user re-enables it.
+  const [repCounterHidden, setRepCounterHidden] = useState<boolean>(() => {
+    try { return localStorage.getItem('posturefix_hide_rep_count') === '1'; }
+    catch { return false; }
+  });
+  const toggleRepCounter = useCallback(() => {
+    setRepCounterHidden(v => {
+      const next = !v;
+      try { localStorage.setItem('posturefix_hide_rep_count', next ? '1' : '0'); }
+      catch { /* ignore quota */ }
+      return next;
+    });
+  }, []);
 
   const ex = exercises[exIdx];
   // Fall back to EXERCISE_REPS for programs generated before the reps field was added
@@ -742,9 +756,8 @@ const DailyExerciseFlow: React.FC = () => {
                 }}>
                   <iframe
                     title={ex.name}
-                    src={`${toYouTubeEmbed(ex.youtubeUrl)}?playsinline=1&rel=0&autoplay=1&mute=1&loop=1`}
+                    src={buildExerciseVideoSrc(ex.youtubeUrl)}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
                     style={{ width: '100%', height: '100%', border: 'none' }}
                   />
                 </div>
@@ -860,38 +873,71 @@ const DailyExerciseFlow: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Tap ring — fills as reps are completed */}
-                    <button
-                      type="button"
-                      onClick={handleRepTap}
-                      style={{
-                        position: 'relative', width: 150, height: 150,
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        marginTop: 4, marginBottom: 4, padding: 0,
-                      }}
-                    >
-                      <svg width="150" height="150" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                        <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
-                        <circle cx="50" cy="50" r="45" fill="none" stroke={T.gold} strokeWidth="5" strokeLinecap="round"
-                          strokeDasharray={circ}
-                          strokeDashoffset={targetReps ? circ - (currentRep / targetReps) * circ : circ}
-                          style={{ transition: 'stroke-dashoffset 0.15s ease' }} />
-                      </svg>
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ fontSize: 44, fontWeight: 800, color: T.gold, letterSpacing: '-0.03em', lineHeight: 1 }}>
-                          {currentRep}
-                        </div>
-                        <div style={{ fontSize: 12, color: T.text3, fontWeight: 500, marginTop: 2 }}>
-                          / {targetReps} reps
-                        </div>
-                        <div style={{ fontSize: 9, color: T.text3, marginTop: 6, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                          tap to correct
-                        </div>
-                      </div>
-                    </button>
+                    {/* Rep counter — toggleable; hidden state shows only the
+                        target so the user isn't watching every rep tick by. */}
+                    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <RepCounterToggle hidden={repCounterHidden} onToggle={toggleRepCounter} />
 
-                    {/* Tempo cue bar — hidden once set is done */}
-                    {!repsDone && (
+                      {!repCounterHidden ? (
+                        <button
+                          type="button"
+                          onClick={handleRepTap}
+                          style={{
+                            position: 'relative', width: 150, height: 150,
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            marginTop: 4, marginBottom: 4, padding: 0,
+                          }}
+                        >
+                          <svg width="150" height="150" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+                            <circle cx="50" cy="50" r="45" fill="none" stroke={T.gold} strokeWidth="5" strokeLinecap="round"
+                              strokeDasharray={circ}
+                              strokeDashoffset={targetReps ? circ - (currentRep / targetReps) * circ : circ}
+                              style={{ transition: 'stroke-dashoffset 0.15s ease' }} />
+                          </svg>
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ fontSize: 44, fontWeight: 800, color: T.gold, letterSpacing: '-0.03em', lineHeight: 1 }}>
+                              {currentRep}
+                            </div>
+                            <div style={{ fontSize: 12, color: T.text3, fontWeight: 500, marginTop: 2 }}>
+                              / {targetReps} reps
+                            </div>
+                            <div style={{ fontSize: 9, color: T.text3, marginTop: 6, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                              tap to correct
+                            </div>
+                          </div>
+                        </button>
+                      ) : (
+                        <div
+                          aria-label={`${targetReps} reps target`}
+                          style={{
+                            width: 150, height: 150,
+                            display: 'flex', flexDirection: 'column',
+                            alignItems: 'center', justifyContent: 'center',
+                            marginTop: 4, marginBottom: 4,
+                          }}
+                        >
+                          <div style={{
+                            fontSize: 56, fontWeight: 800, color: T.gold,
+                            letterSpacing: '-0.04em', lineHeight: 1,
+                            fontVariantNumeric: 'tabular-nums',
+                          }}>
+                            {targetReps}
+                          </div>
+                          <div style={{
+                            fontSize: 11, color: T.text3, marginTop: 8,
+                            letterSpacing: '0.12em', textTransform: 'uppercase',
+                            fontWeight: 600,
+                          }}>
+                            reps to do
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Tempo cue bar — hidden once set is done OR when the
+                        rep counter is collapsed (the user wants a calmer view). */}
+                    {!repsDone && !repCounterHidden && (
                       <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 2 }}>
                         {tempoParts.map((sec, i) => {
                           const isActive = tempoPhase === i;
@@ -944,20 +990,22 @@ const DailyExerciseFlow: React.FC = () => {
                     ) : (
                       /* Rep controls: decrement + skip */
                       <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
-                        <button
-                          type="button"
-                          onClick={() => setCurrentRep(r => Math.max(0, r - 1))}
-                          disabled={currentRep === 0}
-                          style={{
-                            width: 44, height: 44, borderRadius: '50%',
-                            background: T.surface, border: `1.5px solid ${T.border2}`,
-                            color: currentRep === 0 ? T.text3 : T.text2,
-                            fontSize: 20, fontWeight: 700, cursor: currentRep === 0 ? 'default' : 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            opacity: currentRep === 0 ? 0.35 : 1,
-                            fontFamily: T.font,
-                          }}
-                        >−</button>
+                        {!repCounterHidden && (
+                          <button
+                            type="button"
+                            onClick={() => setCurrentRep(r => Math.max(0, r - 1))}
+                            disabled={currentRep === 0}
+                            style={{
+                              width: 44, height: 44, borderRadius: '50%',
+                              background: T.surface, border: `1.5px solid ${T.border2}`,
+                              color: currentRep === 0 ? T.text3 : T.text2,
+                              fontSize: 20, fontWeight: 700, cursor: currentRep === 0 ? 'default' : 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              opacity: currentRep === 0 ? 0.35 : 1,
+                              fontFamily: T.font,
+                            }}
+                          >−</button>
+                        )}
                         <button
                           type="button"
                           onClick={skipEx}
@@ -1067,5 +1115,49 @@ const DailyExerciseFlow: React.FC = () => {
     </div>
   );
 };
+
+/** Eye-toggle for the rep counter — hidden state persists in localStorage. */
+const RepCounterToggle: React.FC<{ hidden: boolean; onToggle: () => void }> = ({ hidden, onToggle }) => (
+  <button
+    type="button"
+    // Stop propagation so a tap on the eye never bubbles to the rep ring
+    // underneath; bump z-index so the eye paints on top of the ring in the
+    // overlapping corner (auto z-index would otherwise lose to a later sibling).
+    onClick={(e) => { e.stopPropagation(); onToggle(); }}
+    onPointerDown={(e) => e.stopPropagation()}
+    aria-label={hidden ? 'Show rep counter' : 'Hide rep counter'}
+    style={{
+      position: 'absolute',
+      top: -8,
+      right: -14,
+      zIndex: 5,
+      width: 32, height: 32,
+      borderRadius: '50%',
+      background: hidden ? 'rgba(217,184,76,0.16)' : 'rgba(20,20,24,0.95)',
+      border: `1px solid ${hidden ? 'rgba(217,184,76,0.45)' : 'rgba(255,255,255,0.10)'}`,
+      color: hidden ? '#D9B84C' : 'rgba(228,228,231,0.75)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      cursor: 'pointer', padding: 0,
+      boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
+      transition: 'background 0.15s ease, color 0.15s ease',
+    }}
+  >
+    {hidden ? (
+      // Eye-off icon
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+        <path d="M14.12 14.12A3 3 0 1 1 9.88 9.88" />
+        <line x1="1" y1="1" x2="23" y2="23" />
+      </svg>
+    ) : (
+      // Eye icon
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    )}
+  </button>
+);
 
 export default DailyExerciseFlow;
