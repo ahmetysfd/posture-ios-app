@@ -29,6 +29,8 @@ interface ScanAnalysisViewProps {
   showNewScanButton?: boolean;
   /** When false, hides “See your daily plan” (e.g. on Progress). */
   showDailyPlanButton?: boolean;
+  /** When true, hides the 21-day Current Level card (used during onboarding). */
+  riskAnalysisOnly?: boolean;
   /** Optional — when provided, Risk Analysis cards become tappable. */
   onProblemSelect?: (problemId: string) => void;
 }
@@ -501,6 +503,7 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
   showFullReportButton = true,
   showNewScanButton = true,
   showDailyPlanButton = true,
+  riskAnalysisOnly = false,
   onProblemSelect,
 }) => {
   const [showSkeleton, setShowSkeleton] = useState(true);
@@ -710,7 +713,7 @@ const ScanAnalysisView: React.FC<ScanAnalysisViewProps> = ({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 24 }}>
 
       {/* ── 21-day program level (replaces scan-only badge + thin bars) ── */}
-      <DailyProgramLevelCard />
+      {!riskAnalysisOnly && <DailyProgramLevelCard />}
 
       {/* ── View tabs ─────────────────────────── */}
       <div style={{

@@ -85,8 +85,27 @@ export interface ProgressEntry {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+/** YYYY-MM-DD in the user's *local* timezone. Day boundaries follow midnight local. */
 function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localIsoDate(new Date());
+}
+
+function localIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Off-days set by the user via the Home day-picker. Preserve streak. */
+const DAY_CONFIG_KEY = 'posturefix_day_config';
+function loadOffDays(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DAY_CONFIG_KEY);
+    if (!raw) return new Set();
+    const cfg = JSON.parse(raw) as Record<string, { off?: boolean }>;
+    return new Set(Object.keys(cfg).filter(iso => cfg[iso]?.off === true));
+  } catch { return new Set(); }
 }
 
 const REST_BETWEEN_SEC = 15; // seconds between exercises
@@ -1294,14 +1313,23 @@ export function getDailyStats(): {
   const log = loadProgressLog();
   const today = todayStr();
   const completedDates = new Set(log.filter(e => e.fullyCompleted).map(e => e.date));
+  const offDays = loadOffDays();
   const completedToday = completedDates.has(today);
+  const todayIsOff = offDays.has(today);
   const totalMinutes = log.reduce((sum, e) => sum + (e.minutesCompleted ?? 0), 0);
 
-  // Count consecutive completed days ending today (or yesterday if today not yet done)
-  let streak = 0;
+  // Walk consecutive days ending today, counting both completed days and
+  // user-marked off days toward the streak. If today hasn't been claimed yet
+  // (not done and not off), start the walk from yesterday so the streak from
+  // prior days still shows up.
   const d = new Date();
-  if (!completedToday) d.setDate(d.getDate() - 1); // look back one day if today not done
-  while (completedDates.has(d.toISOString().slice(0, 10))) {
+  d.setHours(0, 0, 0, 0);
+  if (!completedToday && !todayIsOff) d.setDate(d.getDate() - 1);
+
+  let streak = 0;
+  while (true) {
+    const iso = localIsoDate(d);
+    if (!completedDates.has(iso) && !offDays.has(iso)) break;
     streak++;
     d.setDate(d.getDate() - 1);
   }

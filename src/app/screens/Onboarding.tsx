@@ -46,9 +46,9 @@ const C = {
 const PainAreasPage: React.FC<{ selected: string[]; onToggle: (id: string) => void }> = ({ selected, onToggle }) => (
   <div className="flex flex-col h-full">
     <div className="px-6 pt-4 pb-5">
-      <h1 className="text-[22px] font-bold text-white tracking-tight leading-snug">
-        Where does it{' '}
-        <span className="bg-gradient-to-r from-[#ff6b35] to-[#ff8f5e] bg-clip-text text-transparent">hurt?</span>
+      <h1 className="text-[18px] font-bold text-white tracking-tight leading-snug">
+        Please indicate the body regions where you experience{' '}
+        <span className="bg-gradient-to-r from-[#ff6b35] to-[#ff8f5e] bg-clip-text text-transparent">chronic pain</span>.
       </h1>
     </div>
     <div className="flex-1 overflow-y-auto px-5 pb-4">
@@ -116,13 +116,14 @@ const EquipmentPage: React.FC<{ selected: 'band' | 'no-band' | null; onSelect: (
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-6 pt-4 pb-5">
+      <div className="px-6 pt-4 pb-3">
         <h1 className="text-[22px] font-bold text-white tracking-tight leading-snug">
           Your{' '}
           <span className="bg-gradient-to-r from-[#00d9ff] to-[#00b8d4] bg-clip-text text-transparent">equipment</span>
         </h1>
+        <p className="text-[12px] text-zinc-500 mt-1">Pick what you have available — programs adjust automatically.</p>
       </div>
-      <div className="flex-1 px-5 flex flex-col gap-3 justify-center pb-16">
+      <div className="flex-1 px-5 flex flex-col gap-4 justify-center pb-10">
         {opts.map((opt) => {
           const on = selected === opt.id;
           return (
@@ -130,31 +131,50 @@ const EquipmentPage: React.FC<{ selected: 'band' | 'no-band' | null; onSelect: (
               key={opt.id}
               type="button"
               onClick={() => onSelect(opt.id)}
-              className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 active:scale-[0.98] ${
+              className={`relative flex flex-col items-start gap-4 p-6 rounded-3xl text-left transition-all duration-200 active:scale-[0.98] overflow-hidden ${
                 on
-                  ? 'bg-[#00d9ff]/[0.06] ring-[1.5px] ring-[#00d9ff]/50 shadow-[0_0_24px_rgba(0,217,255,0.08)]'
-                  : 'bg-white/[0.02] ring-[0.5px] ring-white/[0.06] hover:bg-white/[0.03]'
+                  ? 'bg-[#00d9ff]/[0.08] ring-[1.5px] ring-[#00d9ff]/55 shadow-[0_10px_32px_rgba(0,217,255,0.14)]'
+                  : 'bg-white/[0.025] ring-[0.5px] ring-white/[0.08] hover:bg-white/[0.04]'
               }`}
+              style={{ minHeight: 156 }}
             >
+              {/* ambient glow */}
               <div
-                className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200 ${
-                  on ? 'bg-[#00d9ff]/15 text-[#00d9ff]' : 'bg-white/[0.03] text-zinc-500'
-                }`}
-              >
-                {opt.icon}
+                className="pointer-events-none absolute -top-12 -right-10 w-40 h-40 rounded-full blur-2xl transition-opacity duration-300"
+                style={{
+                  background: on
+                    ? 'radial-gradient(circle, rgba(0,217,255,0.28) 0%, rgba(0,217,255,0) 70%)'
+                    : 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 70%)',
+                  opacity: on ? 1 : 0.6,
+                }}
+              />
+
+              <div className="relative w-full flex items-start justify-between">
+                <div
+                  className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-200 ${
+                    on
+                      ? 'bg-[#00d9ff]/18 text-[#00d9ff] ring-[1px] ring-[#00d9ff]/35'
+                      : 'bg-white/[0.04] text-zinc-400 ring-[0.5px] ring-white/[0.06]'
+                  }`}
+                  style={{ boxShadow: on ? '0 0 24px rgba(0,217,255,0.18)' : 'none' }}
+                >
+                  {/* upscale icon */}
+                  <div style={{ transform: 'scale(1.35)' }}>{opt.icon}</div>
+                </div>
+                <div
+                  className={`w-7 h-7 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all duration-200 ${
+                    on ? 'border-[#00d9ff] bg-[#00d9ff]' : 'border-white/15 bg-white/[0.02]'
+                  }`}
+                >
+                  {on && <Check size={14} className="text-[#0a0a0f]" strokeWidth={3} />}
+                </div>
               </div>
-              <div className="flex-1 text-left">
-                <h3 className={`text-[15px] font-semibold transition-colors duration-200 ${on ? 'text-white' : 'text-zinc-300'}`}>
+
+              <div className="relative w-full">
+                <h3 className={`text-[20px] font-bold tracking-tight transition-colors duration-200 ${on ? 'text-white' : 'text-zinc-200'}`}>
                   {opt.label}
                 </h3>
-                <p className="text-[11px] text-zinc-600 mt-0.5">{opt.sub}</p>
-              </div>
-              <div
-                className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all duration-200 ${
-                  on ? 'border-[#00d9ff] bg-[#00d9ff]' : 'border-white/10'
-                }`}
-              >
-                {on && <Check size={10} className="text-white" strokeWidth={3} />}
+                <p className="text-[12.5px] text-zinc-500 mt-1 leading-snug">{opt.sub}</p>
               </div>
             </button>
           );
@@ -434,7 +454,8 @@ export const OnboardingFlow: React.FC<{ onFinish?: () => void }> = ({ onFinish }
     uploadModeRef.current = 'camera';
     if (fileInputRef.current) {
       fileInputRef.current.removeAttribute('capture');
-      fileInputRef.current.setAttribute('capture', 'environment');
+      // Use the device's front (selfie) camera so the user can frame themselves.
+      fileInputRef.current.setAttribute('capture', 'user');
       fileInputRef.current.click();
     }
   }, []);
