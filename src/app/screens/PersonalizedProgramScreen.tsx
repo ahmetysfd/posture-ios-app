@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
+import YoutubeModal from '../components/YoutubeModal';
 import {
   getActiveProgramId,
   loadActiveProgramForSession,
@@ -116,6 +117,8 @@ const PersonalizedProgramScreen: React.FC = () => {
     const p = loadActiveProgramForSession(profile);
     return p ? applyProgressionsToProgram(p) : null;
   });
+  // Move preview — open the demo video when the user taps a move card.
+  const [previewVideo, setPreviewVideo] = useState<{ url: string; title: string } | null>(null);
 
   // Set of exercise names that have a pending tier-upgrade suggestion
   const [pendingUpgrades, setPendingUpgrades] = useState<Set<string>>(() => {
@@ -505,9 +508,14 @@ const PersonalizedProgramScreen: React.FC = () => {
               const imageOffsetX = imageCfg?.offsetX ?? DEFAULT_IMAGE_OFFSET_X;
               const isStrength = ex.duration === 0 || (ex.displayReps && /\d/.test(ex.displayReps) && !ex.displayReps.includes('s'));
               const detailText = isStrength ? ex.displayReps : `${ex.duration}s`;
+              const hasVideo = Boolean(ex.youtubeUrl);
               return (
-                <div
+                <button
                   key={ex.id}
+                  type="button"
+                  onClick={() => { if (hasVideo) setPreviewVideo({ url: ex.youtubeUrl as string, title: ex.name }); }}
+                  disabled={!hasVideo}
+                  aria-label={hasVideo ? `Play demo for ${ex.name}` : ex.name}
                   style={{
                     position: 'relative',
                     borderRadius: 18,
@@ -515,7 +523,12 @@ const PersonalizedProgramScreen: React.FC = () => {
                     background: 'rgba(20,20,24,0.7)',
                     border: '1px solid rgba(255,255,255,0.05)',
                     opacity: ex.completed ? 0.55 : 1,
-                    transition: 'opacity 0.2s ease',
+                    transition: 'opacity 0.2s ease, transform 0.15s ease',
+                    cursor: hasVideo ? 'pointer' : 'default',
+                    padding: 0,
+                    textAlign: 'left',
+                    fontFamily: T.font,
+                    color: 'inherit',
                   }}
                 >
                   {/* Image — square top */}
@@ -589,7 +602,7 @@ const PersonalizedProgramScreen: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -630,6 +643,13 @@ const PersonalizedProgramScreen: React.FC = () => {
         )}
       </div>
       </div>
+
+      <YoutubeModal
+        open={!!previewVideo}
+        watchUrl={previewVideo?.url ?? ''}
+        title={previewVideo?.title}
+        onClose={() => setPreviewVideo(null)}
+      />
     </Layout>
   );
 };

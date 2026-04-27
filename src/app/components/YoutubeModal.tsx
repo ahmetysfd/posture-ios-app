@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { toYouTubeEmbed } from '../lib/youtubeEmbed';
+import { buildExerciseVideoSrc } from '../lib/youtubeEmbed';
 
 export interface YoutubeModalProps {
   open: boolean;
@@ -9,8 +9,10 @@ export interface YoutubeModalProps {
 }
 
 const YoutubeModal: React.FC<YoutubeModalProps> = ({ open, watchUrl, title, onClose }) => {
-  const embed = toYouTubeEmbed(watchUrl);
-  const src = `${embed}${embed.includes('?') ? '&' : '?'}playsinline=1&rel=0`;
+  // All videos play muted, looped, and with no exposed controls — same rule as
+  // the in-flow exercise videos. Compute lazily so we don't build a src for an
+  // unopened modal.
+  const src = open && watchUrl ? buildExerciseVideoSrc(watchUrl) : '';
 
   useEffect(() => {
     if (!open) return;
@@ -87,7 +89,6 @@ const YoutubeModal: React.FC<YoutubeModalProps> = ({ open, watchUrl, title, onCl
             title={title || 'Exercise demo'}
             src={src}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
           />
         </div>
