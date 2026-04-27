@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
-import WeeklyProgramCard, { type ProgramOption } from '../components/WeeklyProgramCard';
 import {
   getActiveProgramId,
   loadActiveProgramForSession,
@@ -157,10 +156,6 @@ const PersonalizedProgramScreen: React.FC = () => {
   const activeId = getActiveProgramId();
   const headerProgramTitle = sortedEntries.find(e => e.id === activeId)?.name ?? 'Daily Program';
 
-  const programOptions: ProgramOption[] = sortedEntries.length > 0
-    ? sortedEntries.map(e => ({ id: e.id, name: e.name }))
-    : [{ id: 'daily', name: 'Daily Program' }];
-
   const total = program.exercises.length;
   const completedCount = program.exercises.filter(e => e.completed).length;
   const allDone = completedCount === total;
@@ -297,12 +292,9 @@ const PersonalizedProgramScreen: React.FC = () => {
           </>
         )}
 
-        <div style={{ marginTop: 20 }}>
-          <WeeklyProgramCard programs={programOptions} />
-        </div>
-
         {/* Stats card — minimal & professional */}
         <div style={{
+          marginTop: 20,
           borderRadius: 20,
           background: 'rgba(20,20,24,0.7)',
           border: '1px solid rgba(255,255,255,0.05)',

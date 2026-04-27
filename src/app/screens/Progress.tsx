@@ -94,12 +94,6 @@ const Progress: React.FC = () => {
         </div>
       </div>
 
-      {!(latestScan && scanCaptures) && (
-        <div style={{ padding: '16px 24px 0', animation: 'slideUp 0.35s ease 0.01s both' }}>
-          <DailyProgramLevelCard />
-        </div>
-      )}
-
       {latestScan && scanCaptures && (
         <div style={{ padding: '20px 24px 0', animation: 'slideUp 0.35s ease 0.01s both' }}>
           <div style={{ marginBottom: 12, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: T.text3, fontWeight: 700, fontFamily: T.font }}>
@@ -115,6 +109,7 @@ const Progress: React.FC = () => {
             showFullReportButton={false}
             showDailyPlanButton={false}
             showNewScanButton={false}
+            riskAnalysisOnly={true}
             onProblemSelect={(id) => navigate(`/problem/${id}`)}
           />
         </div>
@@ -131,6 +126,11 @@ const Progress: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Current Level — pinned to the bottom of the Progress page */}
+      <div style={{ padding: '24px 24px 8px', animation: 'slideUp 0.35s ease 0.05s both' }}>
+        <DailyProgramLevelCard />
+      </div>
     </Layout>
   );
 };

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { BarChart2, Home, ListChecks, Settings, Sparkles } from 'lucide-react';
+import { BarChart2, CalendarDays, Home, ListChecks, Settings, Sparkles } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,6 +14,7 @@ const Layout: React.FC<LayoutProps> = ({ children, hideNav = false }) => {
   const currentScreen = location.pathname === '/' ? 'home'
     : location.pathname === '/welcome' ? 'welcome'
     : location.pathname.startsWith('/program') || location.pathname === '/scan/program' ? 'program'
+    : location.pathname === '/schedule' ? 'schedule'
     : location.pathname === '/progress' ? 'progress'
     : location.pathname === '/settings' ? 'settings' : '';
 
@@ -21,6 +22,7 @@ const Layout: React.FC<LayoutProps> = ({ children, hideNav = false }) => {
     { id: 'home', path: '/', label: 'Home', Icon: HomeIcon },
     { id: 'welcome', path: '/welcome', label: 'Welcome', Icon: WelcomeIcon },
     { id: 'program', path: '/program', label: 'Program', Icon: ProgramIcon },
+    { id: 'schedule', path: '/schedule', label: 'Schedule', Icon: ScheduleIcon },
     { id: 'progress', path: '/progress', label: 'Progress', Icon: ChartIcon },
     { id: 'settings', path: '/settings', label: 'Settings', Icon: GearIcon },
   ];
@@ -141,6 +143,10 @@ const ChartIcon = ({ active }: { active: boolean }) => (
 
 const ProgramIcon = ({ active }: { active: boolean }) => (
   <ListChecks size={20} strokeWidth={active ? 2.2 : 1.6} />
+);
+
+const ScheduleIcon = ({ active }: { active: boolean }) => (
+  <CalendarDays size={20} strokeWidth={active ? 2.2 : 1.6} />
 );
 
 const GearIcon = ({ active }: { active: boolean }) => (

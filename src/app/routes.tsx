@@ -14,6 +14,7 @@ import PersonalizedProgramScreen from './screens/PersonalizedProgramScreen';
 import ProgramEditScreen from './screens/ProgramEditScreen';
 import DailyExerciseFlow from './screens/DailyExerciseFlow';
 import CreateProgramScreen from './screens/CreateProgramScreen';
+import Schedule from './screens/Schedule';
 import Welcome from './screens/Welcome';
 import { isOnboardingComplete } from './services/UserProfile';
 
@@ -36,6 +37,7 @@ const AppRoutes: React.FC = () => (
     <Route path="/completion/:problemId" element={<Guard><Completion /></Guard>} />
     <Route path="/progress" element={<Guard><Progress /></Guard>} />
     <Route path="/program" element={<Guard><PersonalizedProgramScreen /></Guard>} />
+    <Route path="/schedule" element={<Guard><Schedule /></Guard>} />
     <Route path="/settings" element={<Guard><Settings /></Guard>} />
     <Route path="/scan" element={<Guard><BodyScanScreen /></Guard>} />
     <Route path="/program/edit" element={<Guard><ProgramEditScreen /></Guard>} />
